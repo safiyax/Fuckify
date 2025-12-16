@@ -2,7 +2,7 @@
 //  FuckifyApp.swift
 //  Fuckify
 //
-//  Created by Zeeshan Hooda on 2025-11-08.
+//  Created by Safiya Hooda on 2025-11-08.
 //
 
 import SwiftUI
@@ -13,6 +13,8 @@ struct FuckifyApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            Partner.self,
+            Encounter.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
