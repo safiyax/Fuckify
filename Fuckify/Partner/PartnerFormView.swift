@@ -20,6 +20,7 @@ struct PartnerFormView: View {
     @State private var relationshipType: RelationshipType = .casual
     @State private var dateMet: Date?
     @State private var showDateMetPicker: Bool = false
+    @State private var avatarColor: String = ""
 
     var isEditing: Bool {
         partner != nil
@@ -35,6 +36,29 @@ struct PartnerFormView: View {
                     TextField("Phone Number", text: $phoneNumber)
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
+                }
+
+                Section("Avatar Color") {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 50))], spacing: 12) {
+                        ForEach(["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"], id: \.self) { colorName in
+                            Button(action: { avatarColor = colorName }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(colorFromName(colorName))
+                                        .frame(width: 50, height: 50)
+
+                                    if avatarColor == colorName {
+                                        Image(systemName: "checkmark")
+                                            .font(.title3)
+                                            .foregroundColor(.white)
+                                            .fontWeight(.bold)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 8)
                 }
 
                 Section("Relationship") {
@@ -87,6 +111,9 @@ struct PartnerFormView: View {
             .onAppear {
                 if let partner = partner {
                     loadPartner(partner)
+                } else {
+                    // Set a default color for new partners
+                    avatarColor = Partner.randomColorName()
                 }
             }
         }
@@ -100,6 +127,22 @@ struct PartnerFormView: View {
         relationshipType = partner.relationshipType
         dateMet = partner.dateMet
         showDateMetPicker = partner.dateMet != nil
+        avatarColor = partner.avatarColor
+    }
+
+    private func colorFromName(_ name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "purple": return .purple
+        case "pink": return .pink
+        case "red": return .red
+        case "orange": return .orange
+        case "yellow": return .yellow
+        case "green": return .green
+        case "teal": return .teal
+        case "indigo": return .indigo
+        default: return .blue
+        }
     }
 
     private func savePartner() {
@@ -111,6 +154,7 @@ struct PartnerFormView: View {
             partner.isOnPrep = isOnPrep
             partner.relationshipType = relationshipType
             partner.dateMet = showDateMetPicker ? dateMet : nil
+            partner.avatarColor = avatarColor
         } else {
             // Create new partner
             let newPartner = Partner(
@@ -119,7 +163,8 @@ struct PartnerFormView: View {
                 phoneNumber: phoneNumber,
                 isOnPrep: isOnPrep,
                 relationshipType: relationshipType,
-                dateMet: showDateMetPicker ? dateMet : nil
+                dateMet: showDateMetPicker ? dateMet : nil,
+                avatarColor: avatarColor.isEmpty ? nil : avatarColor
             )
             modelContext.insert(newPartner)
         }

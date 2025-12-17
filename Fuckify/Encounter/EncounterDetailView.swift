@@ -42,7 +42,7 @@ struct EncounterDetailView: View {
                             HStack {
                                 ZStack {
                                     Circle()
-                                        .fill(avatarColor(for: partner.name))
+                                        .fill(partner.color)
                                         .frame(width: 35, height: 35)
 
                                     Text(partner.initials)
@@ -153,13 +153,6 @@ struct EncounterDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             EncounterFormView(encounter: encounter)
         }
-    }
-
-    // Generate consistent color based on name
-    private func avatarColor(for name: String) -> Color {
-        let colors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .teal, .indigo]
-        let hash = abs(name.hashValue)
-        return colors[hash % colors.count]
     }
 }
 

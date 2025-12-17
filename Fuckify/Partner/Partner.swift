@@ -6,6 +6,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 @Model
 final class Partner {
@@ -23,6 +24,9 @@ final class Partner {
     var relationshipType: RelationshipType = RelationshipType.casual
     var dateMet: Date?
 
+    // Appearance
+    var avatarColor: String = ""
+
     // Metadata
     var dateAdded: Date = Date()
     var lastEncounterDate: Date?
@@ -37,7 +41,8 @@ final class Partner {
         isOnPrep: Bool = false,
         relationshipType: RelationshipType = .casual,
         dateMet: Date? = nil,
-        dateAdded: Date = Date()
+        dateAdded: Date = Date(),
+        avatarColor: String? = nil
     ) {
         self.name = name
         self.notes = notes
@@ -47,6 +52,13 @@ final class Partner {
         self.dateMet = dateMet
         self.dateAdded = dateAdded
         self.lastEncounterDate = nil
+        self.avatarColor = avatarColor ?? Partner.randomColorName()
+    }
+
+    // Static method to generate random color name
+    static func randomColorName() -> String {
+        let colors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"]
+        return colors.randomElement() ?? "blue"
     }
 
     // Computed property to get initials for avatar
@@ -58,6 +70,22 @@ final class Partner {
             return String(first.prefix(2)).uppercased()
         }
         return "?"
+    }
+
+    // Computed property to get SwiftUI Color from string
+    var color: Color {
+        switch avatarColor {
+        case "blue": return .blue
+        case "purple": return .purple
+        case "pink": return .pink
+        case "red": return .red
+        case "orange": return .orange
+        case "yellow": return .yellow
+        case "green": return .green
+        case "teal": return .teal
+        case "indigo": return .indigo
+        default: return .blue
+        }
     }
 }
 

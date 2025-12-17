@@ -7,6 +7,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @State private var showingImport = false
+
     var body: some View {
         NavigationStack {
             Form {
@@ -37,8 +39,26 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                Section("Data") {
+                    Button(action: { showingImport = true }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                                .foregroundColor(.blue)
+                            Text("Import from CSV")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $showingImport) {
+                ImportView()
+            }
         }
     }
 }

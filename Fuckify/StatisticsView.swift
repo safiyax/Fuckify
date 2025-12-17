@@ -135,7 +135,7 @@ struct StatisticsView: View {
                             HStack {
                                 ZStack {
                                     Circle()
-                                        .fill(avatarColor(for: topPartner.partner.name))
+                                        .fill(topPartner.partner.color)
                                         .frame(width: 60, height: 60)
 
                                     Text(topPartner.partner.initials)
@@ -287,12 +287,6 @@ struct StatisticsView: View {
 
         let totalRating = ratedEncounters.reduce(0) { $0 + $1.rating }
         return Double(totalRating) / Double(ratedEncounters.count)
-    }
-
-    private func avatarColor(for name: String) -> Color {
-        let colors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .teal, .indigo]
-        let hash = abs(name.hashValue)
-        return colors[hash % colors.count]
     }
 }
 

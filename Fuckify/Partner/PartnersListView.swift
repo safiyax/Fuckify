@@ -79,7 +79,7 @@ struct PartnerRowView: View {
             // Initials Avatar
             ZStack {
                 Circle()
-                    .fill(avatarColor(for: partner.name))
+                    .fill(partner.color)
                     .frame(width: 50, height: 50)
 
                 Text(partner.initials)
@@ -111,13 +111,6 @@ struct PartnerRowView: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    // Generate consistent color based on name
-    private func avatarColor(for name: String) -> Color {
-        let colors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .teal, .indigo]
-        let hash = abs(name.hashValue)
-        return colors[hash % colors.count]
     }
 }
 

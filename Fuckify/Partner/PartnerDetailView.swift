@@ -20,7 +20,7 @@ struct PartnerDetailView: View {
                     VStack(spacing: 12) {
                         ZStack {
                             Circle()
-                                .fill(avatarColor(for: partner.name))
+                                .fill(partner.color)
                                 .frame(width: 100, height: 100)
 
                             Text(partner.initials)
@@ -120,13 +120,6 @@ struct PartnerDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             PartnerFormView(partner: partner)
         }
-    }
-
-    // Generate consistent color based on name
-    private func avatarColor(for name: String) -> Color {
-        let colors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .teal, .indigo]
-        let hash = abs(name.hashValue)
-        return colors[hash % colors.count]
     }
 }
 
