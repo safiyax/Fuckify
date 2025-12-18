@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
     @SceneStorage("selectedTab") var selectedTab = 0
     
     var body: some View {
@@ -19,6 +20,7 @@ struct ContentView: View {
 
             Tab("Partners", systemImage: "person.3.fill", value: 1) {
                 PartnersListView()
+                    .environment(PartnersManager(modelContext: self.modelContext))
             }
 
             Tab("Statistics", systemImage: "chart.bar.fill", value: 2) {
@@ -29,12 +31,14 @@ struct ContentView: View {
                 ProfileView()
             }
 
-//            if selectedTab == 1 {
-//                Tab("Search", systemImage: "magnifyingglass", value: 4, role: .search) {
-//                    PartnersListView()
-//                }
-//            }
+            if selectedTab == 1 || selectedTab == 5 {
+                Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
+                    PartnersListView()
+                        .environment(PartnersManager(modelContext: self.modelContext))
+                }
+            }
         }
+        .tabViewStyle(.sidebarAdaptable)
     }
 }
 

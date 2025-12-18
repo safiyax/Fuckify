@@ -9,23 +9,17 @@ import SwiftData
 
 struct PartnersListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(PartnersManager.self) var manager
     @SceneStorage("selectedTab") var selectedTab = 1
-    @State private var manager: PartnersManager?
     @State private var showingAddPartner = false
     @State private var showingSettings = false
-
-    private var filteredPartners: [Partner] {
-        manager?.filteredPartners ?? []
-    }
-
-    private var partners: [Partner] {
-        manager?.partners ?? []
-    }
+    
 
     var body: some View {
+        @Bindable var manager = manager
         NavigationStack {
             List {
-                ForEach(filteredPartners) { partner in
+                ForEach(manager.filteredPartners) { partner in
                     NavigationLink {
                         PartnerDetailView(partner: partner)
                     } label: {
@@ -35,17 +29,9 @@ struct PartnersListView: View {
                 .onDelete(perform: deletePartners)
             }
             .onAppear {
-                if manager == nil {
-                    manager = PartnersManager(modelContext: modelContext)
-                }
-                // Clear search when view appears
-                manager?.searchText = ""
+                manager.searchText = ""
             }
             .navigationTitle("Partners")
-            .isSearchable(selectedTab: selectedTab, searchText: Binding(
-                get: { manager?.searchText ?? "" },
-                set: { manager?.searchText = $0 }
-            ))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
@@ -65,26 +51,27 @@ struct PartnersListView: View {
             }
             .onChange(of: showingAddPartner) { oldValue, newValue in
                 if !newValue {
-                    manager?.fetchPartners()
+                    manager.fetchPartners()
                 }
             }
             .overlay {
-                if partners.isEmpty {
+                if manager.partners.isEmpty {
                     ContentUnavailableView(
                         "No Partners",
                         systemImage: "person.2.slash",
                         description: Text("Add a partner to get started")
                     )
-                } else if filteredPartners.isEmpty {
+                } else if manager.filteredPartners.isEmpty {
                     ContentUnavailableView.search
                 }
             }
+            .isSearchable(selectedTab: selectedTab, searchText: $manager.searchText)
         }
     }
 
     private func deletePartners(offsets: IndexSet) {
         withAnimation {
-            manager?.deletePartners(at: offsets, from: filteredPartners)
+            manager.deletePartners(at: offsets, from: manager.filteredPartners)
         }
     }
 }
@@ -141,7 +128,7 @@ struct IsSearchable: ViewModifier {
     @Binding var searchText: String
 
     func body(content: Content) -> some View {
-        if selectedTab == 1 {
+        if selectedTab == 5 {
             content
                 .searchable(text: $searchText, prompt: "Search partners")
         } else {
