@@ -55,6 +55,12 @@ Fuckify is a comprehensive iOS app designed to help users track their sexual hea
 - Customize which protection methods appear in encounter forms
 - Manual color selection for partner avatars
 
+### Data Management
+- CSV import for bulk partner and encounter creation
+- CSV export for data backup and migration
+- Share exported data via AirDrop, email, or cloud storage
+- Exported files are compatible with spreadsheet applications
+
 ## Requirements
 
 - iOS 17.0+
@@ -161,6 +167,38 @@ date,duration,activities,protectionMethods,location,notes,rating,reachedOrgasm,p
 - `partnerNames`: Comma-separated names in quotes (optional, automatically creates partners if they don't exist)
 
 **Note:** For fields containing commas (activities, protectionMethods, partnerNames), wrap the entire field in quotes.
+
+## CSV Export
+
+The app provides CSV export functionality for both partners and encounters, accessible from Settings > Import & Export.
+
+### Partner Export
+
+Exports all partners to a CSV file with the following format:
+```csv
+name,phoneNumber,notes,isOnPrep,relationshipType,dateMet
+```
+
+The exported file can be:
+- Saved to Files app
+- Shared via AirDrop
+- Sent via email or messages
+- Uploaded to cloud storage
+
+### Encounter Export
+
+Exports all encounters to a CSV file with the following format:
+```csv
+date,duration,activities,protectionMethods,location,notes,rating,reachedOrgasm,partnerNames
+```
+
+**Export Features:**
+- Automatically escapes fields containing commas, quotes, or newlines
+- Uses standard CSV quoting for complex fields
+- Converts duration from seconds to minutes for readability
+- Includes all partner names associated with each encounter
+- Compatible with spreadsheet applications (Excel, Numbers, Google Sheets)
+- Can be re-imported into the app for data migration or backup
 
 ## Project Structure
 

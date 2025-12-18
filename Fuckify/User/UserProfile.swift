@@ -82,4 +82,12 @@ class UserProfile {
     var hasProfile: Bool {
         !name.isEmpty
     }
+
+    func clearProfile() {
+        name = ""
+        dateOfBirth = nil
+        isOnPrep = false
+        lastSTITestDate = nil
+        notes = ""
+    }
 }

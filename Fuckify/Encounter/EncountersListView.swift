@@ -27,11 +27,11 @@ struct EncountersListView: View {
             }
             .navigationTitle("Activity")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
-                    }
-                }
+//                ToolbarItem(placement: .navigationBarLeading) {
+//                    Button(action: { showingSettings = true }) {
+//                        Image(systemName: "gear")
+//                    }
+//                }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
@@ -42,6 +42,7 @@ struct EncountersListView: View {
                     }
                 }
             }
+            .toolbarTitleDisplayMode(.inlineLarge)
             .sheet(isPresented: $showingAddEncounter) {
                 EncounterFormView()
             }

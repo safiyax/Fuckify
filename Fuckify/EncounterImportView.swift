@@ -228,9 +228,7 @@ struct EncounterImportView: View {
                 guard !components.isEmpty, !components[0].isEmpty else { continue }
 
                 // Parse date (required)
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-                guard let date = formatter.date(from: components[0]) else {
+                guard let date = parseDate(components[0]) else {
                     print("Skipping row \(index): invalid date format")
                     continue
                 }
@@ -303,6 +301,14 @@ struct EncounterImportView: View {
             errorMessage = "Failed to read CSV file: \(error.localizedDescription)"
             showingError = true
         }
+    }
+
+    private func parseDate(_ dateString: String) -> Date? {
+        // Use DateFormatter with local timezone to avoid date shifting
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.date(from: dateString)
     }
 
     private func importEncounters() {

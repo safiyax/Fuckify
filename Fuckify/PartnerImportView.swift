@@ -209,9 +209,7 @@ struct PartnerImportView: View {
 
                 var dateMet: Date? = nil
                 if components.count > 5, !components[5].isEmpty {
-                    let formatter = ISO8601DateFormatter()
-                    formatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-                    dateMet = formatter.date(from: components[5])
+                    dateMet = parseDate(components[5])
                 }
 
                 partners.append(PartnerImportData(
@@ -235,6 +233,14 @@ struct PartnerImportView: View {
             errorMessage = "Failed to read CSV file: \(error.localizedDescription)"
             showingError = true
         }
+    }
+
+    private func parseDate(_ dateString: String) -> Date? {
+        // Use DateFormatter with local timezone to avoid date shifting
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.date(from: dateString)
     }
 
     private func importPartners() {

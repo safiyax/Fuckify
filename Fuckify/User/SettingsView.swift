@@ -7,7 +7,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var showingImport = false
 
     var body: some View {
         NavigationStack {
@@ -41,11 +40,13 @@ struct SettingsView: View {
                 }
 
                 Section("Data") {
-                    Button(action: { showingImport = true }) {
+                    NavigationLink {
+                        ImportView()
+                    } label: {
                         HStack {
-                            Image(systemName: "square.and.arrow.down")
+                            Image(systemName: "arrow.up.arrow.down")
                                 .foregroundColor(.blue)
-                            Text("Import from CSV")
+                            Text("Import & Export")
                                 .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -53,12 +54,19 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+
+                    NavigationLink {
+                        DeleteDataView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                                .foregroundColor(.red)
+                            Text("Delete Data")
+                        }
+                    }
                 }
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showingImport) {
-                ImportView()
-            }
         }
     }
 }

@@ -9,14 +9,23 @@ import SwiftData
 
 struct PartnersListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Partner.name) private var partners: [Partner]
+    @SceneStorage("selectedTab") var selectedTab = 1
+    @State private var manager: PartnersManager?
     @State private var showingAddPartner = false
     @State private var showingSettings = false
+
+    private var filteredPartners: [Partner] {
+        manager?.filteredPartners ?? []
+    }
+
+    private var partners: [Partner] {
+        manager?.partners ?? []
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(partners) { partner in
+                ForEach(filteredPartners) { partner in
                     NavigationLink {
                         PartnerDetailView(partner: partner)
                     } label: {
@@ -25,14 +34,19 @@ struct PartnersListView: View {
                 }
                 .onDelete(perform: deletePartners)
             }
-            .navigationTitle("Partners")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
-                    }
+            .onAppear {
+                if manager == nil {
+                    manager = PartnersManager(modelContext: modelContext)
                 }
-
+                // Clear search when view appears
+                manager?.searchText = ""
+            }
+            .navigationTitle("Partners")
+            .isSearchable(selectedTab: selectedTab, searchText: Binding(
+                get: { manager?.searchText ?? "" },
+                set: { manager?.searchText = $0 }
+            ))
+            .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
@@ -42,11 +56,17 @@ struct PartnersListView: View {
                     }
                 }
             }
+            .toolbarTitleDisplayMode(.inlineLarge)
             .sheet(isPresented: $showingAddPartner) {
                 PartnerFormView()
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .onChange(of: showingAddPartner) { oldValue, newValue in
+                if !newValue {
+                    manager?.fetchPartners()
+                }
             }
             .overlay {
                 if partners.isEmpty {
@@ -55,6 +75,8 @@ struct PartnersListView: View {
                         systemImage: "person.2.slash",
                         description: Text("Add a partner to get started")
                     )
+                } else if filteredPartners.isEmpty {
+                    ContentUnavailableView.search
                 }
             }
         }
@@ -62,9 +84,7 @@ struct PartnersListView: View {
 
     private func deletePartners(offsets: IndexSet) {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(partners[index])
-            }
+            manager?.deletePartners(at: offsets, from: filteredPartners)
         }
     }
 }
@@ -114,7 +134,33 @@ struct PartnerRowView: View {
     }
 }
 
+// MARK: - View Modifier
+
+struct IsSearchable: ViewModifier {
+    let selectedTab: Int
+    @Binding var searchText: String
+
+    func body(content: Content) -> some View {
+        if selectedTab == 1 {
+            content
+                .searchable(text: $searchText, prompt: "Search partners")
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func isSearchable(selectedTab: Int, searchText: Binding<String>) -> some View {
+        modifier(IsSearchable(selectedTab: selectedTab, searchText: searchText))
+    }
+}
+
 #Preview {
-    PartnersListView()
-        .modelContainer(for: Partner.self, inMemory: true)
+    TabView {
+        PartnersListView()
+            .tabItem {
+                Label("partners", systemImage: "person.3.fill")
+            }
+    }
 }
