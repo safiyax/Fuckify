@@ -10,12 +10,24 @@ struct ProfileView: View {
     @State private var profile = UserProfile.shared
     @State private var isEditing = false
     @State private var hasProfile = UserProfile.shared.hasProfile
+    @State private var showingSettings = false
 
+    
     var body: some View {
         NavigationStack {
             if hasProfile && !isEditing {
                 // Display Mode
                 profileDisplayView
+                    .toolbar {
+                    }
+                    .sheet(isPresented: $showingSettings) {
+                        SettingsView()
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            isEditing = true
+                        }
+                    }
             } else {
                 // Edit Mode
                 profileEditViewInline
@@ -32,7 +44,7 @@ struct ProfileView: View {
                     VStack(spacing: 12) {
                         ZStack {
                             Circle()
-                                .fill(Color.blue)
+                                .fill(Color("AccentColor"))
                                 .frame(width: 100, height: 100)
 
                             Text(profile.initials)
@@ -88,18 +100,23 @@ struct ProfileView: View {
                 }
             }
         }
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showingSettings = true }) {
+                    Label("Settings", systemImage: "gear")
+                }
+            }
+            ToolbarItem(placement: .topBarLeading) {
                 Button("Edit") {
                     isEditing = true
                 }
+                                EditButton()
             }
         }
     }
 
     private var profileEditViewInline: some View {
+        
         ProfileEditInlineView(isEditing: $isEditing, hasProfile: $hasProfile)
     }
 }

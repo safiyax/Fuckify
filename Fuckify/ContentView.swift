@@ -18,21 +18,18 @@ struct ContentView: View {
                 EncountersListView()
             }
 
-            Tab("Partners", systemImage: "person.3.fill", value: 1) {
+            Tab("Partners", systemImage: "person.2.fill", value: 1) {
                 PartnersListView()
                     .environment(PartnersManager(modelContext: self.modelContext))
             }
 
-            Tab("Statistics", systemImage: "chart.bar.fill", value: 2) {
+            Tab("Summary", systemImage: "circle.hexagonpath.fill", value: 2) {
                 StatisticsView()
             }
 
-            Tab("Profile", systemImage: "person.text.rectangle.fill", value: 3) {
-                ProfileView()
-            }
-
-            if selectedTab == 1 || selectedTab == 5 {
-                Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
+       
+            Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
+                withAnimation {
                     PartnersListView()
                         .environment(PartnersManager(modelContext: self.modelContext))
                 }

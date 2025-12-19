@@ -11,7 +11,6 @@ struct StatisticsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var encounters: [Encounter]
     @Query private var partners: [Partner]
-    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -211,17 +210,8 @@ struct StatisticsView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Statistics")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
+            .navigationTitle("Summary")
+            .toolbarTitleDisplayMode(.inlineLarge)
         }
     }
 
