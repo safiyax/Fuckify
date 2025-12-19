@@ -12,6 +12,8 @@ struct EncountersListView: View {
     @Query(sort: \Encounter.date, order: .reverse) private var encounters: [Encounter]
     @State private var showingAddEncounter = false
     @State private var showingSettings = false
+    @State private var showProfile = false
+    @State private var profile = UserProfile.shared
 
     var body: some View {
         NavigationStack {
@@ -27,20 +29,21 @@ struct EncountersListView: View {
             }
             .navigationTitle("Activity")
             .toolbar {
-//                ToolbarItem(placement: .navigationBarLeading) {
-//                    Button(action: { showingSettings = true }) {
-//                        Image(systemName: "gear")
-//                    }
-//                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(action: { showingAddEncounter = true }) {
                         Label("Add Encounter", systemImage: "plus")
                     }
                 }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button(action: { showProfile = true }) {
+                        ZStack {
+                            Text(profile.initials)
+                        }
+                    }
+                    .buttonStyle(.glassProminent)
+                    
+                }
+                
             }
             .toolbarTitleDisplayMode(.inlineLarge)
             .sheet(isPresented: $showingAddEncounter) {
@@ -49,6 +52,9 @@ struct EncountersListView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
+            .sheet(isPresented: $showProfile, content: {
+                ProfileView()
+            })
             .overlay {
                 if encounters.isEmpty {
                     ContentUnavailableView(
