@@ -56,35 +56,91 @@ struct StatisticsView: View {
                         .padding(.horizontal)
                     }
 
-                    // Most Common Activity
-                    if let mostCommonActivity = mostCommonActivity {
+                    // Top Activities
+                    if !topActivities.isEmpty {
                         VStack(spacing: 12) {
-                            Text("Most Common Activity")
+                            Text("Top Activities")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
 
-                            HStack {
-                                Image(systemName: mostCommonActivity.activity.icon)
-                                    .font(.title)
-                                    .foregroundColor(.purple)
-                                    .frame(width: 60, height: 60)
-                                    .background(Color.purple.opacity(0.1))
-                                    .clipShape(Circle())
+                            VStack(spacing: 8) {
+                                ForEach(Array(topActivities.enumerated()), id: \.element.activity) { index, item in
+                                    HStack {
+                                        Image(systemName: item.activity.icon)
+                                            .font(.title3)
+                                            .foregroundColor(.purple)
+                                            .frame(width: 50, height: 50)
+                                            .background(Color.purple.opacity(0.1))
+                                            .clipShape(Circle())
 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(mostCommonActivity.activity.displayName)
-                                        .font(.headline)
-                                    Text("\(mostCommonActivity.count) times")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(item.activity.displayName)
+                                                .font(.headline)
+                                            Text("\(item.count) times")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        Text("#\(index + 1)")
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(12)
+                            .padding(.horizontal)
+                        }
+                    }
+                    
+                    
+                    // Top Partners
+                    if !topPartners.isEmpty {
+                        VStack(spacing: 12) {
+                            Text("Top Partners")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal)
+
+                            VStack(spacing: 8) {
+                                ForEach(Array(topPartners.enumerated()), id: \.element.partner.id) { index, item in
+                                    HStack {
+                                        ZStack {
+                                            Circle()
+                                                .fill(item.partner.color)
+                                                .frame(width: 50, height: 50)
+
+                                            Text(item.partner.initials)
+                                                .font(.body)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.white)
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(item.partner.name)
+                                                .font(.headline)
+                                            Text("\(item.count) encounters")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        Text("#\(index + 1)")
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                }
+                            }
                             .padding(.horizontal)
                         }
                     }
@@ -122,42 +178,6 @@ struct StatisticsView: View {
                         }
                     }
 
-                    // Top Partner
-                    if let topPartner = topPartner {
-                        VStack(spacing: 12) {
-                            Text("Most Frequent Partner")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-
-                            HStack {
-                                ZStack {
-                                    Circle()
-                                        .fill(topPartner.partner.color)
-                                        .frame(width: 60, height: 60)
-
-                                    Text(topPartner.partner.initials)
-                                        .font(.title3)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(topPartner.partner.name)
-                                        .font(.headline)
-                                    Text("\(topPartner.count) encounters")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                        }
-                    }
 
                     // Average Rating
                     if averageRating > 0 {
@@ -237,15 +257,17 @@ struct StatisticsView: View {
         return encounters.filter { $0.date >= thirtyDaysAgo }.count
     }
 
-    private var mostCommonActivity: (activity: ActivityType, count: Int)? {
+    private var topActivities: [(activity: ActivityType, count: Int)] {
         let allActivities = encounters.flatMap { $0.activities }
-        guard !allActivities.isEmpty else { return nil }
+        guard !allActivities.isEmpty else { return [] }
 
         let counts = Dictionary(grouping: allActivities) { $0 }
             .mapValues { $0.count }
-        guard let mostCommon = counts.max(by: { $0.value < $1.value }) else { return nil }
 
-        return (mostCommon.key, mostCommon.value)
+        return counts
+            .sorted { $0.value > $1.value }
+            .prefix(3)
+            .map { (activity: $0.key, count: $0.value) }
     }
 
     private var mostCommonProtection: (method: ProtectionMethod, count: Int)? {
@@ -259,16 +281,20 @@ struct StatisticsView: View {
         return (mostCommon.key, mostCommon.value)
     }
 
-    private var topPartner: (partner: Partner, count: Int)? {
+    private var topPartners: [(partner: Partner, count: Int)] {
         let allPartners = encounters.compactMap { $0.partners }.flatMap { $0 }
-        guard !allPartners.isEmpty else { return nil }
+        guard !allPartners.isEmpty else { return [] }
 
         let counts = Dictionary(grouping: allPartners) { $0.id }
             .mapValues { $0.count }
-        guard let mostCommon = counts.max(by: { $0.value < $1.value }),
-              let partner = allPartners.first(where: { $0.id == mostCommon.key }) else { return nil }
 
-        return (partner, mostCommon.value)
+        return counts
+            .sorted { $0.value > $1.value }
+            .prefix(3)
+            .compactMap { id, count in
+                guard let partner = allPartners.first(where: { $0.id == id }) else { return nil }
+                return (partner: partner, count: count)
+            }
     }
 
     private var averageRating: Double {

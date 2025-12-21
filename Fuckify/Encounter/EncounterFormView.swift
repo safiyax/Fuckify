@@ -13,6 +13,7 @@ struct EncounterFormView: View {
     @Query(sort: \Partner.name) private var allPartners: [Partner]
 
     var encounter: Encounter?
+    var preselectedPartner: Partner?
 
     @State private var date: Date = Date()
     @State private var durationHours: Int = 0
@@ -167,6 +168,8 @@ struct EncounterFormView: View {
             .onAppear {
                 if let encounter = encounter {
                     loadEncounter(encounter)
+                } else if let preselectedPartner = preselectedPartner {
+                    selectedPartners.insert(preselectedPartner)
                 }
             }
         }

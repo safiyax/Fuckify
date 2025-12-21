@@ -8,8 +8,10 @@ import SwiftUI
 import SwiftData
 
 struct PartnerDetailView: View {
+    @Environment(\.modelContext) private var modelContext
     @Bindable var partner: Partner
     @State private var showingEditSheet = false
+    @State private var showingAddEncounter = false
 
     var body: some View {
         List {
@@ -107,6 +109,35 @@ struct PartnerDetailView: View {
                         .foregroundColor(.secondary)
                 }
             }
+
+            // Encounters
+            Section {
+                if !sortedEncounters.isEmpty {
+                    ForEach(sortedEncounters) { encounter in
+                        NavigationLink {
+                            EncounterDetailView(encounter: encounter)
+                        } label: {
+                            EncounterRowView(encounter: encounter)
+                        }
+                    }
+                    .onDelete(perform: deleteEncounters)
+                } else {
+                    HStack {
+                        Image(systemName: "heart.slash")
+                            .foregroundColor(.secondary)
+                        Text("No encounters yet")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Encounters")
+                    if !sortedEncounters.isEmpty {
+                        Text("(\(sortedEncounters.count))")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         }
         .navigationTitle("Partner Details")
         .navigationBarTitleDisplayMode(.inline)
@@ -116,15 +147,45 @@ struct PartnerDetailView: View {
                     showingEditSheet = true
                 }
             }
+
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { showingAddEncounter = true }) {
+                    Label("Add Encounter", systemImage: "plus")
+                }
+            }
         }
         .sheet(isPresented: $showingEditSheet) {
             PartnerFormView(partner: partner)
+        }
+        .sheet(isPresented: $showingAddEncounter) {
+            EncounterFormView(preselectedPartner: partner)
+        }
+    }
+
+    // MARK: - Computed Properties
+
+    private var sortedEncounters: [Encounter] {
+        guard let encounters = partner.encounters else { return [] }
+        return encounters.sorted(by: { $0.date > $1.date })
+    }
+
+    // MARK: - Functions
+
+    private func deleteEncounters(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(sortedEncounters[index])
+            }
         }
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Partner.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let container = try! ModelContainer(
+        for: Partner.self, Encounter.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+
     let partner = Partner(
         name: "John Doe",
         notes: "Met at the gym, really nice person",
@@ -135,6 +196,26 @@ struct PartnerDetailView: View {
     )
     partner.lastEncounterDate = Date().addingTimeInterval(-86400 * 7)
     container.mainContext.insert(partner)
+
+    // Add some sample encounters
+    let encounter1 = Encounter(
+        date: Date().addingTimeInterval(-86400 * 7),
+        duration: 3600,
+        activities: [.oral, .vaginal],
+        protectionMethods: [.condom],
+        partners: [partner]
+    )
+
+    let encounter2 = Encounter(
+        date: Date().addingTimeInterval(-86400 * 14),
+        duration: 2400,
+        activities: [.kissing, .manual],
+        protectionMethods: [.prep],
+        partners: [partner]
+    )
+
+    container.mainContext.insert(encounter1)
+    container.mainContext.insert(encounter2)
 
     return NavigationStack {
         PartnerDetailView(partner: partner)
