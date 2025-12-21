@@ -180,7 +180,6 @@ struct EncounterImportView: View {
             parseCSV(from: url)
         case .failure(let error):
             errorMessage = error.localizedDescription
-            print(errorMessage)
             showingError = true
         }
     }
