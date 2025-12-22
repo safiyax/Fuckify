@@ -11,6 +11,8 @@ struct PartnersListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(PartnersManager.self) var manager
     @SceneStorage("selectedTab") var selectedTab = 1
+    @State private var partnerForEncounter: Partner?
+    @State private var selectedPartner: Partner?
     @State private var showingAddPartner = false
     @State private var showingSettings = false
     
@@ -19,14 +21,66 @@ struct PartnersListView: View {
         @Bindable var manager = manager
         NavigationStack {
             List {
-                ForEach(manager.filteredPartners) { partner in
-                    NavigationLink {
-                        PartnerDetailView(partner: partner)
-                    } label: {
-                        PartnerRowView(partner: partner)
+                // Pinned Partners Section
+                if !manager.pinnedPartners.isEmpty {
+                    Section {
+                        HStack {
+                            Spacer()
+                            if manager.pinnedPartners.count == 1 {
+                                ForEach(manager.pinnedPartners) { partner in
+                                    PinnedPartnerView(
+                                        partner: partner,
+                                        onAddEncounter: { partnerForEncounter = partner },
+                                        onTap: { selectedPartner = partner }
+                                    )
+                                    .buttonStyle(.plain)
+                                }
+                            } else {
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 16) {
+                                    ForEach(manager.pinnedPartners) { partner in
+                                        PinnedPartnerView(
+                                            partner: partner,
+                                            onAddEncounter: { partnerForEncounter = partner },
+                                            onTap: { selectedPartner = partner }
+                                        )
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 0)
                     }
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
-                .onDelete(perform: deletePartners)
+
+                // Main List
+                Section {
+                    ForEach(manager.filteredPartners) { partner in
+                        NavigationLink {
+                            PartnerDetailView(partner: partner)
+                        } label: {
+                            PartnerRowView(partner: partner)
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                withAnimation {
+                                    manager.togglePin(for: partner)
+                                }
+                            } label: {
+                                Label("Pin", systemImage: "pin.fill")
+                            }
+                            .tint(.orange)
+                        }
+                    }
+                    .onDelete(perform: deletePartners)
+                }
             }
             .onAppear {
                 manager.searchText = ""
@@ -48,6 +102,12 @@ struct PartnersListView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(item: $partnerForEncounter) { partner in
+                EncounterFormView(preselectedPartner: partner)
+            }
+            .navigationDestination(item: $selectedPartner) { partner in
+                PartnerDetailView(partner: partner)
             }
             .onChange(of: showingAddPartner) { oldValue, newValue in
                 if !newValue {
@@ -72,6 +132,51 @@ struct PartnersListView: View {
     private func deletePartners(offsets: IndexSet) {
         withAnimation {
             manager.deletePartners(at: offsets, from: manager.filteredPartners)
+        }
+    }
+}
+
+// MARK: - Pinned Partner View
+
+struct PinnedPartnerView: View {
+    let partner: Partner
+    let onAddEncounter: () -> Void
+    let onTap: () -> Void
+    @Environment(PartnersManager.self) var manager
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(partner.color)
+                    .frame(width: 70, height: 70)
+
+                Text(partner.initials)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                // Pin indicator
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white)
+                    .padding(4)
+                    .glassEffect()
+                    .background(Circle().fill(Color.orange))
+                    .offset(x: 4, y: 4)
+            }
+
+            Text(partner.name)
+                .font(.caption)
+                .fontWeight(.medium)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 70, height: 32, alignment: .top)
+        }
+        .onTapGesture {
+            onTap()
         }
     }
 }

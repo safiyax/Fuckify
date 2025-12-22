@@ -50,16 +50,33 @@ class PartnersManager {
 
     // MARK: - Computed Properties
 
+    var pinnedPartners: [Partner] {
+        partners.filter { $0.isPinned }
+    }
+
+    var unpinnedPartners: [Partner] {
+        partners.filter { !$0.isPinned }
+    }
+
     var filteredPartners: [Partner] {
+        let baseList = unpinnedPartners  // Only show unpinned in main list
         if searchText.isEmpty {
-            return partners
+            return baseList
         }
-        return partners.filter { partner in
+        return baseList.filter { partner in
             partner.name.localizedCaseInsensitiveContains(searchText)
         }
     }
 
     var partnerCount: Int {
         partners.count
+    }
+
+    // MARK: - Pin Operations
+
+    func togglePin(for partner: Partner) {
+        partner.isPinned.toggle()
+        try? modelContext.save()
+        fetchPartners()
     }
 }

@@ -21,6 +21,7 @@ struct PartnerFormView: View {
     @State private var dateMet: Date?
     @State private var showDateMetPicker: Bool = false
     @State private var avatarColor: String = ""
+    @State private var isPinned: Bool = false
 
     var isEditing: Bool {
         partner != nil
@@ -87,6 +88,10 @@ struct PartnerFormView: View {
                     Toggle("On PrEP", isOn: $isOnPrep)
                 }
 
+                Section("Display") {
+                    Toggle("Pinned", isOn: $isPinned)
+                }
+
                 Section("Notes") {
                     TextEditor(text: $notes)
                         .frame(minHeight: 100)
@@ -128,6 +133,7 @@ struct PartnerFormView: View {
         dateMet = partner.dateMet
         showDateMetPicker = partner.dateMet != nil
         avatarColor = partner.avatarColor
+        isPinned = partner.isPinned
     }
 
     private func colorFromName(_ name: String) -> Color {
@@ -155,6 +161,7 @@ struct PartnerFormView: View {
             partner.relationshipType = relationshipType
             partner.dateMet = showDateMetPicker ? dateMet : nil
             partner.avatarColor = avatarColor
+            partner.isPinned = isPinned
         } else {
             // Create new partner
             let newPartner = Partner(
@@ -166,6 +173,7 @@ struct PartnerFormView: View {
                 dateMet: showDateMetPicker ? dateMet : nil,
                 avatarColor: avatarColor.isEmpty ? nil : avatarColor
             )
+            newPartner.isPinned = isPinned
             modelContext.insert(newPartner)
         }
 

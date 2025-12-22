@@ -30,6 +30,7 @@ final class Partner {
     // Metadata
     var dateAdded: Date = Date()
     var lastEncounterDate: Date?
+    var isPinned: Bool = false
 
     // Inverse Relationship
     @Relationship(deleteRule: .nullify) var encounters: [Encounter]? = []
