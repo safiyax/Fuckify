@@ -13,40 +13,129 @@ import Charts
 
 struct EncountersByMonthChartView: View {
     @Query private var encounters: [Encounter]
+    @Query private var partners: [Partner]
 
-    // Data structure for chart
-    struct MonthData: Identifiable {
+    // Data structure for stacked chart
+    struct PartnerMonthData: Identifiable {
         let id = UUID()
         let month: String
         let monthNumber: Int
+        let partnerName: String
+        let partnerColor: Color
         let count: Int
     }
 
-    // Computed property to aggregate encounters by month
-    private var encountersByMonth: [MonthData] {
+    // Get top 4 partners by encounter count
+    private var topPartners: [Partner] {
+        let partnerCounts = Dictionary(grouping: encounters) { encounter -> String in
+            guard let partners = encounter.partners, let firstPartner = partners.first else {
+                return "Unknown"
+            }
+            return firstPartner.persistentModelID.hashValue.description
+        }
+
+        let sortedPartners = partners.sorted { p1, p2 in
+            let count1 = encounters.filter { encounter in
+                encounter.partners?.contains(where: { $0.persistentModelID == p1.persistentModelID }) ?? false
+            }.count
+            let count2 = encounters.filter { encounter in
+                encounter.partners?.contains(where: { $0.persistentModelID == p2.persistentModelID }) ?? false
+            }.count
+            return count1 > count2
+        }
+
+        return Array(sortedPartners.prefix(4))
+    }
+
+    // Computed property to aggregate encounters by month and partner
+    private var encountersByMonthAndPartner: [PartnerMonthData] {
         let calendar = Calendar.current
         let currentYear = calendar.component(.year, from: Date())
+        let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-        // Create a dictionary to count encounters per month
-        var monthCounts: [Int: Int] = [:]
+        let top4 = topPartners
+        let top4IDs = Set(top4.map { $0.persistentModelID })
 
-        // Count encounters for each month of the current year
+        // Dictionary to store counts: [month: [partnerName: count]]
+        var monthPartnerCounts: [Int: [String: Int]] = [:]
+
+        // Count encounters for each month and partner
         for encounter in encounters {
             let year = calendar.component(.year, from: encounter.date)
-            if year == currentYear {
-                let month = calendar.component(.month, from: encounter.date)
-                monthCounts[month, default: 0] += 1
+            guard year == currentYear else { continue }
+
+            let month = calendar.component(.month, from: encounter.date)
+
+            if monthPartnerCounts[month] == nil {
+                monthPartnerCounts[month] = [:]
+            }
+
+            // Determine which partner category this encounter belongs to
+            if let encounterPartners = encounter.partners, !encounterPartners.isEmpty {
+                let isTopPartner = encounterPartners.contains { top4IDs.contains($0.persistentModelID) }
+
+                if isTopPartner, let partner = encounterPartners.first(where: { top4IDs.contains($0.persistentModelID) }) {
+                    monthPartnerCounts[month]?[partner.name, default: 0] += 1
+                } else {
+                    monthPartnerCounts[month]?["Others", default: 0] += 1
+                }
+            } else {
+                monthPartnerCounts[month]?["Others", default: 0] += 1
             }
         }
 
-        // Create array of all months with their counts
-        let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        return (1...12).map { monthNum in
-            MonthData(
-                month: monthNames[monthNum - 1],
+        // Create array of all months and partners with their counts
+        var result: [PartnerMonthData] = []
+        for monthNum in 1...12 {
+            let monthName = monthNames[monthNum - 1]
+            let partnersForMonth = monthPartnerCounts[monthNum] ?? [:]
+
+            // Add entries for top 4 partners
+            for partner in top4 {
+                let count = partnersForMonth[partner.name] ?? 0
+                result.append(PartnerMonthData(
+                    month: monthName,
+                    monthNumber: monthNum,
+                    partnerName: partner.name,
+                    partnerColor: partner.color,
+                    count: count
+                ))
+            }
+
+            // Add entry for "Others"
+            let othersCount = partnersForMonth["Others"] ?? 0
+            result.append(PartnerMonthData(
+                month: monthName,
                 monthNumber: monthNum,
-                count: monthCounts[monthNum] ?? 0
-            )
+                partnerName: "Others",
+                partnerColor: .accent,
+                count: othersCount
+            ))
+        }
+
+        return result
+    }
+
+    // Create color mapping for chart
+    private var partnerColorMapping: KeyValuePairs<String, Color> {
+        var pairs: [(String, Color)] = []
+        var seen = Set<String>()
+
+        for data in encountersByMonthAndPartner {
+            if !seen.contains(data.partnerName) {
+                pairs.append((data.partnerName, data.partnerColor))
+                seen.insert(data.partnerName)
+            }
+        }
+
+        // Convert to KeyValuePairs format
+        switch pairs.count {
+        case 0: return [:]
+        case 1: return [pairs[0].0: pairs[0].1]
+        case 2: return [pairs[0].0: pairs[0].1, pairs[1].0: pairs[1].1]
+        case 3: return [pairs[0].0: pairs[0].1, pairs[1].0: pairs[1].1, pairs[2].0: pairs[2].1]
+        case 4: return [pairs[0].0: pairs[0].1, pairs[1].0: pairs[1].1, pairs[2].0: pairs[2].1, pairs[3].0: pairs[3].1]
+        default: return [pairs[0].0: pairs[0].1, pairs[1].0: pairs[1].1, pairs[2].0: pairs[2].1, pairs[3].0: pairs[3].1, pairs[4].0: pairs[4].1]
         }
     }
 
@@ -58,13 +147,14 @@ struct EncountersByMonthChartView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
 
-            Chart(encountersByMonth) { data in
+            Chart(encountersByMonthAndPartner) { data in
                 BarMark(
                     x: .value("Month", data.month),
                     y: .value("Count", data.count)
                 )
-                .foregroundStyle(.pink.gradient)
+                .foregroundStyle(by: .value("Partner", data.partnerName))
             }
+            .chartForegroundStyleScale(partnerColorMapping)
             .padding(.vertical, 4)
             .frame(height: 250)
             .chartXAxis {

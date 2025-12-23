@@ -67,7 +67,9 @@ struct EncountersByDayChartView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Average Encounters by Day")
-                .font(.headline)
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
 
             Chart(encountersByDayOfWeek) { data in
@@ -90,6 +92,5 @@ struct EncountersByDayChartView: View {
             .cornerRadius(12)
             .padding(.horizontal)
         }
-        .padding(.vertical)
     }
 }
