@@ -53,9 +53,9 @@ struct PartnersListView: View {
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 0)
+                        .padding(.vertical, 8)
                     }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                 }
@@ -149,31 +149,32 @@ struct PinnedPartnerView: View {
             ZStack {
                 Circle()
                     .fill(partner.color)
-                    .frame(width: 70, height: 70)
+                    .frame(width: 96, height: 96)
 
                 Text(partner.initials)
-                    .font(.title2)
+                    .font(.title)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
             }
+            .glassEffect()
             .overlay(alignment: .bottomTrailing) {
                 // Pin indicator
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
-                    .padding(4)
+                    .font(.system(size: 14))
+                    .foregroundColor(.orange)
+                    .padding(5)
                     .glassEffect()
-                    .background(Circle().fill(Color.orange))
-                    .offset(x: 4, y: 4)
+//                    .background(Circle().fill(Color.orange))
+                    .offset(x: 3, y: 3)
             }
 
             Text(partner.name)
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.medium)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 70, height: 32, alignment: .top)
+                .frame(width: 96, height: 48, alignment: .top)
         }
         .onTapGesture {
             onTap()
