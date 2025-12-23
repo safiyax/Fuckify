@@ -209,7 +209,12 @@ struct StatisticsView: View {
                             .padding(.horizontal)
                         }
                     }
-
+                    
+//                    ChartsView()
+                    EncountersByMonthChartView()
+                    
+                    EncountersByDayChartView()
+                    
                     if encounters.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "chart.bar.xaxis")
