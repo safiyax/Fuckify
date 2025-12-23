@@ -9,6 +9,7 @@ import SwiftData
 
 struct PartnersListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @Environment(PartnersManager.self) var manager
     @SceneStorage("selectedTab") var selectedTab = 1
     @State private var partnerForEncounter: Partner?
@@ -16,7 +17,10 @@ struct PartnersListView: View {
     @State private var showingAddPartner = false
     @State private var showingSettings = false
     
-
+    private var isEditing: Bool {
+        editMode?.wrappedValue.isEditing == true
+    }
+    
     var body: some View {
         @Bindable var manager = manager
         NavigationStack {
@@ -90,9 +94,12 @@ struct PartnersListView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
-                ToolbarItem {
-                    Button(action: { showingAddPartner = true }) {
-                        Label("Add Partner", systemImage: "plus")
+                
+                if !isEditing {
+                    ToolbarItem {
+                        Button(action: { showingAddPartner = true }) {
+                            Label("Add Partner", systemImage: "plus")
+                        }
                     }
                 }
             }

@@ -8,148 +8,194 @@ import SwiftUI
 
 struct ProfileView: View {
     @State private var profile = UserProfile.shared
-    @State private var isEditing = false
     @State private var hasProfile = UserProfile.shared.hasProfile
     @State private var showingSettings = false
+    @State private var editMode: EditMode = .inactive
 
-    
-    var body: some View {
-        NavigationStack {
-            if hasProfile && !isEditing {
-                // Display Mode
-                profileDisplayView
-                    .toolbar {
-                    }
-                    .sheet(isPresented: $showingSettings) {
-                        SettingsView()
-                    }
-                    .onTapGesture {
-                        withAnimation {
-                            isEditing = true
-                        }
-                    }
-            } else {
-                // Edit Mode
-                profileEditViewInline
-            }
-        }
+    // Editable fields
+    @State private var editName: String = ""
+    @State private var editDateOfBirth: Date?
+    @State private var editShowDateOfBirth: Bool = false
+    @State private var editIsOnPrep: Bool = false
+    @State private var editLastSTITestDate: Date?
+    @State private var editShowLastSTITestDate: Bool = false
+    @State private var editNotes: String = ""
+
+    private var isEditing: Bool {
+        editMode.isEditing
     }
 
-    private var profileDisplayView: some View {
-        List {
-            // Avatar Section
-            Section {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color("AccentColor"))
-                                .frame(width: 100, height: 100)
+    var body: some View {
+        NavigationStack {
+            if !hasProfile {
+                // First time setup - show edit mode
+                profileSetupView
+            } else {
+                // Normal view with EditMode support
+                List {
+                    // Avatar Section
+                    Section {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color("AccentColor"))
+                                        .frame(width: 100, height: 100)
 
-                            Text(profile.initials)
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundColor(.white)
+                                    Text(isEditing ? editName.initials : profile.initials)
+                                        .font(.system(size: 40, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+
+                                if !isEditing {
+                                    Text(profile.name)
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+
+                                    if let age = profile.age {
+                                        Text("\(age) years old")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            Spacer()
                         }
+                        .padding(.vertical, 8)
+                    }
+                    .listRowBackground(Color.clear)
 
-                        Text(profile.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                    // Basic Information
+                    if isEditing {
+                        Section("Basic Information") {
+                            TextField("Name", text: $editName)
+                                .textContentType(.name)
 
-                        if let age = profile.age {
-                            Text("\(age) years old")
-                                .font(.subheadline)
+                            Toggle("Date of Birth", isOn: $editShowDateOfBirth)
+
+                            if editShowDateOfBirth {
+                                DatePicker(
+                                    "Date",
+                                    selection: Binding(
+                                        get: { editDateOfBirth ?? Date() },
+                                        set: { editDateOfBirth = $0 }
+                                    ),
+                                    displayedComponents: .date
+                                )
+                                .datePickerStyle(.compact)
+                            }
+                        }
+                    }
+
+                    // Health Section
+                    Section("Health") {
+                        if isEditing {
+                            Toggle("On PrEP", isOn: $editIsOnPrep)
+
+                            Toggle("Last STI Test", isOn: $editShowLastSTITestDate)
+
+                            if editShowLastSTITestDate {
+                                DatePicker(
+                                    "Date",
+                                    selection: Binding(
+                                        get: { editLastSTITestDate ?? Date() },
+                                        set: { editLastSTITestDate = $0 }
+                                    ),
+                                    displayedComponents: .date
+                                )
+                                .datePickerStyle(.compact)
+                            }
+                        } else {
+                            HStack {
+                                Text("PrEP Status")
+                                Spacer()
+                                if profile.isOnPrep {
+                                    Label("On PrEP", systemImage: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                } else {
+                                    Text("Not on PrEP")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            if let lastTest = profile.lastSTITestDate {
+                                HStack {
+                                    Text("Last STI Test")
+                                    Spacer()
+                                    Text(lastTest.formatted(date: .abbreviated, time: .omitted))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+
+                    // Notes Section
+                    Section("Notes") {
+                        if isEditing {
+                            TextEditor(text: $editNotes)
+                                .frame(minHeight: 100)
+                        } else if !profile.notes.isEmpty {
+                            Text(profile.notes)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("No notes")
                                 .foregroundColor(.secondary)
                         }
                     }
-                    Spacer()
                 }
-                .padding(.vertical, 8)
-            }
-            .listRowBackground(Color.clear)
+                .navigationBarTitleDisplayMode(.inline)
+                .animation(nil, value: editMode)
+                .environment(\.editMode, $editMode)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        EditButton()
+                            .disabled(isEditing && editName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
 
-            // Health Section
-            Section("Health") {
-                HStack {
-                    Text("PrEP Status")
-                    Spacer()
-                    if profile.isOnPrep {
-                        Label("On PrEP", systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.blue)
-                    } else {
-                        Text("Not on PrEP")
-                            .foregroundColor(.secondary)
+                    if !isEditing {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(action: { showingSettings = true }) {
+                                Label("Settings", systemImage: "gear")
+                            }
+                        }
                     }
                 }
-
-                if let lastTest = profile.lastSTITestDate {
-                    HStack {
-                        Text("Last STI Test")
-                        Spacer()
-                        Text(lastTest.formatted(date: .abbreviated, time: .omitted))
-                            .foregroundColor(.secondary)
+                .sheet(isPresented: $showingSettings) {
+                    SettingsView()
+                }
+                .onAppear {
+                    loadEditableFields()
+                }
+                .onChange(of: editMode) { oldValue, newValue in
+                    if oldValue.isEditing && !newValue.isEditing {
+                        // Save changes when exiting edit mode
+                        saveChanges()
+                    } else if !oldValue.isEditing && newValue.isEditing {
+                        // Reload fields when entering edit mode
+                        loadEditableFields()
                     }
                 }
-            }
-
-            // Notes Section
-            if !profile.notes.isEmpty {
-                Section("Notes") {
-                    Text(profile.notes)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: { showingSettings = true }) {
-                    Label("Settings", systemImage: "gear")
-                }
-            }
-            ToolbarItem(placement: .topBarLeading) {
-                Button("Edit") {
-                    isEditing = true
-                }
-                                EditButton()
             }
         }
     }
 
-    private var profileEditViewInline: some View {
-        
-        ProfileEditInlineView(isEditing: $isEditing, hasProfile: $hasProfile)
-    }
-}
+    // MARK: - Profile Setup View (First Time)
 
-// MARK: - Profile Edit Inline View (for tab navigation)
-
-struct ProfileEditInlineView: View {
-    @State private var profile = UserProfile.shared
-    @Binding var isEditing: Bool
-    @Binding var hasProfile: Bool
-
-    @State private var name: String = ""
-    @State private var dateOfBirth: Date?
-    @State private var showDateOfBirth: Bool = false
-    @State private var isOnPrep: Bool = false
-    @State private var lastSTITestDate: Date?
-    @State private var showLastSTITestDate: Bool = false
-    @State private var notes: String = ""
-
-    var body: some View {
-        Form {
+    private var profileSetupView: some View {
+        Group {
             Section("Basic Information") {
-                TextField("Name", text: $name)
+                TextField("Name", text: $editName)
                     .textContentType(.name)
 
-                Toggle("Date of Birth", isOn: $showDateOfBirth)
+                Toggle("Date of Birth", isOn: $editShowDateOfBirth)
 
-                if showDateOfBirth {
+                if editShowDateOfBirth {
                     DatePicker(
                         "Date",
                         selection: Binding(
-                            get: { dateOfBirth ?? Date() },
-                            set: { dateOfBirth = $0 }
+                            get: { editDateOfBirth ?? Date() },
+                            set: { editDateOfBirth = $0 }
                         ),
                         displayedComponents: .date
                     )
@@ -158,16 +204,16 @@ struct ProfileEditInlineView: View {
             }
 
             Section("Health") {
-                Toggle("On PrEP", isOn: $isOnPrep)
+                Toggle("On PrEP", isOn: $editIsOnPrep)
 
-                Toggle("Last STI Test", isOn: $showLastSTITestDate)
+                Toggle("Last STI Test", isOn: $editShowLastSTITestDate)
 
-                if showLastSTITestDate {
+                if editShowLastSTITestDate {
                     DatePicker(
                         "Date",
                         selection: Binding(
-                            get: { lastSTITestDate ?? Date() },
-                            set: { lastSTITestDate = $0 }
+                            get: { editLastSTITestDate ?? Date() },
+                            set: { editLastSTITestDate = $0 }
                         ),
                         displayedComponents: .date
                     )
@@ -176,156 +222,44 @@ struct ProfileEditInlineView: View {
             }
 
             Section("Notes") {
-                TextEditor(text: $notes)
+                TextEditor(text: $editNotes)
                     .frame(minHeight: 100)
             }
         }
-        .navigationTitle(profile.hasProfile ? "Edit Profile" : "Create Profile")
+        .navigationTitle("Create Profile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Save") {
-                    saveProfile()
+                    saveChanges()
+                    hasProfile = true
                 }
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(editName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .onAppear {
-            loadProfile()
+            loadEditableFields()
         }
     }
 
-    private func loadProfile() {
-        name = profile.name
-        dateOfBirth = profile.dateOfBirth
-        showDateOfBirth = profile.dateOfBirth != nil
-        isOnPrep = profile.isOnPrep
-        lastSTITestDate = profile.lastSTITestDate
-        showLastSTITestDate = profile.lastSTITestDate != nil
-        notes = profile.notes
+    // MARK: - Functions
+
+    private func loadEditableFields() {
+        editName = profile.name
+        editDateOfBirth = profile.dateOfBirth
+        editShowDateOfBirth = profile.dateOfBirth != nil
+        editIsOnPrep = profile.isOnPrep
+        editLastSTITestDate = profile.lastSTITestDate
+        editShowLastSTITestDate = profile.lastSTITestDate != nil
+        editNotes = profile.notes
     }
 
-    private func saveProfile() {
-        profile.name = name
-        profile.dateOfBirth = showDateOfBirth ? dateOfBirth : nil
-        profile.isOnPrep = isOnPrep
-        profile.lastSTITestDate = showLastSTITestDate ? lastSTITestDate : nil
-        profile.notes = notes
-
-        // Update state to show display mode
-        hasProfile = true
-        isEditing = false
-    }
-}
-
-// MARK: - Profile Edit View
-
-struct ProfileEditView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var profile = UserProfile.shared
-    @Binding var isPresented: Bool
-
-    @State private var name: String = ""
-    @State private var dateOfBirth: Date?
-    @State private var showDateOfBirth: Bool = false
-    @State private var isOnPrep: Bool = false
-    @State private var lastSTITestDate: Date?
-    @State private var showLastSTITestDate: Bool = false
-    @State private var notes: String = ""
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Basic Information") {
-                    TextField("Name", text: $name)
-                        .textContentType(.name)
-
-                    Toggle("Date of Birth", isOn: $showDateOfBirth)
-
-                    if showDateOfBirth {
-                        DatePicker(
-                            "Date",
-                            selection: Binding(
-                                get: { dateOfBirth ?? Date() },
-                                set: { dateOfBirth = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.compact)
-                    }
-                }
-
-                Section("Health") {
-                    Toggle("On PrEP", isOn: $isOnPrep)
-
-                    Toggle("Last STI Test", isOn: $showLastSTITestDate)
-
-                    if showLastSTITestDate {
-                        DatePicker(
-                            "Date",
-                            selection: Binding(
-                                get: { lastSTITestDate ?? Date() },
-                                set: { lastSTITestDate = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.compact)
-                    }
-                }
-
-                Section("Notes") {
-                    TextEditor(text: $notes)
-                        .frame(minHeight: 100)
-                }
-            }
-            .navigationTitle(profile.hasProfile ? "Edit Profile" : "Create Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        if profile.hasProfile {
-                            isPresented = false
-                        } else {
-                            dismiss()
-                        }
-                    }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveProfile()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .onAppear {
-                loadProfile()
-            }
-        }
-    }
-
-    private func loadProfile() {
-        name = profile.name
-        dateOfBirth = profile.dateOfBirth
-        showDateOfBirth = profile.dateOfBirth != nil
-        isOnPrep = profile.isOnPrep
-        lastSTITestDate = profile.lastSTITestDate
-        showLastSTITestDate = profile.lastSTITestDate != nil
-        notes = profile.notes
-    }
-
-    private func saveProfile() {
-        profile.name = name
-        profile.dateOfBirth = showDateOfBirth ? dateOfBirth : nil
-        profile.isOnPrep = isOnPrep
-        profile.lastSTITestDate = showLastSTITestDate ? lastSTITestDate : nil
-        profile.notes = notes
-
-        if profile.hasProfile {
-            isPresented = false
-        } else {
-            dismiss()
-        }
+    private func saveChanges() {
+        profile.name = editName
+        profile.dateOfBirth = editShowDateOfBirth ? editDateOfBirth : nil
+        profile.isOnPrep = editIsOnPrep
+        profile.lastSTITestDate = editShowLastSTITestDate ? editLastSTITestDate : nil
+        profile.notes = editNotes
     }
 }
 

@@ -11,8 +11,6 @@ struct PartnerFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    var partner: Partner?
-
     @State private var name: String = ""
     @State private var notes: String = ""
     @State private var phoneNumber: String = ""
@@ -22,10 +20,6 @@ struct PartnerFormView: View {
     @State private var showDateMetPicker: Bool = false
     @State private var avatarColor: String = ""
     @State private var isPinned: Bool = false
-
-    var isEditing: Bool {
-        partner != nil
-    }
 
     var body: some View {
         NavigationStack {
@@ -97,7 +91,7 @@ struct PartnerFormView: View {
                         .frame(minHeight: 100)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Partner" : "Add Partner")
+            .navigationTitle("Add Partner")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -114,26 +108,10 @@ struct PartnerFormView: View {
                 }
             }
             .onAppear {
-                if let partner = partner {
-                    loadPartner(partner)
-                } else {
-                    // Set a default color for new partners
-                    avatarColor = Partner.randomColorName()
-                }
+                // Set a default color for new partners
+                avatarColor = Partner.randomColorName()
             }
         }
-    }
-
-    private func loadPartner(_ partner: Partner) {
-        name = partner.name
-        notes = partner.notes
-        phoneNumber = partner.phoneNumber
-        isOnPrep = partner.isOnPrep
-        relationshipType = partner.relationshipType
-        dateMet = partner.dateMet
-        showDateMetPicker = partner.dateMet != nil
-        avatarColor = partner.avatarColor
-        isPinned = partner.isPinned
     }
 
     private func colorFromName(_ name: String) -> Color {
@@ -152,30 +130,18 @@ struct PartnerFormView: View {
     }
 
     private func savePartner() {
-        if let partner = partner {
-            // Edit existing partner
-            partner.name = name
-            partner.notes = notes
-            partner.phoneNumber = phoneNumber
-            partner.isOnPrep = isOnPrep
-            partner.relationshipType = relationshipType
-            partner.dateMet = showDateMetPicker ? dateMet : nil
-            partner.avatarColor = avatarColor
-            partner.isPinned = isPinned
-        } else {
-            // Create new partner
-            let newPartner = Partner(
-                name: name,
-                notes: notes,
-                phoneNumber: phoneNumber,
-                isOnPrep: isOnPrep,
-                relationshipType: relationshipType,
-                dateMet: showDateMetPicker ? dateMet : nil,
-                avatarColor: avatarColor.isEmpty ? nil : avatarColor
-            )
-            newPartner.isPinned = isPinned
-            modelContext.insert(newPartner)
-        }
+        // Create new partner
+        let newPartner = Partner(
+            name: name,
+            notes: notes,
+            phoneNumber: phoneNumber,
+            isOnPrep: isOnPrep,
+            relationshipType: relationshipType,
+            dateMet: showDateMetPicker ? dateMet : nil,
+            avatarColor: avatarColor.isEmpty ? nil : avatarColor
+        )
+        newPartner.isPinned = isPinned
+        modelContext.insert(newPartner)
 
         dismiss()
     }
@@ -184,13 +150,4 @@ struct PartnerFormView: View {
 #Preview("Add Partner") {
     PartnerFormView()
         .modelContainer(for: Partner.self, inMemory: true)
-}
-
-#Preview("Edit Partner") {
-    let container = try! ModelContainer(for: Partner.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let partner = Partner(name: "John Doe", isOnPrep: true, relationshipType: .regular)
-    container.mainContext.insert(partner)
-
-    return PartnerFormView(partner: partner)
-        .modelContainer(container)
 }
