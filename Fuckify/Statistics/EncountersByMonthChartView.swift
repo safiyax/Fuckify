@@ -15,6 +15,8 @@ struct EncountersByMonthChartView: View {
     @Query private var encounters: [Encounter]
     @Query private var partners: [Partner]
 
+    var selectedYear: Int? = nil // nil means all years
+
     // Data structure for stacked chart
     struct PartnerMonthData: Identifiable {
         let id = UUID()
@@ -50,24 +52,40 @@ struct EncountersByMonthChartView: View {
     // Computed property to aggregate encounters by month and partner
     private var encountersByMonthAndPartner: [PartnerMonthData] {
         let calendar = Calendar.current
-        let currentYear = calendar.component(.year, from: Date())
         let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
         let top4 = topPartners
         let top4IDs = Set(top4.map { $0.persistentModelID })
 
-        // Dictionary to store counts: [month: [partnerName: count]]
-        var monthPartnerCounts: [Int: [String: Int]] = [:]
+        // Filter encounters by selected year
+        let filteredEncounters: [Encounter]
+        if let year = selectedYear {
+            filteredEncounters = encounters.filter { calendar.component(.year, from: $0.date) == year }
+        } else {
+            filteredEncounters = encounters
+        }
+
+        // Dictionary to store counts: [monthKey: [partnerName: count]]
+        // monthKey is "YYYY-MM" for all years or "MM" for single year
+        var monthPartnerCounts: [String: [String: Int]] = [:]
+        var monthKeys: Set<String> = []
 
         // Count encounters for each month and partner
-        for encounter in encounters {
+        for encounter in filteredEncounters {
             let year = calendar.component(.year, from: encounter.date)
-            guard year == currentYear else { continue }
-
             let month = calendar.component(.month, from: encounter.date)
 
-            if monthPartnerCounts[month] == nil {
-                monthPartnerCounts[month] = [:]
+            // Create month key based on whether we're showing all years or just one
+            let monthKey: String
+            if selectedYear == nil {
+                monthKey = String(format: "%04d-%02d", year, month)
+            } else {
+                monthKey = String(format: "%02d", month)
+            }
+            monthKeys.insert(monthKey)
+
+            if monthPartnerCounts[monthKey] == nil {
+                monthPartnerCounts[monthKey] = [:]
             }
 
             // Determine which partner category this encounter belongs to
@@ -75,42 +93,79 @@ struct EncountersByMonthChartView: View {
                 let isTopPartner = encounterPartners.contains { top4IDs.contains($0.persistentModelID) }
 
                 if isTopPartner, let partner = encounterPartners.first(where: { top4IDs.contains($0.persistentModelID) }) {
-                    monthPartnerCounts[month]?[partner.name, default: 0] += 1
+                    monthPartnerCounts[monthKey]?[partner.name, default: 0] += 1
                 } else {
-                    monthPartnerCounts[month]?["Others", default: 0] += 1
+                    monthPartnerCounts[monthKey]?["Others", default: 0] += 1
                 }
             } else {
-                monthPartnerCounts[month]?["Others", default: 0] += 1
+                monthPartnerCounts[monthKey]?["Others", default: 0] += 1
             }
         }
 
         // Create array of all months and partners with their counts
         var result: [PartnerMonthData] = []
-        for monthNum in 1...12 {
-            let monthName = monthNames[monthNum - 1]
-            let partnersForMonth = monthPartnerCounts[monthNum] ?? [:]
 
-            // Add entries for top 4 partners
-            for partner in top4 {
-                let count = partnersForMonth[partner.name] ?? 0
+        if let year = selectedYear {
+            // Show 12 months for the selected year
+            for monthNum in 1...12 {
+                let monthKey = String(format: "%02d", monthNum)
+                let monthName = monthNames[monthNum - 1]
+                let partnersForMonth = monthPartnerCounts[monthKey] ?? [:]
+
+                // Add entries for top 4 partners
+                for partner in top4 {
+                    let count = partnersForMonth[partner.name] ?? 0
+                    result.append(PartnerMonthData(
+                        month: monthName,
+                        monthNumber: monthNum,
+                        partnerName: partner.name,
+                        partnerColor: partner.color,
+                        count: count
+                    ))
+                }
+
+                // Add entry for "Others"
+                let othersCount = partnersForMonth["Others"] ?? 0
                 result.append(PartnerMonthData(
                     month: monthName,
                     monthNumber: monthNum,
-                    partnerName: partner.name,
-                    partnerColor: partner.color,
-                    count: count
+                    partnerName: "Others",
+                    partnerColor: .accent,
+                    count: othersCount
                 ))
             }
+        } else {
+            // Show all months across all years
+            let sortedKeys = monthKeys.sorted()
+            for (index, monthKey) in sortedKeys.enumerated() {
+                let components = monthKey.split(separator: "-")
+                let year = Int(components[0]) ?? 0
+                let monthNum = Int(components[1]) ?? 0
+                let monthName = monthNames[(monthNum - 1) % 12] + " '\(String(year).suffix(2))"
+                let partnersForMonth = monthPartnerCounts[monthKey] ?? [:]
 
-            // Add entry for "Others"
-            let othersCount = partnersForMonth["Others"] ?? 0
-            result.append(PartnerMonthData(
-                month: monthName,
-                monthNumber: monthNum,
-                partnerName: "Others",
-                partnerColor: .accent,
-                count: othersCount
-            ))
+                // Add entries for top 4 partners
+                for partner in top4 {
+                    let count = partnersForMonth[partner.name] ?? 0
+                    result.append(PartnerMonthData(
+                        month: monthName,
+                        monthNumber: index + 1, // Use sequential number for proper ordering
+                        partnerName: partner.name,
+                        partnerColor: partner.color,
+                        count: count
+                    ))
+                }
+
+                // Add entry for "Others"
+                let othersCount = partnersForMonth["Others"] ?? 0
+                result.append(PartnerMonthData(
+                    month: monthName,
+                    monthNumber: index + 1,
+                    partnerName: "Others",
+                    partnerColor: .accent,
+                    count: othersCount
+                ))
+            }
         }
 
         return result

@@ -13,6 +13,8 @@ import Charts
 struct EncountersByDayChartView: View {
     @Query private var encounters: [Encounter]
 
+    var selectedYear: Int? = nil // nil means all years
+
     // Data structure for chart
     struct DayData: Identifiable {
         let id = UUID()
@@ -26,14 +28,22 @@ struct EncountersByDayChartView: View {
         let calendar = Calendar.current
         let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-        guard !encounters.isEmpty else {
+        // Filter encounters by selected year
+        let filteredEncounters: [Encounter]
+        if let year = selectedYear {
+            filteredEncounters = encounters.filter { calendar.component(.year, from: $0.date) == year }
+        } else {
+            filteredEncounters = encounters
+        }
+
+        guard !filteredEncounters.isEmpty else {
             return (1...7).map { dayNum in
                 DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, average: 0)
             }
         }
 
         // Find the date range
-        let sortedDates = encounters.map { $0.date }.sorted()
+        let sortedDates = filteredEncounters.map { $0.date }.sorted()
         guard let firstDate = sortedDates.first,
               let lastDate = sortedDates.last else {
             return []
@@ -41,7 +51,7 @@ struct EncountersByDayChartView: View {
 
         // Count encounters per day of week
         var dayCounts: [Int: Int] = [:]
-        for encounter in encounters {
+        for encounter in filteredEncounters {
             let weekday = calendar.component(.weekday, from: encounter.date)
             dayCounts[weekday, default: 0] += 1
         }

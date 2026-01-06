@@ -1,0 +1,43 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.00000,0.00000,0.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "blur-material" : null,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : {
+            "solid" : "display-p3:0.91765,0.20000,0.40392,1.00000"
+          },
+          "glass" : true,
+          "image-name" : "noun-underwear-127518.svg",
+          "name" : "noun-underwear-127518",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 20,
+            "translation-in-points" : [
+              -17.085937499999886,
+              149.566956588857
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

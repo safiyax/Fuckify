@@ -20,6 +20,16 @@ struct SettingsView: View {
 
                 Section("Personalization") {
                     NavigationLink {
+                        AppIconManagerView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "app.fill")
+                                .foregroundColor(.pink)
+                            Text("App Icon")
+                        }
+                    }
+
+                    NavigationLink {
                         ActivitiesSettingsView()
                     } label: {
                         HStack {

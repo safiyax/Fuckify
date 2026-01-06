@@ -12,6 +12,22 @@ struct StatisticsView: View {
     @Query private var encounters: [Encounter]
     @Query private var partners: [Partner]
 
+    @State private var selectedYear: Int? = nil // nil means "All"
+
+    // MARK: - Year Filtering
+
+    private var availableYears: [Int] {
+        let calendar = Calendar.current
+        let years = Set(encounters.map { calendar.component(.year, from: $0.date) })
+        return years.sorted(by: >)
+    }
+
+    private var filteredEncounters: [Encounter] {
+        guard let year = selectedYear else { return encounters }
+        let calendar = Calendar.current
+        return encounters.filter { calendar.component(.year, from: $0.date) == year }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -27,7 +43,7 @@ struct StatisticsView: View {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             StatCard(
                                 title: "Total Encounters",
-                                value: "\(encounters.count)",
+                                value: "\(filteredEncounters.count)",
                                 icon: "heart.fill",
                                 color: .pink
                             )
@@ -209,13 +225,14 @@ struct StatisticsView: View {
                             .padding(.horizontal)
                         }
                     }
-                    
+
+
 //                    ChartsView()
-                    EncountersByMonthChartView()
-                    
-                    EncountersByDayChartView()
-                    
-                    if encounters.isEmpty {
+                    EncountersByMonthChartView(selectedYear: selectedYear)
+
+                    EncountersByDayChartView(selectedYear: selectedYear)
+
+                    if filteredEncounters.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "chart.bar.xaxis")
                                 .font(.system(size: 60))
@@ -237,15 +254,51 @@ struct StatisticsView: View {
             }
             .navigationTitle("Summary")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            selectedYear = nil
+                        } label: {
+                            HStack {
+                                Text("All Years")
+                                if selectedYear == nil {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        ForEach(availableYears, id: \.self) { year in
+                            Button {
+                                selectedYear = year
+                            } label: {
+                                HStack {
+                                    Text(String(year))
+                                    if selectedYear == year {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar")
+                            Text(selectedYear.map(String.init) ?? "All")
+                        }
+                    }
+                }
+            }
         }
     }
 
     // MARK: - Computed Properties
 
     private var averageDuration: String {
-        guard !encounters.isEmpty else { return "0m" }
-        let totalDuration = encounters.reduce(0) { $0 + $1.duration }
-        let avgDuration = totalDuration / Double(encounters.count)
+        guard !filteredEncounters.isEmpty else { return "0m" }
+        let totalDuration = filteredEncounters.reduce(0) { $0 + $1.duration }
+        let avgDuration = totalDuration / Double(filteredEncounters.count)
 
         let hours = Int(avgDuration) / 3600
         let minutes = (Int(avgDuration) % 3600) / 60
@@ -259,11 +312,11 @@ struct StatisticsView: View {
 
     private var recentEncountersCount: Int {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        return encounters.filter { $0.date >= thirtyDaysAgo }.count
+        return filteredEncounters.filter { $0.date >= thirtyDaysAgo }.count
     }
 
     private var topActivities: [(activity: ActivityType, count: Int)] {
-        let allActivities = encounters.flatMap { $0.activities }
+        let allActivities = filteredEncounters.flatMap { $0.activities }
         guard !allActivities.isEmpty else { return [] }
 
         let counts = Dictionary(grouping: allActivities) { $0 }
@@ -276,7 +329,7 @@ struct StatisticsView: View {
     }
 
     private var mostCommonProtection: (method: ProtectionMethod, count: Int)? {
-        let allProtection = encounters.flatMap { $0.protectionMethods }
+        let allProtection = filteredEncounters.flatMap { $0.protectionMethods }
         guard !allProtection.isEmpty else { return nil }
 
         let counts = Dictionary(grouping: allProtection) { $0 }
@@ -287,7 +340,7 @@ struct StatisticsView: View {
     }
 
     private var topPartners: [(partner: Partner, count: Int)] {
-        let allPartners = encounters.compactMap { $0.partners }.flatMap { $0 }
+        let allPartners = filteredEncounters.compactMap { $0.partners }.flatMap { $0 }
         guard !allPartners.isEmpty else { return [] }
 
         let counts = Dictionary(grouping: allPartners) { $0.id }
@@ -303,7 +356,7 @@ struct StatisticsView: View {
     }
 
     private var averageRating: Double {
-        let ratedEncounters = encounters.filter { $0.rating > 0 }
+        let ratedEncounters = filteredEncounters.filter { $0.rating > 0 }
         guard !ratedEncounters.isEmpty else { return 0 }
 
         let totalRating = ratedEncounters.reduce(0) { $0 + $1.rating }
