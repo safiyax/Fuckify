@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import SQLiteData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext

@@ -7,9 +7,16 @@
 
 import SwiftUI
 import SwiftData
+import SQLiteData
 
 @main
 struct FuckifyApp: App {
+    init() {
+        prepareDependencies {
+            $0.defaultDatabase = try! appDatabase()
+        }
+    }
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
