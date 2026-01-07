@@ -76,6 +76,18 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                Section {
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(.blue)
+                            Text("About")
+                        }
+                    }
+                }
             }
             .navigationTitle("Settings")
             .toolbar {
