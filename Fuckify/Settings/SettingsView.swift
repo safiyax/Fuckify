@@ -20,7 +20,7 @@ struct SettingsView: View {
 
                 Section("Personalization") {
                     NavigationLink {
-                        AppIconManagerView()
+                        AppIconSettingsView()
                     } label: {
                         HStack {
                             Image(systemName: "app.fill")
