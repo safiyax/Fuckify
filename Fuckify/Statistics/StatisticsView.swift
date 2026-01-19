@@ -227,12 +227,11 @@ struct StatisticsView: View {
                     }
 
 
-//                    ChartsView()
-                    EncountersByMonthChartView(selectedYear: selectedYear)
+                    if !filteredEncounters.isEmpty {
+                        EncountersByMonthChartView(selectedYear: selectedYear)
 
-                    EncountersByDayChartView(selectedYear: selectedYear)
-
-                    if filteredEncounters.isEmpty {
+                        EncountersByDayChartView(selectedYear: selectedYear)
+                    } else {
                         VStack(spacing: 16) {
                             Image(systemName: "chart.bar.xaxis")
                                 .font(.system(size: 60))

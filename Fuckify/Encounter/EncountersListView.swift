@@ -14,7 +14,7 @@ struct EncountersListView: View {
     @State private var showingSettings = false
     @State private var showProfile = false
     @State private var profile = UserProfile.shared
-
+    
     var body: some View {
         NavigationStack {
             List {
@@ -35,12 +35,21 @@ struct EncountersListView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
-                    Button(action: { showProfile = true }) {
-                        ZStack {
-                            Text(profile.initials)
+                    if #available(iOS 26.0, *) {
+                        Button(action: { showProfile = true }) {
+                            ZStack {
+                                Text(profile.initials)
+                            }
                         }
+                        .buttonStyle(.glassProminent)
+                    } else {
+                        Button(action: { showProfile = true }) {
+                            ZStack {
+                                Text(profile.initials)
+                            }
+                        }
+                        .buttonStyle(.compatibleGlassProminent)
                     }
-                    .buttonStyle(.glassProminent)
                     
                 }
                 

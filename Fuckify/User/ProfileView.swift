@@ -155,14 +155,24 @@ struct ProfileView: View {
                             }
                             .disabled(isEditing && editName.trimmingCharacters(in: .whitespaces).isEmpty)
                         } else {
-                            Button(action: {
-                                withAnimation {
-                                    isEditing.toggle()
+                            if #available(iOS 26.0, *) {
+                                Button(action: {
+                                    withAnimation {
+                                        isEditing.toggle()
+                                    }
+                                }) {
+                                    Label("Save", systemImage: "checkmark")
                                 }
-                            }) {
-                                Label("Save", systemImage: "checkmark")
+                                .buttonStyle(.glassProminent)
+                            } else {
+                                Button(action: {
+                                    withAnimation {
+                                        isEditing.toggle()
+                                    }
+                                }) {
+                                    Text("Done")
+                                }
                             }
-                            .buttonStyle(.glassProminent)
                         }
                     }
 

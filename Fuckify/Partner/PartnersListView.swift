@@ -157,22 +157,26 @@ struct PinnedPartnerView: View {
                 Circle()
                     .fill(partner.color)
                     .frame(width: 96, height: 96)
+                    .compatibleGlassEffect()
 
                 Text(partner.initials)
                     .font(.title)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
             }
-            .glassEffect()
             .overlay(alignment: .bottomTrailing) {
                 // Pin indicator
-                Image(systemName: "pin.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.orange)
-                    .padding(5)
-                    .glassEffect()
-//                    .background(Circle().fill(Color.orange))
-                    .offset(x: 3, y: 3)
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.3))
+                        .frame(width: 24, height: 24)
+                        .compatibleGlassEffect()
+                    
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                }
+                .offset(x: 3, y: 3)
             }
 
             Text(partner.name)

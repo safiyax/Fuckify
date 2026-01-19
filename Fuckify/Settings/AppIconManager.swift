@@ -87,7 +87,7 @@ struct AppIconRow: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 60)
                 } else {
-                    Image("AppIcon-Image")
+                    Image("\(AppIconManager.primaryIconName)-Image")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 60)
@@ -116,6 +116,18 @@ struct AppIconManager {
             return []
         }
         return Array(alternateIcons.keys).sorted()
+    }
+    
+    static var primaryIconName: String {
+        // Get the primary icon name from the asset catalog compiler setting
+        // Default is "CatIcon" as configured in the project
+        if let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
+           let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
+           let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
+           let lastIcon = iconFiles.last {
+            return lastIcon
+        }
+        return "CatIcon"
     }
     
     static var currentIconName: String? {

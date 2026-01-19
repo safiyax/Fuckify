@@ -1,5 +1,5 @@
 {
-  "originHash" : "099237ae805acba12a1e1206eb9b6b4a6d0e3a8f9334d0c1292d9f5487729389",
+  "originHash" : "308be7b5c8f7c3528ca6afe0cb16db2ceac0436f51d4a59bebdc00c22462685e",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "aa0079aeb82a4bf00324561a40bffe68c6fe1c26",
         "version" : "7.9.0"
+      }
+    },
+    {
+      "identity" : "liquidglasskit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/DnV1eX/LiquidGlassKit.git",
+      "state" : {
+        "revision" : "2eb41c5d0115d23179d7a3eb133cb07bac7bb7d8",
+        "version" : "1.0.1"
       }
     },
     {
