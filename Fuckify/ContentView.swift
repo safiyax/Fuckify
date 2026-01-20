@@ -2,16 +2,15 @@
 //  ContentView.swift
 //  Fuckify
 //
-//  Created by Safiya Hooda on 2025-11-08.
+//  Updated to use SQLite services
 //
 
 import SwiftUI
-import SwiftData
 import SQLiteData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
     @SceneStorage("selectedTab") var selectedTab = 0
+    @State private var partnersManager = PartnersManager()
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -21,18 +20,17 @@ struct ContentView: View {
 
             Tab("Partners", systemImage: "person.2.fill", value: 1) {
                 PartnersListView()
-                    .environment(PartnersManager(modelContext: self.modelContext))
+                    .environment(partnersManager)
             }
 
             Tab("Summary", systemImage: "circle.hexagonpath.fill", value: 2) {
                 StatisticsView()
             }
 
-       
             Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
                 withAnimation {
                     PartnersListView()
-                        .environment(PartnersManager(modelContext: self.modelContext))
+                        .environment(partnersManager)
                 }
             }
         }
@@ -41,6 +39,9 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: Partner.self, inMemory: true)
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    return ContentView()
 }

@@ -5,139 +5,154 @@
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct EncounterDetailView: View {
-    @Bindable var encounter: Encounter
+    let encounter: SQLEncounter
     @State private var showingEditSheet = false
+    @State private var partners: [SQLPartner] = []
+    @State private var activities: [SQLActivityType] = []
+    @State private var protectionMethods: [SQLProtectionMethod] = []
+    @State private var isLoading = true
+    
+    @Dependency(\.encounterService) private var encounterService
 
     var body: some View {
         List {
-            // Date and Duration Section
-            Section("When") {
-                HStack {
-                    Text("Date")
-                    Spacer()
-                    Text(encounter.date.formatted(date: .abbreviated, time: .omitted))
-                        .foregroundColor(.secondary)
+            if isLoading {
+                Section {
+                    ProgressView("Loading...")
                 }
+            } else {
+                // Date and Duration Section
+                Section("When") {
+                    if let date = encounter.date {
+                        HStack {
+                            Text("Date")
+                            Spacer()
+                            Text(date.formatted(date: .abbreviated, time: .omitted))
+                                .foregroundColor(.secondary)
+                        }
+                    }
 
-                if !encounter.duration.isZero {
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text(encounter.formattedDuration)
-                            .foregroundColor(.secondary)
+                    if !encounter.duration.isZero {
+                        HStack {
+                            Text("Duration")
+                            Spacer()
+                            Text(encounter.formattedDuration)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
-            }
 
-            // Partners Section
-            Section("Partners") {
-                if let partners = encounter.partners, !partners.isEmpty {
-                    ForEach(partners) { partner in
-                        NavigationLink {
-                            PartnerDetailView(partner: partner)
-                        } label: {
-                            HStack {
-                                ZStack {
-                                    Circle()
-                                        .fill(partner.color)
-                                        .frame(width: 35, height: 35)
+                // Partners Section
+                Section("Partners") {
+                    if !partners.isEmpty {
+                        ForEach(partners) { partner in
+                            NavigationLink {
+                                PartnerDetailView(partner: partner)
+                            } label: {
+                                HStack {
+                                    ZStack {
+                                        Circle()
+                                            .fill(partner.color)
+                                            .frame(width: 35, height: 35)
 
-                                    Text(partner.initials)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
+                                        Text(partner.initials)
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                    }
+
+                                    Text(partner.name)
                                 }
-
-                                Text(partner.name)
                             }
                         }
-                    }
-                } else {
-                    Text("No partners recorded")
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // Activities Section
-            if !encounter.activities.isEmpty {
-                Section("Activities") {
-                    ForEach(encounter.activities, id: \.self) { activity in
-                        HStack {
-                            Image(systemName: activity.icon)
-                                .foregroundColor(.purple)
-                            Text(activity.displayName)
-                        }
-                    }
-                }
-            }
-
-            // Protection Section
-            if !encounter.protectionMethods.isEmpty {
-                Section("Protection") {
-                    ForEach(encounter.protectionMethods, id: \.self) { protection in
-                        HStack {
-                            Image(systemName: protection.icon)
-                                .foregroundColor(.green)
-                            Text(protection.displayName)
-                        }
-                    }
-                }
-            }
-
-            // Experience Section
-            Section("Experience") {
-                if encounter.rating > 0 {
-                    HStack {
-                        Text("Rating")
-                        Spacer()
-                        HStack(spacing: 4) {
-                            ForEach(1...5, id: \.self) { star in
-                                Image(systemName: star <= encounter.rating ? "star.fill" : "star")
-                                    .foregroundColor(star <= encounter.rating ? .yellow : .gray)
-                                    .font(.caption)
-                            }
-                        }
-                    }
-                }
-
-                HStack {
-                    Text("Orgasm")
-                    Spacer()
-                    if encounter.reachedOrgasm {
-                        Label("Yes", systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.green)
                     } else {
-                        Text("No")
+                        Text("No partners recorded")
                             .foregroundColor(.secondary)
                     }
                 }
-            }
 
-            // Location Section
-            if !encounter.location.isEmpty {
-                Section("Location") {
-                    Text(encounter.location)
-                        .foregroundColor(.secondary)
+                // Activities Section
+                if !activities.isEmpty {
+                    Section("Activities") {
+                        ForEach(activities, id: \.self) { activity in
+                            HStack {
+                                Image(systemName: activity.icon)
+                                    .foregroundColor(.purple)
+                                Text(activity.displayName)
+                            }
+                        }
+                    }
                 }
-            }
 
-            // Notes Section
-            if !encounter.notes.isEmpty {
-                Section("Notes") {
-                    Text(encounter.notes)
-                        .foregroundColor(.secondary)
+                // Protection Section
+                if !protectionMethods.isEmpty {
+                    Section("Protection") {
+                        ForEach(protectionMethods, id: \.self) { protection in
+                            HStack {
+                                Image(systemName: protection.icon)
+                                    .foregroundColor(.green)
+                                Text(protection.displayName)
+                            }
+                        }
+                    }
                 }
-            }
 
-            // Metadata Section
-            Section("Details") {
-                HStack {
-                    Text("Added")
-                    Spacer()
-                    Text(encounter.dateAdded.formatted(date: .abbreviated, time: .shortened))
-                        .foregroundColor(.secondary)
+                // Experience Section
+                Section("Experience") {
+                    if encounter.rating > 0 {
+                        HStack {
+                            Text("Rating")
+                            Spacer()
+                            HStack(spacing: 4) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Image(systemName: star <= encounter.rating ? "star.fill" : "star")
+                                        .foregroundColor(star <= encounter.rating ? .yellow : .gray)
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                    }
+
+                    HStack {
+                        Text("Orgasm")
+                        Spacer()
+                        if encounter.reachedOrgasm {
+                            Label("Yes", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        } else {
+                            Text("No")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Location Section
+                if !encounter.location.isEmpty {
+                    Section("Location") {
+                        Text(encounter.location)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                // Notes Section
+                if !encounter.notes.isEmpty {
+                    Section("Notes") {
+                        Text(encounter.notes)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                // Metadata Section
+                Section("Details") {
+                    HStack {
+                        Text("Added")
+                        Spacer()
+                        Text(encounter.dateAdded.formatted(date: .abbreviated, time: .shortened))
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
@@ -153,30 +168,48 @@ struct EncounterDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             EncounterFormView(encounter: encounter)
         }
+        .task {
+            await loadEncounterData()
+        }
+    }
+    
+    private func loadEncounterData() async {
+        isLoading = true
+        
+        // Load all relationships
+        if let loadedPartners = try? encounterService.fetchPartners(for: encounter.id) {
+            partners = loadedPartners
+        }
+        
+        if let loadedActivities = try? encounterService.fetchActivities(for: encounter.id) {
+            activities = loadedActivities
+        }
+        
+        if let loadedProtection = try? encounterService.fetchProtectionMethods(for: encounter.id) {
+            protectionMethods = loadedProtection
+        }
+        
+        isLoading = false
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Partner.self, Encounter.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-
-    let partner1 = Partner(name: "John Doe")
-    let partner2 = Partner(name: "Jane Smith")
-    container.mainContext.insert(partner1)
-    container.mainContext.insert(partner2)
-
-    let encounter = Encounter(
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    let encounter = SQLEncounter(
+        id: UUID(),
         date: Date(),
         duration: 3600,
-        activities: [.oral, .vaginal, .kissing],
-        protectionMethods: [.condom, .prep],
         location: "Home",
         notes: "Great time!",
-        partners: [partner1, partner2]
+        rating: 5,
+        reachedOrgasm: true,
+        dateAdded: Date()
     )
-    container.mainContext.insert(encounter)
 
-    return NavigationStack {
+    NavigationStack {
         EncounterDetailView(encounter: encounter)
     }
-    .modelContainer(container)
 }

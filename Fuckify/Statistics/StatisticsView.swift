@@ -2,30 +2,43 @@
 //  StatisticsView.swift
 //  Fuckify
 //
+//  Statistics view using SQLiteData
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct StatisticsView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var encounters: [Encounter]
-    @Query private var partners: [Partner]
+    @FetchAll
+    private var encounters: [SQLEncounter]
+    
+    @FetchAll
+    private var partners: [SQLPartner]
+    
+    @Dependency(\.encounterService) var encounterService
 
     @State private var selectedYear: Int? = nil // nil means "All"
+    @State private var encounterRelationships: [UUID: EncounterRelationships] = [:]
 
     // MARK: - Year Filtering
 
     private var availableYears: [Int] {
         let calendar = Calendar.current
-        let years = Set(encounters.map { calendar.component(.year, from: $0.date) })
+        let years: Set<Int> = Set(encounters.compactMap { encounter in
+            guard let date = encounter.date else { return nil }
+            return calendar.component(.year, from: date)
+        })
         return years.sorted(by: >)
     }
 
-    private var filteredEncounters: [Encounter] {
+    private var filteredEncounters: [SQLEncounter] {
         guard let year = selectedYear else { return encounters }
         let calendar = Calendar.current
-        return encounters.filter { calendar.component(.year, from: $0.date) == year }
+        return encounters.filter { encounter in
+            guard let date = encounter.date else { return false }
+            return calendar.component(.year, from: date) == year
+        }
     }
 
     var body: some View {
@@ -98,12 +111,13 @@ struct StatisticsView: View {
                                                 .font(.subheadline)
                                                 .foregroundColor(.secondary)
                                         }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        Spacer()
 
                                         Text("#\(index + 1)")
                                             .font(.title2)
                                             .fontWeight(.bold)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(.secondary.opacity(0.5))
                                     }
                                     .padding()
                                     .background(Color(.systemGray6))
@@ -113,12 +127,11 @@ struct StatisticsView: View {
                             .padding(.horizontal)
                         }
                     }
-                    
-                    
+
                     // Top Partners
                     if !topPartners.isEmpty {
                         VStack(spacing: 12) {
-                            Text("Top Partners")
+                            Text("Most Active Partners")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -133,8 +146,7 @@ struct StatisticsView: View {
                                                 .frame(width: 50, height: 50)
 
                                             Text(item.partner.initials)
-                                                .font(.body)
-                                                .fontWeight(.bold)
+                                                .font(.headline)
                                                 .foregroundColor(.white)
                                         }
 
@@ -145,12 +157,13 @@ struct StatisticsView: View {
                                                 .font(.subheadline)
                                                 .foregroundColor(.secondary)
                                         }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        Spacer()
 
                                         Text("#\(index + 1)")
                                             .font(.title2)
                                             .fontWeight(.bold)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(.secondary.opacity(0.5))
                                     }
                                     .padding()
                                     .background(Color(.systemGray6))
@@ -161,31 +174,32 @@ struct StatisticsView: View {
                         }
                     }
 
-                    // Most Common Protection
-                    if let mostCommonProtection = mostCommonProtection {
+                    // Protection Methods
+                    if let mostCommon = mostCommonProtection {
                         VStack(spacing: 12) {
-                            Text("Most Common Protection")
+                            Text("Protection")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
 
                             HStack {
-                                Image(systemName: mostCommonProtection.method.icon)
+                                Image(systemName: mostCommon.method.icon)
                                     .font(.title)
                                     .foregroundColor(.green)
-                                    .frame(width: 60, height: 60)
+                                    .frame(width: 50, height: 50)
                                     .background(Color.green.opacity(0.1))
                                     .clipShape(Circle())
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(mostCommonProtection.method.displayName)
+                                    Text(mostCommon.method.displayName)
                                         .font(.headline)
-                                    Text("\(mostCommonProtection.count) times")
+                                    Text("Used in \(mostCommon.count) encounters")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                                Spacer()
                             }
                             .padding()
                             .background(Color(.systemGray6))
@@ -193,7 +207,6 @@ struct StatisticsView: View {
                             .padding(.horizontal)
                         }
                     }
-
 
                     // Average Rating
                     if averageRating > 0 {
@@ -289,6 +302,29 @@ struct StatisticsView: View {
                     }
                 }
             }
+            .task {
+                await loadEncounterRelationships()
+            }
+        }
+    }
+
+    // MARK: - Data Loading
+    
+    private func loadEncounterRelationships() async {
+        for encounter in encounters {
+            do {
+                let activities = try encounterService.fetchActivities(for: encounter.id)
+                let protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+                let partners = try encounterService.fetchPartners(for: encounter.id)
+                
+                encounterRelationships[encounter.id] = EncounterRelationships(
+                    activities: activities,
+                    protectionMethods: protectionMethods,
+                    partnerIDs: partners.map(\.id)
+                )
+            } catch {
+                // Silent fail
+            }
         }
     }
 
@@ -311,11 +347,14 @@ struct StatisticsView: View {
 
     private var recentEncountersCount: Int {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        return filteredEncounters.filter { $0.date >= thirtyDaysAgo }.count
+        return filteredEncounters.filter { encounter in
+            guard let date = encounter.date else { return false }
+            return date >= thirtyDaysAgo
+        }.count
     }
 
-    private var topActivities: [(activity: ActivityType, count: Int)] {
-        let allActivities = filteredEncounters.flatMap { $0.activities }
+    private var topActivities: [(activity: SQLActivityType, count: Int)] {
+        let allActivities = filteredEncounters.compactMap { encounterRelationships[$0.id]?.activities }.flatMap { $0 }
         guard !allActivities.isEmpty else { return [] }
 
         let counts = Dictionary(grouping: allActivities) { $0 }
@@ -327,8 +366,8 @@ struct StatisticsView: View {
             .map { (activity: $0.key, count: $0.value) }
     }
 
-    private var mostCommonProtection: (method: ProtectionMethod, count: Int)? {
-        let allProtection = filteredEncounters.flatMap { $0.protectionMethods }
+    private var mostCommonProtection: (method: SQLProtectionMethod, count: Int)? {
+        let allProtection = filteredEncounters.compactMap { encounterRelationships[$0.id]?.protectionMethods }.flatMap { $0 }
         guard !allProtection.isEmpty else { return nil }
 
         let counts = Dictionary(grouping: allProtection) { $0 }
@@ -338,18 +377,18 @@ struct StatisticsView: View {
         return (mostCommon.key, mostCommon.value)
     }
 
-    private var topPartners: [(partner: Partner, count: Int)] {
-        let allPartners = filteredEncounters.compactMap { $0.partners }.flatMap { $0 }
-        guard !allPartners.isEmpty else { return [] }
+    private var topPartners: [(partner: SQLPartner, count: Int)] {
+        let allPartnerIDs = filteredEncounters.compactMap { encounterRelationships[$0.id]?.partnerIDs }.flatMap { $0 }
+        guard !allPartnerIDs.isEmpty else { return [] }
 
-        let counts = Dictionary(grouping: allPartners) { $0.id }
+        let counts = Dictionary(grouping: allPartnerIDs) { $0 }
             .mapValues { $0.count }
 
         return counts
             .sorted { $0.value > $1.value }
             .prefix(3)
             .compactMap { id, count in
-                guard let partner = allPartners.first(where: { $0.id == id }) else { return nil }
+                guard let partner = partners.first(where: { $0.id == id }) else { return nil }
                 return (partner: partner, count: count)
             }
     }
@@ -361,6 +400,14 @@ struct StatisticsView: View {
         let totalRating = ratedEncounters.reduce(0) { $0 + $1.rating }
         return Double(totalRating) / Double(ratedEncounters.count)
     }
+}
+
+// MARK: - Helper Types
+
+struct EncounterRelationships {
+    let activities: [SQLActivityType]
+    let protectionMethods: [SQLProtectionMethod]
+    let partnerIDs: [UUID]
 }
 
 // MARK: - Stat Card View
@@ -394,6 +441,9 @@ struct StatCard: View {
 }
 
 #Preview {
-    StatisticsView()
-        .modelContainer(for: [Encounter.self, Partner.self], inMemory: true)
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    return StatisticsView()
 }

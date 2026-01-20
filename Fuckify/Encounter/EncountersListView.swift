@@ -2,14 +2,19 @@
 //  EncountersListView.swift
 //  Fuckify
 //
+//  Encounters list using SQLiteData
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct EncountersListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Encounter.date, order: .reverse) private var encounters: [Encounter]
+    @FetchAll(SQLEncounter.order { $0.date.desc() })
+    private var encounters: [SQLEncounter]
+    
+    @Dependency(\.encounterService) var encounterService
+    
     @State private var showingAddEncounter = false
     @State private var showingSettings = false
     @State private var showProfile = false
@@ -19,11 +24,12 @@ struct EncountersListView: View {
         NavigationStack {
             List {
                 ForEach(encounters) { encounter in
-                    NavigationLink {
-                        EncounterDetailView(encounter: encounter)
-                    } label: {
+                    // TODO: Update EncounterDetailView to use SQLEncounter
+                     NavigationLink {
+                         EncounterDetailView(encounter: encounter)
+                     } label: {
                         EncounterRowView(encounter: encounter)
-                    }
+                     }
                 }
                 .onDelete(perform: deleteEncounters)
             }
@@ -35,24 +41,13 @@ struct EncountersListView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
-                    if #available(iOS 26.0, *) {
-                        Button(action: { showProfile = true }) {
-                            ZStack {
-                                Text(profile.initials)
-                            }
+                    Button(action: { showProfile = true }) {
+                        ZStack {
+                            Text(profile.initials)
                         }
-                        .buttonStyle(.glassProminent)
-                    } else {
-                        Button(action: { showProfile = true }) {
-                            ZStack {
-                                Text(profile.initials)
-                            }
-                        }
-                        .buttonStyle(.compatibleGlassProminent)
                     }
-                    
+                    .buttonStyle(.compatibleGlassProminent)
                 }
-                
             }
             .toolbarTitleDisplayMode(.inlineLarge)
             .sheet(isPresented: $showingAddEncounter) {
@@ -79,7 +74,12 @@ struct EncountersListView: View {
     private func deleteEncounters(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(encounters[index])
+                do {
+                    try encounterService.delete(encounters[index].id)
+                } catch {
+                    // TODO: Show error to user
+                    print("Failed to delete encounter: \(error)")
+                }
             }
         }
     }
@@ -88,18 +88,29 @@ struct EncountersListView: View {
 // MARK: - Encounter Row View
 
 struct EncounterRowView: View {
-    let encounter: Encounter
+    let encounter: SQLEncounter
+    
+    @Dependency(\.encounterService) var encounterService
+    @State private var partners: [SQLPartner] = []
+    @State private var activities: [SQLActivityType] = []
+    @State private var protectionMethods: [SQLProtectionMethod] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Date and Partners
+            // Date and Duration
             HStack {
-                Text(encounter.date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.headline)
+                if let date = encounter.date {
+                    Text(date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.headline)
+                } else {
+                    Text("No date")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
-                if !encounter.duration.isZero {
+                if encounter.duration > 0 {
                     Text(encounter.formattedDuration)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -112,31 +123,31 @@ struct EncounterRowView: View {
                     .foregroundColor(.blue)
                     .font(.caption)
 
-                Text(encounter.partnerNames)
+                Text(partnerNames)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
             // Activities and Protection
             HStack(spacing: 12) {
-                if !encounter.activities.isEmpty {
+                if !activities.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(encounter.activities.prefix(3), id: \.self) { activity in
+                        ForEach(activities.prefix(3), id: \.self) { activity in
                             Image(systemName: activity.icon)
                                 .foregroundColor(.purple)
                                 .font(.caption)
                         }
-                        if encounter.activities.count > 3 {
-                            Text("+\(encounter.activities.count - 3)")
+                        if activities.count > 3 {
+                            Text("+\(activities.count - 3)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
                     }
                 }
 
-                if !encounter.protectionMethods.isEmpty {
+                if !protectionMethods.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(encounter.protectionMethods.prefix(2), id: \.self) { protection in
+                        ForEach(protectionMethods.prefix(2), id: \.self) { protection in
                             Image(systemName: protection.icon)
                                 .foregroundColor(.green)
                                 .font(.caption)
@@ -146,36 +157,31 @@ struct EncounterRowView: View {
             }
         }
         .padding(.vertical, 4)
+        .task {
+            await loadRelationships()
+        }
+    }
+    
+    private var partnerNames: String {
+        guard !partners.isEmpty else { return "No partners" }
+        return partners.map(\.name).joined(separator: ", ")
+    }
+    
+    private func loadRelationships() async {
+        do {
+            partners = try encounterService.fetchPartners(for: encounter.id)
+            activities = try encounterService.fetchActivities(for: encounter.id)
+            protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+        } catch {
+            // Silent fail - relationships will be empty
+        }
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Encounter.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-
-    let partner1 = Partner(name: "John Doe")
-    let partner2 = Partner(name: "Jane Smith")
-    container.mainContext.insert(partner1)
-    container.mainContext.insert(partner2)
-
-    let encounter1 = Encounter(
-        date: Date(),
-        duration: 3600,
-        activities: [.oral, .vaginal],
-        protectionMethods: [.condom],
-        partners: [partner1]
-    )
-
-    let encounter2 = Encounter(
-        date: Date().addingTimeInterval(-86400 * 2),
-        duration: 1800,
-        activities: [.kissing, .manual, .oral],
-        protectionMethods: [.prep],
-        partners: [partner1, partner2]
-    )
-
-    container.mainContext.insert(encounter1)
-    container.mainContext.insert(encounter2)
-
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
     return EncountersListView()
-        .modelContainer(container)
 }

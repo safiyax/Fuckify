@@ -5,15 +5,13 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct PartnersListView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.editMode) private var editMode
     @Environment(PartnersManager.self) var manager
     @SceneStorage("selectedTab") var selectedTab = 1
-    @State private var partnerForEncounter: Partner?
-    @State private var selectedPartner: Partner?
+    @State private var partnerForEncounter: SQLPartner?
+    @State private var selectedPartner: SQLPartner?
     @State private var showingAddPartner = false
     @State private var showingSettings = false
     
@@ -88,6 +86,7 @@ struct PartnersListView: View {
             }
             .onAppear {
                 manager.searchText = ""
+                manager.fetchPartners()
             }
             .navigationTitle("Partners")
             .toolbar {
@@ -111,7 +110,7 @@ struct PartnersListView: View {
                 SettingsView()
             }
             .sheet(item: $partnerForEncounter) { partner in
-                EncounterFormView(preselectedPartner: partner)
+                EncounterFormView(preselectedPartners: [partner])
             }
             .navigationDestination(item: $selectedPartner) { partner in
                 PartnerDetailView(partner: partner)
@@ -146,7 +145,7 @@ struct PartnersListView: View {
 // MARK: - Pinned Partner View
 
 struct PinnedPartnerView: View {
-    let partner: Partner
+    let partner: SQLPartner
     let onAddEncounter: () -> Void
     let onTap: () -> Void
     @Environment(PartnersManager.self) var manager
@@ -157,26 +156,22 @@ struct PinnedPartnerView: View {
                 Circle()
                     .fill(partner.color)
                     .frame(width: 96, height: 96)
-                    .compatibleGlassEffect()
 
                 Text(partner.initials)
                     .font(.title)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
             }
+            .compatibleGlassEffect()
             .overlay(alignment: .bottomTrailing) {
                 // Pin indicator
-                ZStack {
-                    Circle()
-                        .fill(Color.orange.opacity(0.3))
-                        .frame(width: 24, height: 24)
-                        .compatibleGlassEffect()
-                    
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.orange)
-                }
-                .offset(x: 3, y: 3)
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.orange)
+                    .padding(5)
+                    .compatibleGlassEffect()
+//                    .background(Circle().fill(Color.orange))
+                    .offset(x: 3, y: 3)
             }
 
             Text(partner.name)
@@ -196,7 +191,7 @@ struct PinnedPartnerView: View {
 // MARK: - Partner Row View
 
 struct PartnerRowView: View {
-    let partner: Partner
+    let partner: SQLPartner
 
     var body: some View {
         HStack(spacing: 12) {

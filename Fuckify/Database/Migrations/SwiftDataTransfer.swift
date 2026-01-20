@@ -66,7 +66,7 @@ struct SwiftDataTransfer {
             
             try SQLEncounter.insert { encounter }.execute(db)
             
-            // Create junction table entries for relationships
+            // Create junction table entries for partners
             if let partners = swiftEncounter.partners {
                 for partner in partners {
                     if let partnerUUID = partnerIdMapping[partner.persistentModelID] {
@@ -79,6 +79,30 @@ struct SwiftDataTransfer {
                         try SQLEncounterPartner.insert { junction }.execute(db)
                     }
                 }
+            }
+            
+            // Create junction table entries for activities
+            for activity in swiftEncounter.activities {
+                let sqlActivity = convertActivityType(activity)
+                let activityJunction = EncounterActivity(
+                    id: UUID(),
+                    encounterId: newUUID,
+                    activityType: sqlActivity
+                )
+                
+                try EncounterActivity.insert { activityJunction }.execute(db)
+            }
+            
+            // Create junction table entries for protection methods
+            for method in swiftEncounter.protectionMethods {
+                let sqlMethod = convertProtectionMethod(method)
+                let methodJunction = EncounterProtectionMethod(
+                    id: UUID(),
+                    encounterId: newUUID,
+                    protectionMethod: sqlMethod
+                )
+                
+                try EncounterProtectionMethod.insert { methodJunction }.execute(db)
             }
         }
         
@@ -98,6 +122,58 @@ struct SwiftDataTransfer {
             )
         """)
         .execute(db)
+    }
+    
+    /// Migration to add activities and protection methods that were missed in initial migration
+    static func migrateActivitiesAndProtection(_ db: Database, modelContext: ModelContext) throws {
+        // Fetch all SwiftData encounters
+        let encounterDescriptor = FetchDescriptor<Encounter_SwiftData>(
+            sortBy: [SortDescriptor(\.dateAdded)]
+        )
+        let swiftDataEncounters = try modelContext.fetch(encounterDescriptor)
+        
+        // Fetch all existing SQLite encounters to create a mapping
+        let sqlEncounters = try SQLEncounter.order(by: \.dateAdded).fetchAll(db)
+        
+        // Create a mapping based on dateAdded timestamp which should be unique enough
+        // Group both by their date components to match them
+        var encounterMapping: [String: UUID] = [:]
+        for sqlEncounter in sqlEncounters {
+            let key = sqlEncounter.dateAdded.timeIntervalSince1970.description
+            encounterMapping[key] = sqlEncounter.id
+        }
+        
+        // For each SwiftData encounter, add its activities and protection methods
+        for swiftEncounter in swiftDataEncounters {
+            let key = swiftEncounter.dateAdded.timeIntervalSince1970.description
+            guard let sqlEncounterId = encounterMapping[key] else {
+                continue // Skip if we can't find matching SQL encounter
+            }
+            
+            // Add activities
+            for activity in swiftEncounter.activities {
+                let sqlActivity = convertActivityType(activity)
+                let activityJunction = EncounterActivity(
+                    id: UUID(),
+                    encounterId: sqlEncounterId,
+                    activityType: sqlActivity
+                )
+                
+                try EncounterActivity.insert { activityJunction }.execute(db)
+            }
+            
+            // Add protection methods
+            for method in swiftEncounter.protectionMethods {
+                let sqlMethod = convertProtectionMethod(method)
+                let methodJunction = EncounterProtectionMethod(
+                    id: UUID(),
+                    encounterId: sqlEncounterId,
+                    protectionMethod: sqlMethod
+                )
+                
+                try EncounterProtectionMethod.insert { methodJunction }.execute(db)
+            }
+        }
     }
     
     /// Converts SwiftData RelationshipType to SQLiteData RelationshipType

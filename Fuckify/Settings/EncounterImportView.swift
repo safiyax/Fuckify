@@ -5,13 +5,15 @@
 //
 
 import SwiftUI
-import SwiftData
 import UniformTypeIdentifiers
+import Dependencies
 
 struct EncounterImportView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.partnerService) private var partnerService
+    @Dependency(\.encounterService) private var encounterService
     @Environment(\.dismiss) private var dismiss
-    @Query private var allPartners: [Partner]
+    
+    @State private var allPartners: [SQLPartner] = []
 
     @State private var showingFilePicker = false
     @State private var importedEncounters: [EncounterImportData] = []
@@ -157,6 +159,11 @@ struct EncounterImportView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred")
             }
+            .task {
+                if let partners = try? partnerService.fetchAll() {
+                    allPartners = partners
+                }
+            }
         }
     }
 
@@ -239,17 +246,17 @@ struct EncounterImportView: View {
                 }
 
                 // Parse activities (optional, comma-separated)
-                var activities: [ActivityType] = []
+                var activities: [SQLActivityType] = []
                 if components.count > 2, !components[2].isEmpty {
                     let activityNames = components[2].components(separatedBy: ",")
-                    activities = activityNames.compactMap { ActivityType(rawValue: $0.trimmingCharacters(in: .whitespaces)) }
+                    activities = activityNames.compactMap { SQLActivityType(rawValue: $0.trimmingCharacters(in: .whitespaces)) }
                 }
 
                 // Parse protection methods (optional, comma-separated)
-                var protectionMethods: [ProtectionMethod] = []
+                var protectionMethods: [SQLProtectionMethod] = []
                 if components.count > 3, !components[3].isEmpty {
                     let methodNames = components[3].components(separatedBy: ",")
-                    protectionMethods = methodNames.compactMap { ProtectionMethod(rawValue: $0.trimmingCharacters(in: .whitespaces)) }
+                    protectionMethods = methodNames.compactMap { SQLProtectionMethod(rawValue: $0.trimmingCharacters(in: .whitespaces)) }
                 }
 
                 // Parse location (optional)
@@ -315,37 +322,56 @@ struct EncounterImportView: View {
 
         for encounterData in importedEncounters {
             // Match partner names to existing partners, or create new ones
-            var matchedPartners: [Partner] = []
+            var matchedPartnerIDs: [UUID] = []
             for partnerName in encounterData.partnerNames {
                 if let partner = allPartners.first(where: { $0.name == partnerName }) {
                     // Partner exists, use it
-                    matchedPartners.append(partner)
+                    matchedPartnerIDs.append(partner.id)
                 } else {
                     // Partner doesn't exist, create a new one
-                    let newPartner = Partner(name: partnerName)
-                    modelContext.insert(newPartner)
-                    matchedPartners.append(newPartner)
+                    let newPartnerDraft = SQLPartner.Draft(
+                        name: partnerName,
+                        notes: "",
+                        phoneNumber: "",
+                        isOnPrep: false,
+                        relationshipType: .casual,
+                        dateMet: nil,
+                        avatarColor: SQLPartner.randomColorName(),
+                        dateAdded: Date(),
+                        lastEncounterDate: nil,
+                        isPinned: false
+                    )
+                    
+                    do {
+                        let newPartner = try partnerService.create(newPartnerDraft)
+                        matchedPartnerIDs.append(newPartner.id)
+                        // Add to local array for future matches in this import
+                        allPartners.append(newPartner)
+                    } catch {
+                        print("Failed to create partner \(partnerName): \(error)")
+                    }
                 }
             }
 
-            let encounter = Encounter(
+            let encounterDraft = SQLEncounter.Draft(
                 date: encounterData.date,
                 duration: encounterData.duration,
-                activities: encounterData.activities,
-                protectionMethods: encounterData.protectionMethods,
                 location: encounterData.location,
                 notes: encounterData.notes,
                 rating: encounterData.rating,
                 reachedOrgasm: encounterData.reachedOrgasm,
-                partners: matchedPartners
+                dateAdded: Date()
             )
-            modelContext.insert(encounter)
-
-            // Update lastEncounterDate for matched partners
-            for partner in matchedPartners {
-                if partner.lastEncounterDate == nil || partner.lastEncounterDate! < encounterData.date {
-                    partner.lastEncounterDate = encounterData.date
-                }
+            
+            do {
+                try encounterService.create(
+                    encounterDraft,
+                    partnerIDs: matchedPartnerIDs,
+                    activities: encounterData.activities,
+                    protectionMethods: encounterData.protectionMethods
+                )
+            } catch {
+                print("Failed to import encounter: \(error)")
             }
         }
 
@@ -359,8 +385,8 @@ struct EncounterImportView: View {
 struct EncounterImportData {
     let date: Date
     let duration: TimeInterval
-    let activities: [ActivityType]
-    let protectionMethods: [ProtectionMethod]
+    let activities: [SQLActivityType]
+    let protectionMethods: [SQLProtectionMethod]
     let location: String
     let notes: String
     let rating: Int
@@ -370,5 +396,4 @@ struct EncounterImportData {
 
 #Preview {
     EncounterImportView()
-        .modelContainer(for: [Encounter.self, Partner.self], inMemory: true)
 }

@@ -5,13 +5,15 @@
 //
 
 import SwiftUI
-import SwiftData
+import Dependencies
 
 struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
-    @Query private var allPartners: [Partner]
-    @Query private var allEncounters: [Encounter]
-
+    @Dependency(\.partnerService) private var partnerService
+    @Dependency(\.encounterService) private var encounterService
+    
+    @State private var allPartners: [SQLPartner] = []
+    @State private var allEncounters: [SQLEncounter] = []
     @State private var showingPartnerImport = false
     @State private var showingEncounterImport = false
     @State private var partnerExportURL: URL?
@@ -247,6 +249,9 @@ struct ImportView: View {
             .sheet(isPresented: $showingEncounterImport) {
                 EncounterImportView()
             }
+            .task {
+                await loadData()
+            }
             .onAppear {
                 // Pre-generate export files so ShareLink has them ready
                 if !allPartners.isEmpty && partnerExportURL == nil {
@@ -256,6 +261,15 @@ struct ImportView: View {
                     exportEncounters()
                 }
             }
+        }
+    }
+    
+    private func loadData() async {
+        if let partners = try? partnerService.fetchAll() {
+            allPartners = partners
+        }
+        if let encounters = try? encounterService.fetchAll() {
+            allEncounters = encounters
         }
     }
 
@@ -300,17 +314,23 @@ struct ImportView: View {
         dateFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
 
         for encounter in allEncounters {
-            let date = dateFormatter.string(from: encounter.date)
+            let date = encounter.date != nil ? dateFormatter.string(from: encounter.date!) : ""
             let duration = String(Int(encounter.duration / 60)) // Convert to minutes
-            let activities = escapeCSVField(encounter.activities.map { $0.rawValue }.joined(separator: ", "))
-            let protectionMethods = escapeCSVField(encounter.protectionMethods.map { $0.rawValue }.joined(separator: ", "))
+            
+            // Load activities and protection methods for this encounter
+            let activities = (try? encounterService.fetchActivities(for: encounter.id)) ?? []
+            let protectionMethods = (try? encounterService.fetchProtectionMethods(for: encounter.id)) ?? []
+            let partners = (try? encounterService.fetchPartners(for: encounter.id)) ?? []
+            
+            let activitiesStr = escapeCSVField(activities.map { $0.rawValue }.joined(separator: ", "))
+            let protectionMethodsStr = escapeCSVField(protectionMethods.map { $0.rawValue }.joined(separator: ", "))
             let location = escapeCSVField(encounter.location)
             let notes = escapeCSVField(encounter.notes)
             let rating = String(encounter.rating)
             let reachedOrgasm = encounter.reachedOrgasm ? "true" : "false"
-            let partnerNames = escapeCSVField(encounter.partners?.map { $0.name }.joined(separator: ", ") ?? "")
+            let partnerNames = escapeCSVField(partners.map { $0.name }.joined(separator: ", "))
 
-            csvString += "\(date),\(duration),\(activities),\(protectionMethods),\(location),\(notes),\(rating),\(reachedOrgasm),\(partnerNames)\n"
+            csvString += "\(date),\(duration),\(activitiesStr),\(protectionMethodsStr),\(location),\(notes),\(rating),\(reachedOrgasm),\(partnerNames)\n"
         }
 
         let tempDir = FileManager.default.temporaryDirectory

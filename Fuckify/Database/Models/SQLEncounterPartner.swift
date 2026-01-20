@@ -10,7 +10,7 @@ import SQLiteData
 
 /// Junction table representing Encounter-Partner many-to-many relationship
 @Table("encounterPartner")
-struct SQLEncounterPartner {
+struct SQLEncounterPartner: Identifiable {
     let id: UUID
     var encounterId: UUID
     var partnerId: UUID

@@ -5,13 +5,15 @@
 //
 
 import SwiftUI
-import SwiftData
+import Dependencies
 
 struct DeleteDataView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.partnerService) private var partnerService
+    @Dependency(\.encounterService) private var encounterService
     @Environment(\.dismiss) private var dismiss
-    @Query private var allPartners: [Partner]
-    @Query private var allEncounters: [Encounter]
+    
+    @State private var allPartners: [SQLPartner] = []
+    @State private var allEncounters: [SQLEncounter] = []
 
     @State private var showingDeletePartnersAlert = false
     @State private var showingDeleteEncountersAlert = false
@@ -119,19 +121,33 @@ struct DeleteDataView: View {
             } message: {
                 Text("This will permanently delete ALL your data including partners, encounters, and profile. This action cannot be undone.")
             }
+            .task {
+                await loadData()
+            }
+        }
+    }
+    
+    private func loadData() async {
+        if let partners = try? partnerService.fetchAll() {
+            allPartners = partners
+        }
+        if let encounters = try? encounterService.fetchAll() {
+            allEncounters = encounters
         }
     }
 
     private func deleteAllPartners() {
         for partner in allPartners {
-            modelContext.delete(partner)
+            try? partnerService.delete(partner.id)
         }
+        allPartners = []
     }
 
     private func deleteAllEncounters() {
         for encounter in allEncounters {
-            modelContext.delete(encounter)
+            try? encounterService.delete(encounter.id)
         }
+        allEncounters = []
     }
 
     private func deleteProfileData() {
@@ -147,5 +163,4 @@ struct DeleteDataView: View {
 
 #Preview {
     DeleteDataView()
-        .modelContainer(for: [Partner.self, Encounter.self], inMemory: true)
 }
