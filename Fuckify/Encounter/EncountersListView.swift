@@ -41,12 +41,21 @@ struct EncountersListView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
-                    Button(action: { showProfile = true }) {
-                        ZStack {
-                            Text(profile.initials)
+                    if #available(iOS 26.0, *) {
+                        Button(action: { showProfile = true }) {
+                            ZStack {
+                                Text(profile.initials)
+                            }
                         }
+                        .buttonStyle(.glassProminent)
+                    } else {
+                        Button(action: { showProfile = true }) {
+                            ZStack {
+                                Text(profile.initials)
+                            }
+                        }
+                        .buttonStyle(.compatibleGlassProminent)
                     }
-                    .buttonStyle(.compatibleGlassProminent)
                 }
             }
             .toolbarTitleDisplayMode(.inlineLarge)
