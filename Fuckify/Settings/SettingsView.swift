@@ -116,7 +116,7 @@ struct ActivitiesSettingsView: View {
             }
 
             Section {
-                ForEach(ActivityType.allCases, id: \.self) { activity in
+                ForEach(SQLActivityType.allCases, id: \.self) { activity in
                     Toggle(isOn: Binding(
                         get: { settings.isActivityEnabled(activity) },
                         set: { _ in settings.toggleActivity(activity) }
@@ -132,7 +132,7 @@ struct ActivitiesSettingsView: View {
 
             Section {
                 Button("Enable All") {
-                    settings.enabledActivities = Set(ActivityType.allCases)
+                    settings.enabledActivities = Set(SQLActivityType.allCases)
                 }
             }
         }
@@ -155,7 +155,7 @@ struct ProtectionMethodsSettingsView: View {
             }
 
             Section {
-                ForEach(ProtectionMethod.allCases, id: \.self) { method in
+                ForEach(SQLProtectionMethod.allCases, id: \.self) { method in
                     Toggle(isOn: Binding(
                         get: { settings.isProtectionMethodEnabled(method) },
                         set: { _ in settings.toggleProtectionMethod(method) }
@@ -171,7 +171,7 @@ struct ProtectionMethodsSettingsView: View {
 
             Section {
                 Button("Enable All") {
-                    settings.enabledProtectionMethods = Set(ProtectionMethod.allCases)
+                    settings.enabledProtectionMethods = Set(SQLProtectionMethod.allCases)
                 }
             }
         }

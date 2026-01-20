@@ -10,7 +10,7 @@ import SwiftUI
 import SQLiteData
 
 @Table("partner")
-struct SQLPartner {
+struct SQLPartner: Identifiable, Hashable {
     let id: UUID
     
     var name = ""

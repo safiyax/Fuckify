@@ -12,14 +12,14 @@ class UserSettings {
     static let shared = UserSettings()
 
     // Activity preferences
-    var enabledActivities: Set<ActivityType> {
+    var enabledActivities: Set<SQLActivityType> {
         get {
             if let data = UserDefaults.standard.data(forKey: "enabledActivities"),
                let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
-                return Set(decoded.compactMap { ActivityType(rawValue: $0) })
+                return Set(decoded.compactMap { SQLActivityType(rawValue: $0) })
             }
             // Default: all activities enabled
-            return Set(ActivityType.allCases)
+            return Set(SQLActivityType.allCases)
         }
         set {
             let encoded = try? JSONEncoder().encode(Set(newValue.map { $0.rawValue }))
@@ -28,14 +28,14 @@ class UserSettings {
     }
 
     // Protection method preferences
-    var enabledProtectionMethods: Set<ProtectionMethod> {
+    var enabledProtectionMethods: Set<SQLProtectionMethod> {
         get {
             if let data = UserDefaults.standard.data(forKey: "enabledProtectionMethods"),
                let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
-                return Set(decoded.compactMap { ProtectionMethod(rawValue: $0) })
+                return Set(decoded.compactMap { SQLProtectionMethod(rawValue: $0) })
             }
             // Default: all protection methods enabled
-            return Set(ProtectionMethod.allCases)
+            return Set(SQLProtectionMethod.allCases)
         }
         set {
             let encoded = try? JSONEncoder().encode(Set(newValue.map { $0.rawValue }))
@@ -46,11 +46,11 @@ class UserSettings {
     private init() {}
 
     // Helper methods
-    func isActivityEnabled(_ activity: ActivityType) -> Bool {
+    func isActivityEnabled(_ activity: SQLActivityType) -> Bool {
         enabledActivities.contains(activity)
     }
 
-    func toggleActivity(_ activity: ActivityType) {
+    func toggleActivity(_ activity: SQLActivityType) {
         if enabledActivities.contains(activity) {
             enabledActivities.remove(activity)
         } else {
@@ -58,11 +58,11 @@ class UserSettings {
         }
     }
 
-    func isProtectionMethodEnabled(_ method: ProtectionMethod) -> Bool {
+    func isProtectionMethodEnabled(_ method: SQLProtectionMethod) -> Bool {
         enabledProtectionMethods.contains(method)
     }
 
-    func toggleProtectionMethod(_ method: ProtectionMethod) {
+    func toggleProtectionMethod(_ method: SQLProtectionMethod) {
         if enabledProtectionMethods.contains(method) {
             enabledProtectionMethods.remove(method)
         } else {

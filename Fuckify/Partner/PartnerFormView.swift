@@ -2,24 +2,27 @@
 //  PartnerFormView.swift
 //  Fuckify
 //
+//  Partner form using SQLite services
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct PartnerFormView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.partnerService) var partnerService
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String = ""
     @State private var notes: String = ""
     @State private var phoneNumber: String = ""
     @State private var isOnPrep: Bool = false
-    @State private var relationshipType: RelationshipType = .casual
+    @State private var relationshipType: SQLRelationshipType = .casual
     @State private var dateMet: Date?
     @State private var showDateMetPicker: Bool = false
     @State private var avatarColor: String = ""
     @State private var isPinned: Bool = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -58,7 +61,7 @@ struct PartnerFormView: View {
 
                 Section("Relationship") {
                     Picker("Relationship Type", selection: $relationshipType) {
-                        ForEach([RelationshipType.casual, .regular, .committed, .oneTime, .other], id: \.self) { type in
+                        ForEach([SQLRelationshipType.casual, .regular, .committed, .oneTime, .other], id: \.self) { type in
                             Text(type.displayName).tag(type)
                         }
                     }
@@ -90,6 +93,14 @@ struct PartnerFormView: View {
                     TextEditor(text: $notes)
                         .frame(minHeight: 100)
                 }
+                
+                if let error = errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+                }
             }
             .navigationTitle("Add Partner")
             .navigationBarTitleDisplayMode(.inline)
@@ -109,7 +120,7 @@ struct PartnerFormView: View {
             }
             .onAppear {
                 // Set a default color for new partners
-                avatarColor = Partner.randomColorName()
+                avatarColor = SQLPartner.randomColorName()
             }
         }
     }
@@ -130,24 +141,36 @@ struct PartnerFormView: View {
     }
 
     private func savePartner() {
-        // Create new partner
-        let newPartner = Partner(
-            name: name,
+        errorMessage = nil
+        
+        // Create partner draft
+        let draft = SQLPartner.Draft(
+            id: UUID(),
+            name: name.trimmingCharacters(in: .whitespaces),
             notes: notes,
             phoneNumber: phoneNumber,
             isOnPrep: isOnPrep,
             relationshipType: relationshipType,
             dateMet: showDateMetPicker ? dateMet : nil,
-            avatarColor: avatarColor.isEmpty ? nil : avatarColor
+            avatarColor: avatarColor.isEmpty ? SQLPartner.randomColorName() : avatarColor,
+            dateAdded: Date(),
+            lastEncounterDate: nil,
+            isPinned: isPinned
         )
-        newPartner.isPinned = isPinned
-        modelContext.insert(newPartner)
-
-        dismiss()
+        
+        do {
+            try partnerService.create(draft)
+            dismiss()
+        } catch {
+            errorMessage = "Failed to save partner. Please try again."
+        }
     }
 }
 
 #Preview("Add Partner") {
-    PartnerFormView()
-        .modelContainer(for: Partner.self, inMemory: true)
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    return PartnerFormView()
 }

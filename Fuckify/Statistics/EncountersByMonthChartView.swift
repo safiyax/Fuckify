@@ -6,14 +6,18 @@
 //
 
 import SwiftUI
-import SwiftData
 import Charts
+import SQLiteData
+import Dependencies
 
 // MARK: - Encounters by Month Chart
 
 struct EncountersByMonthChartView: View {
-    @Query private var encounters: [Encounter]
-    @Query private var partners: [Partner]
+    @FetchAll(SQLEncounter.all)
+    private var encounters: [SQLEncounter]
+    
+    @FetchAll(SQLPartner.all)
+    private var partners: [SQLPartner]
 
     var selectedYear: Int? = nil // nil means all years
 
@@ -27,21 +31,17 @@ struct EncountersByMonthChartView: View {
         let count: Int
     }
 
+    @Dependency(\.encounterService) private var encounterService
+    @State private var encounterPartners: [UUID: [SQLPartner]] = [:]
+    
     // Get top 4 partners by encounter count
-    private var topPartners: [Partner] {
-        let partnerCounts = Dictionary(grouping: encounters) { encounter -> String in
-            guard let partners = encounter.partners, let firstPartner = partners.first else {
-                return "Unknown"
-            }
-            return firstPartner.persistentModelID.hashValue.description
-        }
-
+    private var topPartners: [SQLPartner] {
         let sortedPartners = partners.sorted { p1, p2 in
-            let count1 = encounters.filter { encounter in
-                encounter.partners?.contains(where: { $0.persistentModelID == p1.persistentModelID }) ?? false
+            let count1 = encounterPartners.values.filter { partners in
+                partners.contains(where: { $0.id == p1.id })
             }.count
-            let count2 = encounters.filter { encounter in
-                encounter.partners?.contains(where: { $0.persistentModelID == p2.persistentModelID }) ?? false
+            let count2 = encounterPartners.values.filter { partners in
+                partners.contains(where: { $0.id == p2.id })
             }.count
             return count1 > count2
         }
@@ -55,14 +55,17 @@ struct EncountersByMonthChartView: View {
         let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
         let top4 = topPartners
-        let top4IDs = Set(top4.map { $0.persistentModelID })
+        let top4IDs = Set(top4.map { $0.id })
 
         // Filter encounters by selected year
-        let filteredEncounters: [Encounter]
+        let filteredEncounters: [SQLEncounter]
         if let year = selectedYear {
-            filteredEncounters = encounters.filter { calendar.component(.year, from: $0.date) == year }
+            filteredEncounters = encounters.compactMap { encounter in
+                guard let date = encounter.date else { return nil }
+                return calendar.component(.year, from: date) == year ? encounter : nil
+            }
         } else {
-            filteredEncounters = encounters
+            filteredEncounters = encounters.filter { $0.date != nil }
         }
 
         // Dictionary to store counts: [monthKey: [partnerName: count]]
@@ -72,8 +75,10 @@ struct EncountersByMonthChartView: View {
 
         // Count encounters for each month and partner
         for encounter in filteredEncounters {
-            let year = calendar.component(.year, from: encounter.date)
-            let month = calendar.component(.month, from: encounter.date)
+            guard let date = encounter.date else { continue }
+            
+            let year = calendar.component(.year, from: date)
+            let month = calendar.component(.month, from: date)
 
             // Create month key based on whether we're showing all years or just one
             let monthKey: String
@@ -89,10 +94,10 @@ struct EncountersByMonthChartView: View {
             }
 
             // Determine which partner category this encounter belongs to
-            if let encounterPartners = encounter.partners, !encounterPartners.isEmpty {
-                let isTopPartner = encounterPartners.contains { top4IDs.contains($0.persistentModelID) }
+            if let partners = encounterPartners[encounter.id], !partners.isEmpty {
+                let isTopPartner = partners.contains { top4IDs.contains($0.id) }
 
-                if isTopPartner, let partner = encounterPartners.first(where: { top4IDs.contains($0.persistentModelID) }) {
+                if isTopPartner, let partner = partners.first(where: { top4IDs.contains($0.id) }) {
                     monthPartnerCounts[monthKey]?[partner.name, default: 0] += 1
                 } else {
                     monthPartnerCounts[monthKey]?["Others", default: 0] += 1
@@ -105,7 +110,7 @@ struct EncountersByMonthChartView: View {
         // Create array of all months and partners with their counts
         var result: [PartnerMonthData] = []
 
-        if let year = selectedYear {
+        if selectedYear != nil {
             // Show 12 months for the selected year
             for monthNum in 1...12 {
                 let monthKey = String(format: "%02d", monthNum)
@@ -224,6 +229,21 @@ struct EncountersByMonthChartView: View {
             .padding(.horizontal)
         }
         .padding(.vertical)
+        .task {
+            await loadEncounterRelationships()
+        }
+    }
+    
+    private func loadEncounterRelationships() async {
+        var relationships: [UUID: [SQLPartner]] = [:]
+        
+        for encounter in encounters {
+            if let partners = try? encounterService.fetchPartners(for: encounter.id) {
+                relationships[encounter.id] = partners
+            }
+        }
+        
+        encounterPartners = relationships
     }
 }
 

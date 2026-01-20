@@ -31,7 +31,7 @@ func appDatabase() throws -> any DatabaseWriter {
     var migrator = DatabaseMigrator()
     
 #if DEBUG
-    migrator.eraseDatabaseOnSchemaChange = false
+    migrator.eraseDatabaseOnSchemaChange = true
 #endif
     // Register migrations
     migrator.registerMigration("Create tables") { db in
@@ -45,6 +45,15 @@ func appDatabase() throws -> any DatabaseWriter {
         let modelContext = ModelContext(swiftDataContainer)
         
         try SwiftDataTransfer.migrate(db, modelContext: modelContext)
+    }
+    
+    migrator.registerMigration("Transfer activities and protection methods") { db in
+        let swiftDataContainer = try ModelContainer(
+            for: Partner.self, Encounter.self
+        )
+        let modelContext = ModelContext(swiftDataContainer)
+        
+        try SwiftDataTransfer.migrateActivitiesAndProtection(db, modelContext: modelContext)
     }
     
     try migrator.migrate(database)

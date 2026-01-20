@@ -2,16 +2,17 @@
 //  EncountersByDayChartView.swift
 //  Fuckify
 //
-//  Created by Zeeshan Hooda on 2025-12-22.
+//  Day of week chart using SQLite
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
 import Charts
 
 
 struct EncountersByDayChartView: View {
-    @Query private var encounters: [Encounter]
+    @FetchAll
+    private var encounters: [SQLEncounter]
 
     var selectedYear: Int? = nil // nil means all years
 
@@ -29,9 +30,12 @@ struct EncountersByDayChartView: View {
         let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
         // Filter encounters by selected year
-        let filteredEncounters: [Encounter]
+        let filteredEncounters: [SQLEncounter]
         if let year = selectedYear {
-            filteredEncounters = encounters.filter { calendar.component(.year, from: $0.date) == year }
+            filteredEncounters = encounters.filter { encounter in
+                guard let date = encounter.date else { return false }
+                return calendar.component(.year, from: date) == year
+            }
         } else {
             filteredEncounters = encounters
         }
@@ -43,16 +47,19 @@ struct EncountersByDayChartView: View {
         }
 
         // Find the date range
-        let sortedDates = filteredEncounters.map { $0.date }.sorted()
+        let sortedDates = filteredEncounters.compactMap { $0.date }.sorted()
         guard let firstDate = sortedDates.first,
               let lastDate = sortedDates.last else {
-            return []
+            return (1...7).map { dayNum in
+                DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, average: 0)
+            }
         }
 
         // Count encounters per day of week
         var dayCounts: [Int: Int] = [:]
         for encounter in filteredEncounters {
-            let weekday = calendar.component(.weekday, from: encounter.date)
+            guard let date = encounter.date else { continue }
+            let weekday = calendar.component(.weekday, from: date)
             dayCounts[weekday, default: 0] += 1
         }
 

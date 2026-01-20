@@ -5,20 +5,25 @@
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct PartnerDetailView: View {
-    @Environment(\.modelContext) private var modelContext
+    let partner: SQLPartner
     @Environment(\.editMode) private var editMode
-    @Bindable var partner: Partner
     @State private var showingAddEncounter = false
+    @State private var encounters: [SQLEncounter] = []
+    @State private var isLoadingEncounters = true
+    
+    @Dependency(\.partnerService) private var partnerService
+    @Dependency(\.encounterService) private var encounterService
 
     // Editable fields
     @State private var editName: String = ""
     @State private var editNotes: String = ""
     @State private var editPhoneNumber: String = ""
     @State private var editIsOnPrep: Bool = false
-    @State private var editRelationshipType: RelationshipType = .casual
+    @State private var editRelationshipType: SQLRelationshipType = .casual
     @State private var editDateMet: Date?
     @State private var editShowDateMetPicker: Bool = false
     @State private var editAvatarColor: String = ""
@@ -115,7 +120,7 @@ struct PartnerDetailView: View {
             Section("Relationship") {
                 if isEditing {
                     Picker("Relationship Type", selection: $editRelationshipType) {
-                        ForEach([RelationshipType.casual, .regular, .committed, .oneTime, .other], id: \.self) { type in
+                        ForEach([SQLRelationshipType.casual, .regular, .committed, .oneTime, .other], id: \.self) { type in
                             Text(type.displayName).tag(type)
                         }
                     }
@@ -204,22 +209,13 @@ struct PartnerDetailView: View {
             // Encounters (only shown when not editing)
             if !isEditing {
                 Section {
-                    if !sortedEncounters.isEmpty {
-                        ForEach(sortedEncounters) { encounter in
-                            NavigationLink {
-                                EncounterDetailView(encounter: encounter)
-                            } label: {
-                                EncounterRowView(encounter: encounter)
-                            }
-                        }
-                        .onDelete(perform: deleteEncounters)
-                    } else {
-                        HStack {
-                            Image(systemName: "heart.slash")
-                                .foregroundColor(.secondary)
-                            Text("No encounters yet")
-                                .foregroundColor(.secondary)
-                        }
+                    // TODO: Update this section to use SQLEncounter
+                    HStack {
+                        Image(systemName: "heart.slash")
+                            .foregroundColor(.secondary)
+                        Text("Encounters list temporarily disabled during migration")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
                     }
                 } header: {
                     HStack {
@@ -250,10 +246,11 @@ struct PartnerDetailView: View {
             }
         }
         .sheet(isPresented: $showingAddEncounter) {
-            EncounterFormView(preselectedPartner: partner)
+            EncounterFormView(preselectedPartners: [partner])
         }
-        .onAppear {
+        .task {
             loadEditableFields()
+            await loadEncounters()
         }
         .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if oldValue?.isEditing == true && newValue?.isEditing == false {
@@ -268,9 +265,11 @@ struct PartnerDetailView: View {
 
     // MARK: - Computed Properties
 
-    private var sortedEncounters: [Encounter] {
-        guard let encounters = partner.encounters else { return [] }
-        return encounters.sorted(by: { $0.date > $1.date })
+    private var sortedEncounters: [SQLEncounter] {
+        encounters.sorted(by: { 
+            guard let date1 = $0.date, let date2 = $1.date else { return false }
+            return date1 > date2 
+        })
     }
 
     // MARK: - Functions
@@ -288,14 +287,21 @@ struct PartnerDetailView: View {
     }
 
     private func saveChanges() {
-        partner.name = editName
-        partner.notes = editNotes
-        partner.phoneNumber = editPhoneNumber
-        partner.isOnPrep = editIsOnPrep
-        partner.relationshipType = editRelationshipType
-        partner.dateMet = editShowDateMetPicker ? editDateMet : nil
-        partner.avatarColor = editAvatarColor
-        partner.isPinned = editIsPinned
+        var updatedPartner = partner
+        updatedPartner.name = editName
+        updatedPartner.notes = editNotes
+        updatedPartner.phoneNumber = editPhoneNumber
+        updatedPartner.isOnPrep = editIsOnPrep
+        updatedPartner.relationshipType = editRelationshipType
+        updatedPartner.dateMet = editShowDateMetPicker ? editDateMet : nil
+        updatedPartner.avatarColor = editAvatarColor
+        updatedPartner.isPinned = editIsPinned
+        
+        do {
+            try partnerService.update(updatedPartner)
+        } catch {
+            print("Failed to update partner: \(error)")
+        }
     }
 
     private func colorFromName(_ name: String) -> Color {
@@ -313,10 +319,34 @@ struct PartnerDetailView: View {
         }
     }
 
+    private func loadEncounters() async {
+        isLoadingEncounters = true
+        
+        // Load all encounters and filter for this partner
+        if let allEncounters = try? encounterService.fetchAll() {
+            // Filter encounters that include this partner
+            var partnerEncounters: [SQLEncounter] = []
+            for encounter in allEncounters {
+                if let partners = try? encounterService.fetchPartners(for: encounter.id) {
+                    if partners.contains(where: { $0.id == partner.id }) {
+                        partnerEncounters.append(encounter)
+                    }
+                }
+            }
+            encounters = partnerEncounters
+        }
+        
+        isLoadingEncounters = false
+    }
+    
     private func deleteEncounters(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(sortedEncounters[index])
+        for index in offsets {
+            let encounter = sortedEncounters[index]
+            do {
+                try encounterService.delete(encounter.id)
+                encounters.removeAll { $0.id == encounter.id }
+            } catch {
+                print("Failed to delete encounter: \(error)")
             }
         }
     }
@@ -335,44 +365,25 @@ extension String {
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: Partner.self, Encounter.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-
-    let partner = Partner(
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    let partner = SQLPartner(
+        id: UUID(),
         name: "John Doe",
         notes: "Met at the gym, really nice person",
         phoneNumber: "555-0123",
         isOnPrep: true,
         relationshipType: .regular,
-        dateMet: Date().addingTimeInterval(-86400 * 30)
-    )
-    partner.lastEncounterDate = Date().addingTimeInterval(-86400 * 7)
-    container.mainContext.insert(partner)
-
-    // Add some sample encounters
-    let encounter1 = Encounter(
-        date: Date().addingTimeInterval(-86400 * 7),
-        duration: 3600,
-        activities: [.oral, .vaginal],
-        protectionMethods: [.condom],
-        partners: [partner]
+        dateMet: Date().addingTimeInterval(-86400 * 30),
+        avatarColor: "blue",
+        dateAdded: Date(),
+        lastEncounterDate: Date().addingTimeInterval(-86400 * 7),
+        isPinned: false
     )
 
-    let encounter2 = Encounter(
-        date: Date().addingTimeInterval(-86400 * 14),
-        duration: 2400,
-        activities: [.kissing, .manual],
-        protectionMethods: [.prep],
-        partners: [partner]
-    )
-
-    container.mainContext.insert(encounter1)
-    container.mainContext.insert(encounter2)
-
-    return NavigationStack {
+    NavigationStack {
         PartnerDetailView(partner: partner)
     }
-    .modelContainer(container)
 }

@@ -2,15 +2,16 @@
 //  ChartsView.swift
 //  Fuckify
 //
-//  Created by Zeeshan Hooda on 2025-12-22.
+//  Charts view using SQLite
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
 import Charts
 
 struct ChartsView: View {
-    @Query private var encounters: [Encounter]
+    @FetchAll
+    private var encounters: [SQLEncounter]
 
     // Data structure for chart
     struct MonthData: Identifiable {
@@ -30,9 +31,10 @@ struct ChartsView: View {
 
         // Count encounters for each month of the current year
         for encounter in encounters {
-            let year = calendar.component(.year, from: encounter.date)
+            guard let date = encounter.date else { continue }
+            let year = calendar.component(.year, from: date)
             if year == currentYear {
-                let month = calendar.component(.month, from: encounter.date)
+                let month = calendar.component(.month, from: date)
                 monthCounts[month, default: 0] += 1
             }
         }
@@ -80,6 +82,9 @@ struct ChartsView: View {
 }
 
 #Preview {
-    ChartsView()
-        .modelContainer(for: Encounter.self, inMemory: true)
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    return ChartsView()
 }

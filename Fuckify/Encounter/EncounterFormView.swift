@@ -2,30 +2,36 @@
 //  EncounterFormView.swift
 //  Fuckify
 //
+//  Encounter form using SQLite services
 //
 
 import SwiftUI
-import SwiftData
+import SQLiteData
+import Dependencies
 
 struct EncounterFormView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.encounterService) var encounterService
+    @Dependency(\.partnerService) var partnerService
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Partner.name) private var allPartners: [Partner]
 
-    var encounter: Encounter?
-    var preselectedPartner: Partner?
+    @FetchAll(SQLPartner.order(by: \.name))
+    private var allPartners: [SQLPartner]
+
+    var encounter: SQLEncounter?
+    var preselectedPartners: [SQLPartner] = []
 
     @State private var date: Date = Date()
     @State private var durationHours: Int = 0
     @State private var durationMinutes: Int = 30
-    @State private var selectedPartners: Set<Partner> = []
-    @State private var selectedActivities: Set<ActivityType> = []
-    @State private var selectedProtection: Set<ProtectionMethod> = []
+    @State private var selectedPartnerIDs: Set<UUID> = []
+    @State private var selectedActivities: Set<SQLActivityType> = []
+    @State private var selectedProtection: Set<SQLProtectionMethod> = []
     @State private var location: String = ""
     @State private var notes: String = ""
     @State private var rating: Int = 0
     @State private var reachedOrgasm: Bool = false
     @State private var settings = UserSettings.shared
+    @State private var errorMessage: String?
 
     var isEditing: Bool {
         encounter != nil
@@ -65,12 +71,12 @@ struct EncounterFormView: View {
                             .foregroundColor(.secondary)
                     } else {
                         ForEach(allPartners) { partner in
-                            Button(action: { togglePartner(partner) }) {
+                            Button(action: { togglePartner(partner.id) }) {
                                 HStack {
                                     Text(partner.name)
                                         .foregroundColor(.primary)
                                     Spacer()
-                                    if selectedPartners.contains(partner) {
+                                    if selectedPartnerIDs.contains(partner.id) {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(.blue)
                                     }
@@ -82,7 +88,7 @@ struct EncounterFormView: View {
 
                 // Activities
                 Section("Activities") {
-                    ForEach(ActivityType.allCases.filter { settings.isActivityEnabled($0) }, id: \.self) { activity in
+                    ForEach(SQLActivityType.allCases.filter { settings.isActivityEnabled($0) }, id: \.self) { activity in
                         Button(action: { toggleActivity(activity) }) {
                             HStack {
                                 Image(systemName: activity.icon)
@@ -101,7 +107,7 @@ struct EncounterFormView: View {
 
                 // Protection
                 Section("Protection") {
-                    ForEach(ProtectionMethod.allCases.filter { settings.isProtectionMethodEnabled($0) }, id: \.self) { protection in
+                    ForEach(SQLProtectionMethod.allCases.filter { settings.isProtectionMethodEnabled($0) }, id: \.self) { protection in
                         Button(action: { toggleProtection(protection) }) {
                             HStack {
                                 Image(systemName: protection.icon)
@@ -149,6 +155,14 @@ struct EncounterFormView: View {
                     TextEditor(text: $notes)
                         .frame(minHeight: 100)
                 }
+                
+                if let error = errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+                }
             }
             .navigationTitle(isEditing ? "Edit Encounter" : "Add Encounter")
             .navigationBarTitleDisplayMode(.inline)
@@ -163,27 +177,34 @@ struct EncounterFormView: View {
                     Button("Save") {
                         saveEncounter()
                     }
+                    .disabled(selectedPartnerIDs.isEmpty)
                 }
             }
-            .onAppear {
-                if let encounter = encounter {
-                    loadEncounter(encounter)
-                } else if let preselectedPartner = preselectedPartner {
-                    selectedPartners.insert(preselectedPartner)
-                }
+            .task {
+                await loadData()
             }
         }
     }
 
-    private func togglePartner(_ partner: Partner) {
-        if selectedPartners.contains(partner) {
-            selectedPartners.remove(partner)
+    private func loadData() async {
+        // Load encounter data if editing
+        if let encounter = encounter {
+            await loadEncounter(encounter)
+        } else if !preselectedPartners.isEmpty {
+            // Preselect partners
+            selectedPartnerIDs = Set(preselectedPartners.map(\.id))
+        }
+    }
+
+    private func togglePartner(_ partnerID: UUID) {
+        if selectedPartnerIDs.contains(partnerID) {
+            selectedPartnerIDs.remove(partnerID)
         } else {
-            selectedPartners.insert(partner)
+            selectedPartnerIDs.insert(partnerID)
         }
     }
 
-    private func toggleActivity(_ activity: ActivityType) {
+    private func toggleActivity(_ activity: SQLActivityType) {
         if selectedActivities.contains(activity) {
             selectedActivities.remove(activity)
         } else {
@@ -191,7 +212,7 @@ struct EncounterFormView: View {
         }
     }
 
-    private func toggleProtection(_ protection: ProtectionMethod) {
+    private func toggleProtection(_ protection: SQLProtectionMethod) {
         if selectedProtection.contains(protection) {
             selectedProtection.remove(protection)
         } else {
@@ -199,70 +220,93 @@ struct EncounterFormView: View {
         }
     }
 
-    private func loadEncounter(_ encounter: Encounter) {
-        date = encounter.date
+    private func loadEncounter(_ encounter: SQLEncounter) async {
+        date = encounter.date ?? Date()
         let totalMinutes = Int(encounter.duration / 60)
         durationHours = totalMinutes / 60
         durationMinutes = totalMinutes % 60
-        selectedPartners = Set(encounter.partners ?? [])
-        selectedActivities = Set(encounter.activities)
-        selectedProtection = Set(encounter.protectionMethods)
         location = encounter.location
         notes = encounter.notes
         rating = encounter.rating
         reachedOrgasm = encounter.reachedOrgasm
+        
+        // Load relationships
+        do {
+            let partners = try encounterService.fetchPartners(for: encounter.id)
+            selectedPartnerIDs = Set(partners.map(\.id))
+            
+            selectedActivities = Set(try encounterService.fetchActivities(for: encounter.id))
+            selectedProtection = Set(try encounterService.fetchProtectionMethods(for: encounter.id))
+        } catch {
+            errorMessage = "Failed to load encounter data"
+        }
     }
 
     private func saveEncounter() {
+        errorMessage = nil
+        
         let duration = TimeInterval(durationHours * 3600 + durationMinutes * 60)
-        let partnersList = Array(selectedPartners)
+        let partnerIDs = Array(selectedPartnerIDs)
 
-        if let encounter = encounter {
-            // Edit existing encounter
-            encounter.date = date
-            encounter.duration = duration
-            encounter.partners = partnersList
-            encounter.activities = Array(selectedActivities)
-            encounter.protectionMethods = Array(selectedProtection)
-            encounter.location = location
-            encounter.notes = notes
-            encounter.rating = rating
-            encounter.reachedOrgasm = reachedOrgasm
-        } else {
-            // Create new encounter
-            let newEncounter = Encounter(
-                date: date,
-                duration: duration,
-                activities: Array(selectedActivities),
-                protectionMethods: Array(selectedProtection),
-                location: location,
-                notes: notes,
-                rating: rating,
-                reachedOrgasm: reachedOrgasm,
-                partners: partnersList
-            )
-            modelContext.insert(newEncounter)
-        }
-
-        // Update lastEncounterDate for all partners
-        for partner in selectedPartners {
-            if partner.lastEncounterDate == nil || partner.lastEncounterDate! < date {
-                partner.lastEncounterDate = date
+        do {
+            if let encounter = encounter {
+                // Edit existing encounter
+                var updated = encounter
+                updated.date = date
+                updated.duration = duration
+                updated.location = location
+                updated.notes = notes
+                updated.rating = rating
+                updated.reachedOrgasm = reachedOrgasm
+                
+                try encounterService.update(
+                    updated,
+                    partnerIDs: partnerIDs,
+                    activities: Array(selectedActivities),
+                    protectionMethods: Array(selectedProtection)
+                )
+                
+                // Update partner last encounter dates
+                for partnerID in partnerIDs {
+                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                }
+            } else {
+                // Create new encounter
+                let draft = SQLEncounter.Draft(
+                    id: UUID(),
+                    date: date,
+                    duration: duration,
+                    location: location,
+                    notes: notes,
+                    rating: rating,
+                    reachedOrgasm: reachedOrgasm,
+                    dateAdded: Date()
+                )
+                
+                let encounterID = try encounterService.create(
+                    draft,
+                    partnerIDs: partnerIDs,
+                    activities: Array(selectedActivities),
+                    protectionMethods: Array(selectedProtection)
+                )
+                
+                // Update partner last encounter dates
+                for partnerID in partnerIDs {
+                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                }
             }
+            
+            dismiss()
+        } catch {
+            errorMessage = "Failed to save encounter. Please try again."
         }
-
-        dismiss()
     }
 }
 
 #Preview("Add Encounter") {
-    let container = try! ModelContainer(for: Partner.self, Encounter.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-
-    let partner1 = Partner(name: "John Doe")
-    let partner2 = Partner(name: "Jane Smith")
-    container.mainContext.insert(partner1)
-    container.mainContext.insert(partner2)
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
 
     return EncounterFormView()
-        .modelContainer(container)
 }

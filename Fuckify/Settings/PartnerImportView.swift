@@ -5,11 +5,11 @@
 //
 
 import SwiftUI
-import SwiftData
 import UniformTypeIdentifiers
+import Dependencies
 
 struct PartnerImportView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.partnerService) private var partnerService
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingFilePicker = false
@@ -200,9 +200,9 @@ struct PartnerImportView: View {
                 let notes = components.count > 2 ? components[2] : ""
                 let isOnPrep = components.count > 3 ? (components[3].lowercased() == "true") : false
 
-                let relationshipType: RelationshipType
+                let relationshipType: SQLRelationshipType
                 if components.count > 4 {
-                    relationshipType = RelationshipType(rawValue: components[4]) ?? .casual
+                    relationshipType = SQLRelationshipType(rawValue: components[4]) ?? .casual
                 } else {
                     relationshipType = .casual
                 }
@@ -247,15 +247,24 @@ struct PartnerImportView: View {
         isImporting = true
 
         for partnerData in importedPartners {
-            let partner = Partner(
+            let partnerDraft = SQLPartner.Draft(
                 name: partnerData.name,
                 notes: partnerData.notes,
                 phoneNumber: partnerData.phoneNumber,
                 isOnPrep: partnerData.isOnPrep,
                 relationshipType: partnerData.relationshipType,
-                dateMet: partnerData.dateMet
+                dateMet: partnerData.dateMet,
+                avatarColor: SQLPartner.randomColorName(),
+                dateAdded: Date(),
+                lastEncounterDate: nil,
+                isPinned: false
             )
-            modelContext.insert(partner)
+            
+            do {
+                try partnerService.create(partnerDraft)
+            } catch {
+                print("Failed to import partner \(partnerData.name): \(error)")
+            }
         }
 
         isImporting = false
@@ -270,11 +279,10 @@ struct PartnerImportData {
     let phoneNumber: String
     let notes: String
     let isOnPrep: Bool
-    let relationshipType: RelationshipType
+    let relationshipType: SQLRelationshipType
     let dateMet: Date?
 }
 
 #Preview {
     PartnerImportView()
-        .modelContainer(for: Partner.self, inMemory: true)
 }

@@ -9,7 +9,7 @@ import Foundation
 import SQLiteData
 
 @Table("encounter")
-struct SQLEncounter {
+struct SQLEncounter: Identifiable {
     // Primary Key
     let id: UUID
     
@@ -46,7 +46,7 @@ struct SQLEncounter {
 
 
 @Table("encounterActivity")
-struct EncounterActivity {
+struct EncounterActivity: Identifiable {
     let id: UUID
     var encounterId: UUID
     var activityType: SQLActivityType
@@ -60,11 +60,10 @@ struct EncounterActivity {
         self.encounterId = encounterId
         self.activityType = activityType
     }
-    
 }
 
 @Table("encounterProtectionMethod")
-struct EncounterProtectionMethod {
+struct EncounterProtectionMethod: Identifiable {
     let id: UUID
     var encounterId: UUID
     var protectionMethod: SQLProtectionMethod
@@ -78,7 +77,6 @@ struct EncounterProtectionMethod {
         self.encounterId = encounterId
         self.protectionMethod = protectionMethod
     }
-    
 }
 
 enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
