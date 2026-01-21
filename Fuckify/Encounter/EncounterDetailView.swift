@@ -176,17 +176,28 @@ struct EncounterDetailView: View {
     private func loadEncounterData() async {
         isLoading = true
         
-        // Load all relationships
-        if let loadedPartners = try? encounterService.fetchPartners(for: encounter.id) {
+        // Capture service before detached task to avoid actor isolation issues
+        let service = encounterService
+        let encounterId = encounter.id
+        
+        // Load all relationships - perform database I/O off main thread
+        do {
+            let loadedPartners = try await Task.detached {
+                try service.fetchPartners(for: encounterId)
+            }.value
             partners = loadedPartners
-        }
-        
-        if let loadedActivities = try? encounterService.fetchActivities(for: encounter.id) {
+            
+            let loadedActivities = try await Task.detached {
+                try service.fetchActivities(for: encounterId)
+            }.value
             activities = loadedActivities
-        }
-        
-        if let loadedProtection = try? encounterService.fetchProtectionMethods(for: encounter.id) {
+            
+            let loadedProtection = try await Task.detached {
+                try service.fetchProtectionMethods(for: encounterId)
+            }.value
             protectionMethods = loadedProtection
+        } catch {
+            // Silent error handling - keep empty arrays
         }
         
         isLoading = false

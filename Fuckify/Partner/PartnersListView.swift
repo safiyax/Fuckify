@@ -72,8 +72,8 @@ struct PartnersListView: View {
                         }
                         .swipeActions(edge: .leading) {
                             Button {
-                                withAnimation {
-                                    manager.togglePin(for: partner)
+                                Task {
+                                    await manager.togglePin(for: partner)
                                 }
                             } label: {
                                 Label("Pin", systemImage: "pin.fill")
@@ -84,9 +84,11 @@ struct PartnersListView: View {
                     .onDelete(perform: deletePartners)
                 }
             }
+            .task {
+                await manager.fetchPartners()
+            }
             .onAppear {
                 manager.searchText = ""
-                manager.fetchPartners()
             }
             .navigationTitle("Partners")
             .toolbar {
@@ -117,7 +119,9 @@ struct PartnersListView: View {
             }
             .onChange(of: showingAddPartner) { oldValue, newValue in
                 if !newValue {
-                    manager.fetchPartners()
+                    Task {
+                        await manager.fetchPartners()
+                    }
                 }
             }
             .overlay {
@@ -136,8 +140,8 @@ struct PartnersListView: View {
     }
 
     private func deletePartners(offsets: IndexSet) {
-        withAnimation {
-            manager.deletePartners(at: offsets, from: manager.filteredPartners)
+        Task {
+            await manager.deletePartners(at: offsets, from: manager.filteredPartners)
         }
     }
 }

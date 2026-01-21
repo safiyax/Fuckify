@@ -8,6 +8,7 @@
 import SwiftUI
 import SQLiteData
 import Dependencies
+import MijickCalendarView
 
 struct EncountersListView: View {
     @FetchAll(SQLEncounter.order { $0.date.desc() })
@@ -19,10 +20,12 @@ struct EncountersListView: View {
     @State private var showingSettings = false
     @State private var showProfile = false
     @State private var profile = UserProfile.shared
+    @State private var selectedDate: Date? = nil
     
     var body: some View {
         NavigationStack {
             List {
+                
                 ForEach(encounters) { encounter in
                     // TODO: Update EncounterDetailView to use SQLEncounter
                      NavigationLink {
@@ -186,6 +189,30 @@ struct EncounterRowView: View {
         }
     }
 }
+
+//struct EncounterCalendarView: View {
+//    @Binding var selectedDate: Date?
+//    @Binding var selectedMonth: Date
+//    
+//    var body: some View {
+//        MCalendarView(selectedDate: $selectedDate, selectedRange: nil)
+//    }
+//    
+//    func configureCalendar(_ config: CalendarConfig) -> CalendarConfig {
+//        config
+//            .monthsTopPadding(36)
+//            .monthsBottomPadding(8)
+//            .daysHorizontalSpacing(1)
+//            .daysVerticalSpacing(3)
+//            .startMonth(selectedMonth)
+//            .endMonth(selectedMonth)
+//            .dayView()
+//    }
+//    
+//    func buildDayView(_ date: Date, _ isCurrentMonth: Bool, selectedDate: Binding<Date?>?, range: Binding<MDateRange?>?) -> DV.ColoredCircle {
+//
+//    }
+//}
 
 #Preview {
     let _ = prepareDependencies {

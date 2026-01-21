@@ -11,6 +11,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.fuckify", category: "EncountersManager")
 
+@MainActor
 @Observable
 class EncountersManager {
     @ObservationIgnored
@@ -25,17 +26,26 @@ class EncountersManager {
     var isLoading = false
 
     init() {
-        fetchEncounters()
+        // Don't fetch in init - let views trigger it
     }
 
     // MARK: - Data Operations
 
-    func fetchEncounters() {
+    func fetchEncounters() async {
         isLoading = true
         errorMessage = nil
         
         do {
-            encounters = try encounterService.fetchAll()
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            // Perform database I/O off main thread
+            let fetchedEncounters = try await Task.detached {
+                try service.fetchAll()
+            }.value
+            
+            // Update UI on main thread
+            encounters = fetchedEncounters
             logger.info("Fetched \(self.encounters.count) encounters")
         } catch {
             logger.error("Failed to fetch encounters: \(error.localizedDescription)")
@@ -51,24 +61,33 @@ class EncountersManager {
         partnerIDs: [UUID],
         activities: [SQLActivityType],
         protectionMethods: [SQLProtectionMethod]
-    ) {
+    ) async {
         do {
-            let encounterID = try encounterService.create(
-                encounterDraft,
-                partnerIDs: partnerIDs,
-                activities: activities,
-                protectionMethods: protectionMethods
-            )
+            // Capture services before detached task to avoid actor isolation issues
+            let encService = encounterService
+            let pService = partnerService
+            
+            let encounterID = try await Task.detached {
+                try encService.create(
+                    encounterDraft,
+                    partnerIDs: partnerIDs,
+                    activities: activities,
+                    protectionMethods: protectionMethods
+                )
+            }.value
             logger.info("Created encounter: \(encounterID)")
             
             // Update last encounter date for all partners
             if let date = encounterDraft.date {
                 for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                    try? await Task.detached {
+                        try pService.updateLastEncounterDate(partnerID, date: date)
+                    }.value
                 }
             }
             
-            fetchEncounters()
+            // Refresh the list
+            await fetchEncounters()
         } catch {
             logger.error("Failed to create encounter: \(error.localizedDescription)")
             errorMessage = "Unable to create encounter. Please try again."
@@ -80,44 +99,62 @@ class EncountersManager {
         partnerIDs: [UUID]? = nil,
         activities: [SQLActivityType]? = nil,
         protectionMethods: [SQLProtectionMethod]? = nil
-    ) {
+    ) async {
         do {
-            try encounterService.update(
-                encounter,
-                partnerIDs: partnerIDs,
-                activities: activities,
-                protectionMethods: protectionMethods
-            )
+            // Capture services before detached task to avoid actor isolation issues
+            let encService = encounterService
+            let pService = partnerService
+            
+            // Perform database I/O off main thread
+            try await Task.detached {
+                try encService.update(
+                    encounter,
+                    partnerIDs: partnerIDs,
+                    activities: activities,
+                    protectionMethods: protectionMethods
+                )
+            }.value
             logger.info("Updated encounter: \(encounter.id)")
             
             // Update last encounter date for partners if date changed
             if let date = encounter.date, let partnerIDs = partnerIDs {
                 for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                    try? await Task.detached {
+                        try pService.updateLastEncounterDate(partnerID, date: date)
+                    }.value
                 }
             }
             
-            fetchEncounters()
+            // Refresh the list
+            await fetchEncounters()
         } catch {
             logger.error("Failed to update encounter: \(error.localizedDescription)")
             errorMessage = "Unable to update encounter. Please try again."
         }
     }
 
-    func deleteEncounter(_ encounter: SQLEncounter) {
+    func deleteEncounter(_ encounter: SQLEncounter) async {
         do {
-            try encounterService.delete(encounter.id)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            // Perform database I/O off main thread
+            try await Task.detached {
+                try service.delete(encounter.id)
+            }.value
             logger.info("Deleted encounter: \(encounter.id)")
-            fetchEncounters()
+            
+            // Refresh the list
+            await fetchEncounters()
         } catch {
             logger.error("Failed to delete encounter: \(error.localizedDescription)")
             errorMessage = "Unable to delete encounter. Please try again."
         }
     }
 
-    func deleteEncounters(at offsets: IndexSet, from filteredList: [SQLEncounter]) {
+    func deleteEncounters(at offsets: IndexSet, from filteredList: [SQLEncounter]) async {
         for index in offsets {
-            deleteEncounter(filteredList[index])
+            await deleteEncounter(filteredList[index])
         }
     }
 
@@ -141,9 +178,14 @@ class EncountersManager {
     // MARK: - Helper Methods
     
     /// Get partners for a specific encounter
-    func partners(for encounter: SQLEncounter) -> [SQLPartner] {
+    func partners(for encounter: SQLEncounter) async -> [SQLPartner] {
         do {
-            return try encounterService.fetchPartners(for: encounter.id)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            return try await Task.detached {
+                try service.fetchPartners(for: encounter.id)
+            }.value
         } catch {
             logger.error("Failed to fetch partners for encounter: \(error.localizedDescription)")
             return []
@@ -151,9 +193,14 @@ class EncountersManager {
     }
     
     /// Get activities for a specific encounter
-    func activities(for encounter: SQLEncounter) -> [SQLActivityType] {
+    func activities(for encounter: SQLEncounter) async -> [SQLActivityType] {
         do {
-            return try encounterService.fetchActivities(for: encounter.id)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            return try await Task.detached {
+                try service.fetchActivities(for: encounter.id)
+            }.value
         } catch {
             logger.error("Failed to fetch activities for encounter: \(error.localizedDescription)")
             return []
@@ -161,9 +208,14 @@ class EncountersManager {
     }
     
     /// Get protection methods for a specific encounter
-    func protectionMethods(for encounter: SQLEncounter) -> [SQLProtectionMethod] {
+    func protectionMethods(for encounter: SQLEncounter) async -> [SQLProtectionMethod] {
         do {
-            return try encounterService.fetchProtectionMethods(for: encounter.id)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            return try await Task.detached {
+                try service.fetchProtectionMethods(for: encounter.id)
+            }.value
         } catch {
             logger.error("Failed to fetch protection methods for encounter: \(error.localizedDescription)")
             return []

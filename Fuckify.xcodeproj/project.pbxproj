@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97532F1ED08200FC58E8 /* LiquidGlassKit */; };
+		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
 			);
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				89BA72072F0C9BC10017A928 /* SQLiteData */,
 				890C97532F1ED08200FC58E8 /* LiquidGlassKit */,
+				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -106,6 +109,7 @@
 			packageReferences = (
 				89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */,
 				890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */,
+				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -369,6 +373,14 @@
 				minimumVersion = 1.0.1;
 			};
 		};
+		890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Mijick/CalendarView.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 		89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
@@ -384,6 +396,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */;
 			productName = LiquidGlassKit;
+		};
+		890C97602F1F1F8E00FC58E8 /* MijickCalendarView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */;
+			productName = MijickCalendarView;
 		};
 		89BA72072F0C9BC10017A928 /* SQLiteData */ = {
 			isa = XCSwiftPackageProductDependency;

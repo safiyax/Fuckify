@@ -113,7 +113,9 @@ struct PartnerFormView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        savePartner()
+                        Task {
+                            await savePartner()
+                        }
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -140,7 +142,7 @@ struct PartnerFormView: View {
         }
     }
 
-    private func savePartner() {
+    private func savePartner() async {
         errorMessage = nil
         
         // Create partner draft
@@ -159,7 +161,13 @@ struct PartnerFormView: View {
         )
         
         do {
-            try partnerService.create(draft)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = partnerService
+            
+            // Perform database I/O off main thread
+            try await Task.detached {
+                try service.create(draft)
+            }.value
             dismiss()
         } catch {
             errorMessage = "Failed to save partner. Please try again."
