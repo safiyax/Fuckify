@@ -11,6 +11,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.fuckify", category: "PartnersManager")
 
+@MainActor
 @Observable
 class PartnersManager {
     @ObservationIgnored
@@ -22,17 +23,26 @@ class PartnersManager {
     var isLoading = false
 
     init() {
-        fetchPartners()
+        // Don't fetch in init - let views trigger it
     }
 
     // MARK: - Data Operations
 
-    func fetchPartners() {
+    func fetchPartners() async {
         isLoading = true
         errorMessage = nil
         
         do {
-            partners = try partnerService.fetchAll()
+            // Capture service before detached task to avoid actor isolation issues
+            let service = partnerService
+            
+            // Perform database I/O off main thread
+            let fetchedPartners = try await Task.detached {
+                try service.fetchAll()
+            }.value
+            
+            // Update UI on main thread
+            partners = fetchedPartners
             logger.info("Fetched \(self.partners.count) partners")
         } catch {
             logger.error("Failed to fetch partners: \(error.localizedDescription)")
@@ -43,42 +53,75 @@ class PartnersManager {
         isLoading = false
     }
 
-    func addPartner(_ partner: SQLPartner.Draft) {
+    func addPartner(_ partner: SQLPartner.Draft) async {
         do {
-            try partnerService.create(partner)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = partnerService
+            
+            let createdPartner = try await Task.detached {
+                try service.create(partner)
+            }.value
             logger.info("Created partner: \(partner.name)")
-            fetchPartners()
+            
+            // Optimistic update - add to list immediately
+            partners.append(createdPartner)
+            partners.sort { $0.name < $1.name }
         } catch {
             logger.error("Failed to create partner: \(error.localizedDescription)")
             errorMessage = "Unable to create partner. Please try again."
         }
     }
 
-    func updatePartner(_ partner: SQLPartner) {
-        do {
-            try partnerService.update(partner)
-            logger.info("Updated partner: \(partner.name)")
-            fetchPartners()
-        } catch {
-            logger.error("Failed to update partner: \(error.localizedDescription)")
-            errorMessage = "Unable to update partner. Please try again."
+    func updatePartner(_ partner: SQLPartner) async {
+        // Optimistic update
+        if let index = partners.firstIndex(where: { $0.id == partner.id }) {
+            let oldPartner = partners[index]
+            partners[index] = partner
+            
+            do {
+                // Capture service before detached task to avoid actor isolation issues
+                let service = partnerService
+                
+                try await Task.detached {
+                    try service.update(partner)
+                }.value
+                logger.info("Updated partner: \(partner.name)")
+            } catch {
+                // Rollback on error
+                partners[index] = oldPartner
+                logger.error("Failed to update partner: \(error.localizedDescription)")
+                errorMessage = "Unable to update partner. Please try again."
+            }
         }
     }
 
-    func deletePartner(_ partner: SQLPartner) {
+    func deletePartner(_ partner: SQLPartner) async {
+        // Optimistic update
+        guard let index = partners.firstIndex(where: { $0.id == partner.id }) else { return }
+        let removedPartner = partners.remove(at: index)
+        
         do {
-            try partnerService.delete(partner.id)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = partnerService
+            
+            try await Task.detached {
+                try service.delete(partner.id)
+            }.value
             logger.info("Deleted partner: \(partner.name)")
-            fetchPartners()
         } catch {
+            // Rollback on error
+            partners.insert(removedPartner, at: index)
             logger.error("Failed to delete partner: \(error.localizedDescription)")
             errorMessage = "Unable to delete partner. Please try again."
         }
     }
 
-    func deletePartners(at offsets: IndexSet, from filteredList: [SQLPartner]) {
-        for index in offsets {
-            deletePartner(filteredList[index])
+    func deletePartners(at offsets: IndexSet, from filteredList: [SQLPartner]) async {
+        // Capture IDs to avoid index issues
+        let partnersToDelete = offsets.map { filteredList[$0] }
+        
+        for partner in partnersToDelete {
+            await deletePartner(partner)
         }
     }
 
@@ -108,14 +151,28 @@ class PartnersManager {
 
     // MARK: - Pin Operations
 
-    func togglePin(for partner: SQLPartner) {
-        do {
-            try partnerService.togglePin(for: partner.id)
-            logger.info("Toggled pin for partner: \(partner.name)")
-            fetchPartners()
-        } catch {
-            logger.error("Failed to toggle pin: \(error.localizedDescription)")
-            errorMessage = "Unable to update pin status. Please try again."
+    func togglePin(for partner: SQLPartner) async {
+        // Optimistic update
+        if let index = partners.firstIndex(where: { $0.id == partner.id }) {
+            var updatedPartner = partners[index]
+            let oldValue = updatedPartner.isPinned
+            updatedPartner.isPinned.toggle()
+            partners[index] = updatedPartner
+            
+            do {
+                // Capture service before detached task to avoid actor isolation issues
+                let service = partnerService
+                
+                try await Task.detached {
+                    try service.togglePin(for: partner.id)
+                }.value
+                logger.info("Toggled pin for partner: \(partner.name)")
+            } catch {
+                // Rollback on error
+                partners[index].isPinned = oldValue
+                logger.error("Failed to toggle pin: \(error.localizedDescription)")
+                errorMessage = "Unable to update pin status. Please try again."
+            }
         }
     }
 }

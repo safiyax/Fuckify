@@ -27,7 +27,7 @@ struct SQLPartner: Identifiable, Hashable {
     var dateMet: Date?
 
     // Appearance
-    var avatarColor: String = SQLPartner.randomColorName()
+    var avatarColor: String = "blue"
 
     // Metadata
     var dateAdded: Date = Date()
@@ -51,7 +51,8 @@ struct SQLPartner: Identifiable, Hashable {
     }
     
     // Static method to generate random color name
-    static func randomColorName() -> String {
+    // Note: Must be nonisolated to be used in struct defaults and initializers
+    nonisolated static func randomColorName() -> String {
         let colors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"]
         return colors.randomElement() ?? "blue"
     }

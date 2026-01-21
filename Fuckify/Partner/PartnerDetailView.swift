@@ -209,13 +209,29 @@ struct PartnerDetailView: View {
             // Encounters (only shown when not editing)
             if !isEditing {
                 Section {
-                    // TODO: Update this section to use SQLEncounter
-                    HStack {
-                        Image(systemName: "heart.slash")
-                            .foregroundColor(.secondary)
-                        Text("Encounters list temporarily disabled during migration")
-                            .foregroundColor(.secondary)
-                            .font(.caption)
+//                    // TODO: Update this section to use SQLEncounter
+//                    HStack {
+//                        Image(systemName: "heart.slash")
+//                            .foregroundColor(.secondary)
+//                        Text("Encounters list temporarily disabled during migration")
+//                            .foregroundColor(.secondary)
+//                            .font(.caption)
+//                    }
+                    if !sortedEncounters.isEmpty {
+                        ForEach(sortedEncounters) { encounter in
+                            NavigationLink {
+                                EncounterDetailView(encounter: encounter)
+                            } label: {
+                                EncounterRowView(encounter: encounter)
+                            }
+                        }
+                    } else {
+                        HStack {
+                            Image(systemName: "heart.slash")
+                                .foregroundStyle(.secondary)
+                            Text("No encounters yet")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 } header: {
                     HStack {
@@ -255,7 +271,9 @@ struct PartnerDetailView: View {
         .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if oldValue?.isEditing == true && newValue?.isEditing == false {
                 // Save changes when exiting edit mode
-                saveChanges()
+                Task {
+                    await saveChanges()
+                }
             } else if oldValue?.isEditing == false && newValue?.isEditing == true {
                 // Reload fields when entering edit mode
                 loadEditableFields()
@@ -286,7 +304,7 @@ struct PartnerDetailView: View {
         editIsPinned = partner.isPinned
     }
 
-    private func saveChanges() {
+    private func saveChanges() async {
         var updatedPartner = partner
         updatedPartner.name = editName
         updatedPartner.notes = editNotes
@@ -298,7 +316,13 @@ struct PartnerDetailView: View {
         updatedPartner.isPinned = editIsPinned
         
         do {
-            try partnerService.update(updatedPartner)
+            // Capture service before detached task to avoid actor isolation issues
+            let service = partnerService
+            
+            // Perform database I/O off main thread
+            try await Task.detached {
+                try service.update(updatedPartner)
+            }.value
         } catch {
             print("Failed to update partner: \(error)")
         }
@@ -322,28 +346,48 @@ struct PartnerDetailView: View {
     private func loadEncounters() async {
         isLoadingEncounters = true
         
-        // Load all encounters and filter for this partner
-        if let allEncounters = try? encounterService.fetchAll() {
+        // Capture service before detached task to avoid actor isolation issues
+        let service = encounterService
+        
+        // Perform database I/O off main thread
+        do {
+            let allEncounters = try await Task.detached {
+                try service.fetchAll()
+            }.value
+            
             // Filter encounters that include this partner
             var partnerEncounters: [SQLEncounter] = []
             for encounter in allEncounters {
-                if let partners = try? encounterService.fetchPartners(for: encounter.id) {
+                do {
+                    let partners = try await Task.detached {
+                        try service.fetchPartners(for: encounter.id)
+                    }.value
                     if partners.contains(where: { $0.id == partner.id }) {
                         partnerEncounters.append(encounter)
                     }
+                } catch {
+                    // Skip encounters we can't load partners for
                 }
             }
             encounters = partnerEncounters
+        } catch {
+            print("Failed to load encounters: \(error)")
         }
         
         isLoadingEncounters = false
     }
     
-    private func deleteEncounters(offsets: IndexSet) {
+    private func deleteEncounters(offsets: IndexSet) async {
+        // Capture service before detached task to avoid actor isolation issues
+        let service = encounterService
+        
         for index in offsets {
             let encounter = sortedEncounters[index]
             do {
-                try encounterService.delete(encounter.id)
+                // Perform database I/O off main thread
+                try await Task.detached {
+                    try service.delete(encounter.id)
+                }.value
                 encounters.removeAll { $0.id == encounter.id }
             } catch {
                 print("Failed to delete encounter: \(error)")

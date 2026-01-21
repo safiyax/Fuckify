@@ -175,7 +175,9 @@ struct EncounterFormView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        saveEncounter()
+                        Task {
+                            await saveEncounter()
+                        }
                     }
                     .disabled(selectedPartnerIDs.isEmpty)
                 }
@@ -230,23 +232,39 @@ struct EncounterFormView: View {
         rating = encounter.rating
         reachedOrgasm = encounter.reachedOrgasm
         
-        // Load relationships
+        // Capture service before detached task to avoid actor isolation issues
+        let service = encounterService
+        
+        // Load relationships - perform database I/O off main thread
         do {
-            let partners = try encounterService.fetchPartners(for: encounter.id)
+            let partners = try await Task.detached {
+                try service.fetchPartners(for: encounter.id)
+            }.value
             selectedPartnerIDs = Set(partners.map(\.id))
             
-            selectedActivities = Set(try encounterService.fetchActivities(for: encounter.id))
-            selectedProtection = Set(try encounterService.fetchProtectionMethods(for: encounter.id))
+            let activities = try await Task.detached {
+                try service.fetchActivities(for: encounter.id)
+            }.value
+            selectedActivities = Set(activities)
+            
+            let protectionMethods = try await Task.detached {
+                try service.fetchProtectionMethods(for: encounter.id)
+            }.value
+            selectedProtection = Set(protectionMethods)
         } catch {
             errorMessage = "Failed to load encounter data"
         }
     }
 
-    private func saveEncounter() {
+    private func saveEncounter() async {
         errorMessage = nil
         
         let duration = TimeInterval(durationHours * 3600 + durationMinutes * 60)
         let partnerIDs = Array(selectedPartnerIDs)
+
+        // Capture services before detached task to avoid actor isolation issues
+        let encService = encounterService
+        let pService = partnerService
 
         do {
             if let encounter = encounter {
@@ -259,16 +277,25 @@ struct EncounterFormView: View {
                 updated.rating = rating
                 updated.reachedOrgasm = reachedOrgasm
                 
-                try encounterService.update(
-                    updated,
-                    partnerIDs: partnerIDs,
-                    activities: Array(selectedActivities),
-                    protectionMethods: Array(selectedProtection)
-                )
+                // Capture arrays for detached task
+                let activities = Array(selectedActivities)
+                let protection = Array(selectedProtection)
+                
+                // Perform database I/O off main thread
+                try await Task.detached {
+                    try encService.update(
+                        updated,
+                        partnerIDs: partnerIDs,
+                        activities: activities,
+                        protectionMethods: protection
+                    )
+                }.value
                 
                 // Update partner last encounter dates
                 for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                    try? await Task.detached {
+                        try pService.updateLastEncounterDate(partnerID, date: date)
+                    }.value
                 }
             } else {
                 // Create new encounter
@@ -283,16 +310,25 @@ struct EncounterFormView: View {
                     dateAdded: Date()
                 )
                 
-                let encounterID = try encounterService.create(
-                    draft,
-                    partnerIDs: partnerIDs,
-                    activities: Array(selectedActivities),
-                    protectionMethods: Array(selectedProtection)
-                )
+                // Capture arrays for detached task
+                let activities = Array(selectedActivities)
+                let protection = Array(selectedProtection)
+                
+                // Perform database I/O off main thread
+                let encounterID = try await Task.detached {
+                    try encService.create(
+                        draft,
+                        partnerIDs: partnerIDs,
+                        activities: activities,
+                        protectionMethods: protection
+                    )
+                }.value
                 
                 // Update partner last encounter dates
                 for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
+                    try? await Task.detached {
+                        try pService.updateLastEncounterDate(partnerID, date: date)
+                    }.value
                 }
             }
             

@@ -6,7 +6,6 @@
 //
 
 import OSLog
-import SwiftData
 import SQLiteData
 
 
@@ -33,28 +32,16 @@ func appDatabase() throws -> any DatabaseWriter {
 #if DEBUG
     migrator.eraseDatabaseOnSchemaChange = true
 #endif
+    
     // Register migrations
     migrator.registerMigration("Create tables") { db in
         try CreateTables.migrate(db)
     }
     
-    migrator.registerMigration("SwiftData transfer") { db in
-        let swiftDataContainer = try ModelContainer(
-            for: Partner.self, Encounter.self
-        )
-        let modelContext = ModelContext(swiftDataContainer)
-        
-        try SwiftDataTransfer.migrate(db, modelContext: modelContext)
-    }
-    
-    migrator.registerMigration("Transfer activities and protection methods") { db in
-        let swiftDataContainer = try ModelContainer(
-            for: Partner.self, Encounter.self
-        )
-        let modelContext = ModelContext(swiftDataContainer)
-        
-        try SwiftDataTransfer.migrateActivitiesAndProtection(db, modelContext: modelContext)
-    }
+    // Note: SwiftData migration has been removed since all data has been migrated
+    // If you need to re-migrate data, restore from git history:
+    // - Fuckify/Database/Migrations/SwiftDataTransfer.swift
+    // - Partner.swift, Encounter.swift, Item.swift
     
     try migrator.migrate(database)
     return database
