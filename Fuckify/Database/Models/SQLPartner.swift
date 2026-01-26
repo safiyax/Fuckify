@@ -36,36 +36,18 @@ struct SQLPartner: Identifiable, Hashable {
     
     
     var color: Color {
-        switch avatarColor {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "pink": return .pink
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "teal": return .teal
-        case "indigo": return .indigo
-        default: return .blue
-        }
+        .fromPartnerColorName(avatarColor)
     }
     
     // Static method to generate random color name
     // Note: Must be nonisolated to be used in struct defaults and initializers
     nonisolated static func randomColorName() -> String {
-        let colors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"]
-        return colors.randomElement() ?? "blue"
+        PartnerColors.randomColorName()
     }
 
     // Computed property to get initials for avatar
     var initials: String {
-        let components = name.split(separator: " ")
-        if components.count >= 2 {
-            return String(components[0].prefix(1) + components[1].prefix(1)).uppercased()
-        } else if let first = components.first {
-            return String(first.prefix(2)).uppercased()
-        }
-        return "?"
+        name.initials
     }
     
 }

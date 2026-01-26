@@ -38,11 +38,11 @@ struct PartnerFormView: View {
 
                 Section("Avatar Color") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 50))], spacing: 12) {
-                        ForEach(["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"], id: \.self) { colorName in
+                        ForEach(PartnerColors.allColorNames, id: \.self) { colorName in
                             Button(action: { avatarColor = colorName }) {
                                 ZStack {
                                     Circle()
-                                        .fill(colorFromName(colorName))
+                                        .fill(Color.fromPartnerColorName(colorName))
                                         .frame(width: 50, height: 50)
 
                                     if avatarColor == colorName {
@@ -122,25 +122,12 @@ struct PartnerFormView: View {
             }
             .onAppear {
                 // Set a default color for new partners
-                avatarColor = SQLPartner.randomColorName()
+                avatarColor = PartnerColors.randomColorName()
             }
         }
     }
 
-    private func colorFromName(_ name: String) -> Color {
-        switch name {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "pink": return .pink
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "teal": return .teal
-        case "indigo": return .indigo
-        default: return .blue
-        }
-    }
+
 
     private func savePartner() async {
         errorMessage = nil
@@ -154,7 +141,7 @@ struct PartnerFormView: View {
             isOnPrep: isOnPrep,
             relationshipType: relationshipType,
             dateMet: showDateMetPicker ? dateMet : nil,
-            avatarColor: avatarColor.isEmpty ? SQLPartner.randomColorName() : avatarColor,
+            avatarColor: avatarColor.isEmpty ? PartnerColors.randomColorName() : avatarColor,
             dateAdded: Date(),
             lastEncounterDate: nil,
             isPinned: isPinned

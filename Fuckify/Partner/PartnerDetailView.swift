@@ -42,7 +42,7 @@ struct PartnerDetailView: View {
                     VStack(spacing: 12) {
                         ZStack {
                             Circle()
-                                .fill(isEditing ? colorFromName(editAvatarColor) : partner.color)
+                                .fill(isEditing ? Color.fromPartnerColorName(editAvatarColor) : partner.color)
                                 .frame(width: 100, height: 100)
 
                             Text(isEditing ? editName.initials : partner.initials)
@@ -79,11 +79,11 @@ struct PartnerDetailView: View {
 
                 Section("Avatar Color") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 50))], spacing: 12) {
-                        ForEach(["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "indigo"], id: \.self) { colorName in
+                        ForEach(PartnerColors.allColorNames, id: \.self) { colorName in
                             Button(action: { editAvatarColor = colorName }) {
                                 ZStack {
                                     Circle()
-                                        .fill(colorFromName(colorName))
+                                        .fill(Color.fromPartnerColorName(colorName))
                                         .frame(width: 50, height: 50)
 
                                     if editAvatarColor == colorName {
@@ -328,20 +328,7 @@ struct PartnerDetailView: View {
         }
     }
 
-    private func colorFromName(_ name: String) -> Color {
-        switch name {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "pink": return .pink
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "teal": return .teal
-        case "indigo": return .indigo
-        default: return .blue
-        }
-    }
+
 
     private func loadEncounters() async {
         isLoadingEncounters = true
@@ -396,17 +383,7 @@ struct PartnerDetailView: View {
     }
 }
 
-// Extension to get initials from String
-extension String {
-    var initials: String {
-        let words = self.split(separator: " ")
-        if words.isEmpty { return "" }
-        if words.count == 1 {
-            return String(words[0].prefix(1)).uppercased()
-        }
-        return (String(words.first?.first ?? " ") + String(words.last?.first ?? " ")).uppercased()
-    }
-}
+
 
 #Preview {
     let _ = prepareDependencies {

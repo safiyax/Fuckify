@@ -10,6 +10,17 @@ import Dependencies
 import SQLiteData
 import GRDB
 
+/// Complete encounter data with all relationships loaded
+/// Used to avoid N+1 query problems
+struct EncounterWithRelationships: Identifiable {
+    let encounter: SQLEncounter
+    let partners: [SQLPartner]
+    let activities: [SQLActivityType]
+    let protectionMethods: [SQLProtectionMethod]
+    
+    var id: UUID { encounter.id }
+}
+
 /// Service layer for Encounter database operations
 /// Uses SQLiteData's query builder and GRDB database connection
 struct EncounterService {
@@ -91,6 +102,72 @@ struct EncounterService {
             try SQLEncounter
                 .order { $0.date.desc() }
                 .fetchAll(db)
+        }
+    }
+    
+    /// Fetch all encounters with relationships in optimized batches
+    /// Avoids N+1 query problem by loading all relationships upfront
+    func fetchAllWithRelationships() throws -> [EncounterWithRelationships] {
+        try database.read { db in
+            // 1. Fetch all encounters
+            let encounters = try SQLEncounter
+                .order { $0.date.desc() }
+                .fetchAll(db)
+            
+            guard !encounters.isEmpty else { return [] }
+            
+            let encounterIDs = encounters.map(\.id)
+            
+            // 2. Batch load ALL partner relationships
+            let partnerJunctions = try SQLEncounterPartner
+                .where { encounterIDs.contains($0.encounterId) }
+                .fetchAll(db)
+            
+            let allPartnerIDs = Set(partnerJunctions.map(\.partnerId))
+            let allPartners = try SQLPartner
+                .where { allPartnerIDs.contains($0.id) }
+                .fetchAll(db)
+            
+            // Create lookup dictionary
+            let partnersByID = Dictionary(uniqueKeysWithValues: allPartners.map { ($0.id, $0) })
+            
+            // Group partners by encounter
+            var partnersByEncounter: [UUID: [SQLPartner]] = [:]
+            for junction in partnerJunctions {
+                if let partner = partnersByID[junction.partnerId] {
+                    partnersByEncounter[junction.encounterId, default: []].append(partner)
+                }
+            }
+            
+            // 3. Batch load ALL activities
+            let allActivities = try EncounterActivity
+                .where { encounterIDs.contains($0.encounterId) }
+                .fetchAll(db)
+            
+            var activitiesByEncounter: [UUID: [SQLActivityType]] = [:]
+            for activity in allActivities {
+                activitiesByEncounter[activity.encounterId, default: []].append(activity.activityType)
+            }
+            
+            // 4. Batch load ALL protection methods
+            let allProtectionMethods = try EncounterProtectionMethod
+                .where { encounterIDs.contains($0.encounterId) }
+                .fetchAll(db)
+            
+            var protectionByEncounter: [UUID: [SQLProtectionMethod]] = [:]
+            for protection in allProtectionMethods {
+                protectionByEncounter[protection.encounterId, default: []].append(protection.protectionMethod)
+            }
+            
+            // 5. Combine everything
+            return encounters.map { encounter in
+                EncounterWithRelationships(
+                    encounter: encounter,
+                    partners: partnersByEncounter[encounter.id] ?? [],
+                    activities: activitiesByEncounter[encounter.id] ?? [],
+                    protectionMethods: protectionByEncounter[encounter.id] ?? []
+                )
+            }
         }
     }
     

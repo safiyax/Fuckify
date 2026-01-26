@@ -11,9 +11,7 @@ import Dependencies
 import MijickCalendarView
 
 struct EncountersListView: View {
-    @FetchAll(SQLEncounter.order { $0.date.desc() })
-    private var encounters: [SQLEncounter]
-    
+    @Environment(EncountersManager.self) var manager
     @Dependency(\.encounterService) var encounterService
     
     @State private var showingAddEncounter = false
@@ -25,16 +23,17 @@ struct EncountersListView: View {
     var body: some View {
         NavigationStack {
             List {
-                
-                ForEach(encounters) { encounter in
-                    // TODO: Update EncounterDetailView to use SQLEncounter
+                ForEach(manager.filteredEncounters) { encounterData in
                      NavigationLink {
-                         EncounterDetailView(encounter: encounter)
+                         EncounterDetailView(encounter: encounterData.encounter)
                      } label: {
-                        EncounterRowView(encounter: encounter)
+                        EncounterRowView(encounterData: encounterData)
                      }
                 }
                 .onDelete(perform: deleteEncounters)
+            }
+            .task {
+                await manager.fetchEncounters()
             }
             .navigationTitle("Activity")
             .toolbar {
@@ -72,7 +71,7 @@ struct EncountersListView: View {
                 ProfileView()
             })
             .overlay {
-                if encounters.isEmpty {
+                if manager.encounters.isEmpty {
                     ContentUnavailableView(
                         "No Encounters",
                         systemImage: "heart.slash",
@@ -84,15 +83,8 @@ struct EncountersListView: View {
     }
 
     private func deleteEncounters(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                do {
-                    try encounterService.delete(encounters[index].id)
-                } catch {
-                    // TODO: Show error to user
-                    print("Failed to delete encounter: \(error)")
-                }
-            }
+        Task {
+            await manager.deleteEncounters(at: offsets, from: manager.filteredEncounters.map(\.encounter))
         }
     }
 }
@@ -100,12 +92,37 @@ struct EncountersListView: View {
 // MARK: - Encounter Row View
 
 struct EncounterRowView: View {
+    let encounterData: EncounterWithRelationships?
     let encounter: SQLEncounter
     
     @Dependency(\.encounterService) var encounterService
-    @State private var partners: [SQLPartner] = []
-    @State private var activities: [SQLActivityType] = []
-    @State private var protectionMethods: [SQLProtectionMethod] = []
+    @State private var loadedPartners: [SQLPartner] = []
+    @State private var loadedActivities: [SQLActivityType] = []
+    @State private var loadedProtectionMethods: [SQLProtectionMethod] = []
+    
+    // Convenience initializer for batch-loaded data (preferred)
+    init(encounterData: EncounterWithRelationships) {
+        self.encounterData = encounterData
+        self.encounter = encounterData.encounter
+    }
+    
+    // Legacy initializer for backward compatibility (will load on demand)
+    init(encounter: SQLEncounter) {
+        self.encounterData = nil
+        self.encounter = encounter
+    }
+    
+    private var partners: [SQLPartner] {
+        encounterData?.partners ?? loadedPartners
+    }
+    
+    private var activities: [SQLActivityType] {
+        encounterData?.activities ?? loadedActivities
+    }
+    
+    private var protectionMethods: [SQLProtectionMethod] {
+        encounterData?.protectionMethods ?? loadedProtectionMethods
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -170,23 +187,41 @@ struct EncounterRowView: View {
         }
         .padding(.vertical, 4)
         .task {
-            await loadRelationships()
+            // Only load if data wasn't pre-loaded (legacy mode)
+            if encounterData == nil {
+                await loadRelationships()
+            }
+        }
+    }
+    
+    private func loadRelationships() async {
+        // Capture service before detached task to avoid actor isolation issues
+        let service = encounterService
+        let encounterId = encounter.id
+        
+        do {
+            let partners = try await Task.detached {
+                try service.fetchPartners(for: encounterId)
+            }.value
+            loadedPartners = partners
+            
+            let activities = try await Task.detached {
+                try service.fetchActivities(for: encounterId)
+            }.value
+            loadedActivities = activities
+            
+            let protectionMethods = try await Task.detached {
+                try service.fetchProtectionMethods(for: encounterId)
+            }.value
+            loadedProtectionMethods = protectionMethods
+        } catch {
+            // Silent fail - relationships will be empty
         }
     }
     
     private var partnerNames: String {
         guard !partners.isEmpty else { return "No partners" }
         return partners.map(\.name).joined(separator: ", ")
-    }
-    
-    private func loadRelationships() async {
-        do {
-            partners = try encounterService.fetchPartners(for: encounter.id)
-            activities = try encounterService.fetchActivities(for: encounter.id)
-            protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
-        } catch {
-            // Silent fail - relationships will be empty
-        }
     }
 }
 
