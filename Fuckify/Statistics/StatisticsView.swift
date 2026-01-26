@@ -20,6 +20,14 @@ struct StatisticsView: View {
 
     @State private var selectedYear: Int? = nil // nil means "All"
     @State private var encounterRelationships: [UUID: EncounterRelationships] = [:]
+    
+    // MARK: - Cached Statistics (computed once when data changes, not on every render)
+    @State private var cachedAverageDuration: String = "0m"
+    @State private var cachedRecentEncountersCount: Int = 0
+    @State private var cachedTopActivities: [(activity: SQLActivityType, count: Int)] = []
+    @State private var cachedMostCommonProtection: (method: SQLProtectionMethod, count: Int)? = nil
+    @State private var cachedTopPartners: [(partner: SQLPartner, count: Int)] = []
+    @State private var cachedAverageRating: Double = 0
 
     // MARK: - Year Filtering
 
@@ -40,272 +48,110 @@ struct StatisticsView: View {
             return calendar.component(.year, from: date) == year
         }
     }
+    
+    private var yearFilterMenu: some View {
+        Menu {
+            Button(action: { selectedYear = nil }) {
+                HStack {
+                    Text("All Years")
+                    if selectedYear == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            Divider()
+
+            ForEach(availableYears, id: \.self) { year in
+                Button(action: { selectedYear = year }) {
+                    HStack {
+                        Text(String(year))
+                        if selectedYear == year {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                Text(selectedYear.map(String.init) ?? "All")
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Overview Stats
-                    VStack(spacing: 12) {
-                        Text("Overview")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal)
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            StatCard(
-                                title: "Total Encounters",
-                                value: "\(filteredEncounters.count)",
-                                icon: "heart.fill",
-                                color: .pink
-                            )
-
-                            StatCard(
-                                title: "Partners",
-                                value: "\(partners.count)",
-                                icon: "person.2.fill",
-                                color: .blue
-                            )
-
-                            StatCard(
-                                title: "Avg Duration",
-                                value: averageDuration,
-                                icon: "clock.fill",
-                                color: .orange
-                            )
-
-                            StatCard(
-                                title: "Recent (30d)",
-                                value: "\(recentEncountersCount)",
-                                icon: "calendar",
-                                color: .green
-                            )
-                        }
-                        .padding(.horizontal)
-                    }
-
-                    // Top Activities
-                    if !topActivities.isEmpty {
-                        VStack(spacing: 12) {
-                            Text("Top Activities")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-
-                            VStack(spacing: 8) {
-                                ForEach(Array(topActivities.enumerated()), id: \.element.activity) { index, item in
-                                    HStack {
-                                        Image(systemName: item.activity.icon)
-                                            .font(.title3)
-                                            .foregroundColor(.purple)
-                                            .frame(width: 50, height: 50)
-                                            .background(Color.purple.opacity(0.1))
-                                            .clipShape(Circle())
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(item.activity.displayName)
-                                                .font(.headline)
-                                            Text("\(item.count) times")
-                                                .font(.subheadline)
-                                                .foregroundColor(.secondary)
-                                        }
-
-                                        Spacer()
-
-                                        Text("#\(index + 1)")
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.secondary.opacity(0.5))
-                                    }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-
-                    // Top Partners
-                    if !topPartners.isEmpty {
-                        VStack(spacing: 12) {
-                            Text("Most Active Partners")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-
-                            VStack(spacing: 8) {
-                                ForEach(Array(topPartners.enumerated()), id: \.element.partner.id) { index, item in
-                                    HStack {
-                                        ZStack {
-                                            Circle()
-                                                .fill(item.partner.color)
-                                                .frame(width: 50, height: 50)
-
-                                            Text(item.partner.initials)
-                                                .font(.headline)
-                                                .foregroundColor(.white)
-                                        }
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(item.partner.name)
-                                                .font(.headline)
-                                            Text("\(item.count) encounters")
-                                                .font(.subheadline)
-                                                .foregroundColor(.secondary)
-                                        }
-
-                                        Spacer()
-
-                                        Text("#\(index + 1)")
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.secondary.opacity(0.5))
-                                    }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-
-                    // Protection Methods
-                    if let mostCommon = mostCommonProtection {
-                        VStack(spacing: 12) {
-                            Text("Protection")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-
-                            HStack {
-                                Image(systemName: mostCommon.method.icon)
-                                    .font(.title)
-                                    .foregroundColor(.green)
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.green.opacity(0.1))
-                                    .clipShape(Circle())
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(mostCommon.method.displayName)
-                                        .font(.headline)
-                                    Text("Used in \(mostCommon.count) encounters")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                        }
-                    }
-
-                    // Average Rating
-                    if averageRating > 0 {
-                        VStack(spacing: 12) {
-                            Text("Average Rating")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-
-                            HStack {
-                                HStack(spacing: 4) {
-                                    ForEach(1...5, id: \.self) { star in
-                                        Image(systemName: star <= Int(averageRating.rounded()) ? "star.fill" : "star")
-                                            .foregroundColor(.yellow)
-                                            .font(.title2)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Text(String(format: "%.1f", averageRating))
-                                    .font(.title)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                        }
-                    }
-
-
-                    if !filteredEncounters.isEmpty {
-                        EncountersByMonthChartView(selectedYear: selectedYear)
-
-                        EncountersByDayChartView(selectedYear: selectedYear)
-                    } else {
-                        VStack(spacing: 16) {
-                            Image(systemName: "chart.bar.xaxis")
-                                .font(.system(size: 60))
-                                .foregroundColor(.secondary)
-                            Text("No Data Yet")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                            Text("Start logging encounters to see your statistics")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 60)
+            contentView
+                .navigationTitle("Summary")
+                .toolbarTitleDisplayMode(.inlineLarge)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        yearFilterMenu
                     }
                 }
-                .padding(.vertical)
-            }
-            .navigationTitle("Summary")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button {
-                            selectedYear = nil
-                        } label: {
-                            HStack {
-                                Text("All Years")
-                                if selectedYear == nil {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-
-                        Divider()
-
-                        ForEach(availableYears, id: \.self) { year in
-                            Button {
-                                selectedYear = year
-                            } label: {
-                                HStack {
-                                    Text(String(year))
-                                    if selectedYear == year {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                            Text(selectedYear.map(String.init) ?? "All")
-                        }
-                    }
+                .task {
+                    await loadEncounterRelationships()
+                    calculateStatistics()
                 }
-            }
-            .task {
-                await loadEncounterRelationships()
-            }
+                .onChange(of: filteredEncounters.count) { _, _ in
+                    calculateStatistics()
+                }
+                .onChange(of: encounterRelationships.count) { _, _ in
+                    calculateStatistics()
+                }
         }
+    }
+    
+    private var contentView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                OverviewSection(
+                    encountersCount: filteredEncounters.count,
+                    partnersCount: partners.count,
+                    averageDuration: cachedAverageDuration,
+                    recentCount: cachedRecentEncountersCount
+                )
+                
+                if !cachedTopActivities.isEmpty {
+                    TopActivitiesSection(activities: cachedTopActivities)
+                }
+                
+                if !cachedTopPartners.isEmpty {
+                    TopPartnersSection(partners: cachedTopPartners)
+                }
+                
+                if let protection = cachedMostCommonProtection {
+                    ProtectionSection(
+                        protectionMethod: protection.method,
+                        count: protection.count
+                    )
+                }
+                
+                if cachedAverageRating > 0 {
+                    AverageRatingSection(rating: cachedAverageRating)
+                }
+                
+                ChartsSection(
+                    selectedYear: selectedYear,
+                    hasData: !filteredEncounters.isEmpty
+                )
+            }
+            .padding(.vertical)
+        }
+    }
+    
+    // MARK: - Statistics Calculation
+    
+    /// Recalculates all statistics when data changes (not on every render)
+    private func calculateStatistics() {
+        print("📊 [StatisticsView] Recalculating statistics (data changed)")
+        cachedAverageDuration = averageDuration
+        cachedRecentEncountersCount = recentEncountersCount
+        cachedTopActivities = topActivities
+        cachedMostCommonProtection = mostCommonProtection
+        cachedTopPartners = topPartners
+        cachedAverageRating = averageRating
     }
 
     // MARK: - Data Loading
@@ -408,6 +254,251 @@ struct EncounterRelationships {
     let activities: [SQLActivityType]
     let protectionMethods: [SQLProtectionMethod]
     let partnerIDs: [UUID]
+}
+
+// MARK: - Section Views
+
+struct OverviewSection: View {
+    let encountersCount: Int
+    let partnersCount: Int
+    let averageDuration: String
+    let recentCount: Int
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Overview")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                StatCard(
+                    title: "Total Encounters",
+                    value: "\(encountersCount)",
+                    icon: "heart.fill",
+                    color: .pink
+                )
+
+                StatCard(
+                    title: "Partners",
+                    value: "\(partnersCount)",
+                    icon: "person.2.fill",
+                    color: .blue
+                )
+
+                StatCard(
+                    title: "Avg Duration",
+                    value: averageDuration,
+                    icon: "clock.fill",
+                    color: .orange
+                )
+
+                StatCard(
+                    title: "Recent (30d)",
+                    value: "\(recentCount)",
+                    icon: "calendar",
+                    color: .green
+                )
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct TopActivitiesSection: View {
+    let activities: [(activity: SQLActivityType, count: Int)]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Top Activities")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            VStack(spacing: 8) {
+                ForEach(Array(activities.enumerated()), id: \.element.activity) { index, item in
+                    HStack {
+                        Image(systemName: item.activity.icon)
+                            .font(.title3)
+                            .foregroundColor(.purple)
+                            .frame(width: 50, height: 50)
+                            .background(Color.purple.opacity(0.1))
+                            .clipShape(Circle())
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.activity.displayName)
+                                .font(.headline)
+                            Text("\(item.count) times")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Text("#\(index + 1)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary.opacity(0.5))
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct TopPartnersSection: View {
+    let partners: [(partner: SQLPartner, count: Int)]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Most Active Partners")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            VStack(spacing: 8) {
+                ForEach(Array(partners.enumerated()), id: \.element.partner.id) { index, item in
+                    HStack {
+                        ZStack {
+                            Circle()
+                                .fill(item.partner.color)
+                                .frame(width: 50, height: 50)
+
+                            Text(item.partner.initials)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.partner.name)
+                                .font(.headline)
+                            Text("\(item.count) encounters")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Text("#\(index + 1)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary.opacity(0.5))
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct ProtectionSection: View {
+    let protectionMethod: SQLProtectionMethod
+    let count: Int
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Protection")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            HStack {
+                Image(systemName: protectionMethod.icon)
+                    .font(.title)
+                    .foregroundColor(.green)
+                    .frame(width: 50, height: 50)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(protectionMethod.displayName)
+                        .font(.headline)
+                    Text("Used in \(count) encounters")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct AverageRatingSection: View {
+    let rating: Double
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Average Rating")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            HStack {
+                HStack(spacing: 4) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= Int(rating.rounded()) ? "star.fill" : "star")
+                            .foregroundColor(.yellow)
+                            .font(.title2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(String(format: "%.1f", rating))
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct ChartsSection: View {
+    let selectedYear: Int?
+    let hasData: Bool
+    
+    var body: some View {
+        if hasData {
+            EncountersByMonthChartView(selectedYear: selectedYear)
+            EncountersByDayChartView(selectedYear: selectedYear)
+        } else {
+            VStack(spacing: 16) {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 60))
+                    .foregroundColor(.secondary)
+                Text("No Data Yet")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Text("Start logging encounters to see your statistics")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .padding(.top, 60)
+        }
+    }
 }
 
 // MARK: - Stat Card View
