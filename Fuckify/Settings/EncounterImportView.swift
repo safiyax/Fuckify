@@ -364,7 +364,7 @@ struct EncounterImportView: View {
             )
             
             do {
-                try encounterService.create(
+                _ = try encounterService.create(
                     encounterDraft,
                     partnerIDs: matchedPartnerIDs,
                     activities: encounterData.activities,

@@ -8,6 +8,7 @@
 import OSLog
 import SQLiteData
 
+private nonisolated(unsafe) let logger = Logger(subsystem: "Fuckify", category: "Database")
 
 func appDatabase() throws -> any DatabaseWriter {
     @Dependency(\.context) var context
@@ -46,5 +47,3 @@ func appDatabase() throws -> any DatabaseWriter {
     try migrator.migrate(database)
     return database
 }
-
-private let logger = Logger(subsystem: "Fuckify", category: "Database")

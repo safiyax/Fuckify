@@ -9,7 +9,7 @@ import Foundation
 import SQLiteData
 
 struct CreateTables {
-    static func migrate(_ db: Database) throws {
+    nonisolated static func migrate(_ db: Database) throws {
         // create partners table
         try #sql("""
             CREATE TABLE "partner"(

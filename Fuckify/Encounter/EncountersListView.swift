@@ -194,26 +194,12 @@ struct EncounterRowView: View {
         }
     }
     
+    @MainActor
     private func loadRelationships() async {
-        // Capture service before detached task to avoid actor isolation issues
-        let service = encounterService
-        let encounterId = encounter.id
-        
         do {
-            let partners = try await Task.detached {
-                try service.fetchPartners(for: encounterId)
-            }.value
-            loadedPartners = partners
-            
-            let activities = try await Task.detached {
-                try service.fetchActivities(for: encounterId)
-            }.value
-            loadedActivities = activities
-            
-            let protectionMethods = try await Task.detached {
-                try service.fetchProtectionMethods(for: encounterId)
-            }.value
-            loadedProtectionMethods = protectionMethods
+            loadedPartners = try encounterService.fetchPartners(for: encounter.id)
+            loadedActivities = try encounterService.fetchActivities(for: encounter.id)
+            loadedProtectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
         } catch {
             // Silent fail - relationships will be empty
         }
