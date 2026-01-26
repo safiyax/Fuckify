@@ -261,7 +261,7 @@ struct PartnerImportView: View {
             )
             
             do {
-                try partnerService.create(partnerDraft)
+                _ = try partnerService.create(partnerDraft)
             } catch {
                 print("Failed to import partner \(partnerData.name): \(error)")
             }

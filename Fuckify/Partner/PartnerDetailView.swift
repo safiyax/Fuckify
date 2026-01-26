@@ -321,7 +321,7 @@ struct PartnerDetailView: View {
             
             // Perform database I/O off main thread
             try await Task.detached {
-                try service.update(updatedPartner)
+                try await service.update(updatedPartner)
             }.value
         } catch {
             print("Failed to update partner: \(error)")
@@ -339,7 +339,7 @@ struct PartnerDetailView: View {
         // Perform database I/O off main thread
         do {
             let allEncounters = try await Task.detached {
-                try service.fetchAll()
+                try await service.fetchAll()
             }.value
             
             // Filter encounters that include this partner
@@ -347,7 +347,7 @@ struct PartnerDetailView: View {
             for encounter in allEncounters {
                 do {
                     let partners = try await Task.detached {
-                        try service.fetchPartners(for: encounter.id)
+                        try await service.fetchPartners(for: encounter.id)
                     }.value
                     if partners.contains(where: { $0.id == partner.id }) {
                         partnerEncounters.append(encounter)
@@ -373,7 +373,7 @@ struct PartnerDetailView: View {
             do {
                 // Perform database I/O off main thread
                 try await Task.detached {
-                    try service.delete(encounter.id)
+                    try await service.delete(encounter.id)
                 }.value
                 encounters.removeAll { $0.id == encounter.id }
             } catch {

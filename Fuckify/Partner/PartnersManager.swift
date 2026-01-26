@@ -38,7 +38,7 @@ class PartnersManager {
             
             // Perform database I/O off main thread
             let fetchedPartners = try await Task.detached {
-                try service.fetchAll()
+                try await service.fetchAll()
             }.value
             
             // Update UI on main thread
@@ -59,7 +59,7 @@ class PartnersManager {
             let service = partnerService
             
             let createdPartner = try await Task.detached {
-                try service.create(partner)
+                try await service.create(partner)
             }.value
             logger.info("Created partner: \(partner.name)")
             
@@ -83,7 +83,7 @@ class PartnersManager {
                 let service = partnerService
                 
                 try await Task.detached {
-                    try service.update(partner)
+                    try await service.update(partner)
                 }.value
                 logger.info("Updated partner: \(partner.name)")
             } catch {
@@ -105,7 +105,7 @@ class PartnersManager {
             let service = partnerService
             
             try await Task.detached {
-                try service.delete(partner.id)
+                try await service.delete(partner.id)
             }.value
             logger.info("Deleted partner: \(partner.name)")
         } catch {
@@ -164,7 +164,7 @@ class PartnersManager {
                 let service = partnerService
                 
                 try await Task.detached {
-                    try service.togglePin(for: partner.id)
+                    try await service.togglePin(for: partner.id)
                 }.value
                 logger.info("Toggled pin for partner: \(partner.name)")
             } catch {

@@ -152,8 +152,8 @@ struct PartnerFormView: View {
             let service = partnerService
             
             // Perform database I/O off main thread
-            try await Task.detached {
-                try service.create(draft)
+            let _ = try await Task.detached {
+                try await service.create(draft)
             }.value
             dismiss()
         } catch {

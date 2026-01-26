@@ -48,7 +48,7 @@ class EncountersManager {
             // This loads all encounters with their relationships in just 4 queries
             // instead of 3N+1 queries (where N = number of encounters)
             let fetchedEncounters = try await Task.detached {
-                try service.fetchAllWithRelationships()
+                try await service.fetchAllWithRelationships()
             }.value
             
             // Update UI on main thread
@@ -75,7 +75,7 @@ class EncountersManager {
             let pService = partnerService
             
             let encounterID = try await Task.detached {
-                try encService.create(
+                try await encService.create(
                     encounterDraft,
                     partnerIDs: partnerIDs,
                     activities: activities,
@@ -88,7 +88,7 @@ class EncountersManager {
             if let date = encounterDraft.date {
                 for partnerID in partnerIDs {
                     try? await Task.detached {
-                        try pService.updateLastEncounterDate(partnerID, date: date)
+                        try await pService.updateLastEncounterDate(partnerID, date: date)
                     }.value
                 }
             }
@@ -114,7 +114,7 @@ class EncountersManager {
             
             // Perform database I/O off main thread
             try await Task.detached {
-                try encService.update(
+                try await encService.update(
                     encounter,
                     partnerIDs: partnerIDs,
                     activities: activities,
@@ -127,7 +127,7 @@ class EncountersManager {
             if let date = encounter.date, let partnerIDs = partnerIDs {
                 for partnerID in partnerIDs {
                     try? await Task.detached {
-                        try pService.updateLastEncounterDate(partnerID, date: date)
+                        try await pService.updateLastEncounterDate(partnerID, date: date)
                     }.value
                 }
             }
@@ -147,7 +147,7 @@ class EncountersManager {
             
             // Perform database I/O off main thread
             try await Task.detached {
-                try service.delete(encounter.id)
+                try await service.delete(encounter.id)
             }.value
             logger.info("Deleted encounter: \(encounter.id)")
             
@@ -194,7 +194,7 @@ class EncountersManager {
             let service = encounterService
             
             return try await Task.detached {
-                try service.fetchPartners(for: encounter.id)
+                try await service.fetchPartners(for: encounter.id)
             }.value
         } catch {
             logger.error("Failed to fetch partners for encounter: \(error.localizedDescription)")
@@ -209,7 +209,7 @@ class EncountersManager {
             let service = encounterService
             
             return try await Task.detached {
-                try service.fetchActivities(for: encounter.id)
+                try await service.fetchActivities(for: encounter.id)
             }.value
         } catch {
             logger.error("Failed to fetch activities for encounter: \(error.localizedDescription)")
@@ -224,7 +224,7 @@ class EncountersManager {
             let service = encounterService
             
             return try await Task.detached {
-                try service.fetchProtectionMethods(for: encounter.id)
+                try await service.fetchProtectionMethods(for: encounter.id)
             }.value
         } catch {
             logger.error("Failed to fetch protection methods for encounter: \(error.localizedDescription)")
