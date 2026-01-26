@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97532F1ED08200FC58E8 /* LiquidGlassKit */; };
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
+		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
 /* End PBXBuildFile section */
 
@@ -30,6 +31,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
+				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
 			);
@@ -77,6 +79,7 @@
 				89BA72072F0C9BC10017A928 /* SQLiteData */,
 				890C97532F1ED08200FC58E8 /* LiquidGlassKit */,
 				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
+				890C97632F205DBB00FC58E8 /* AcknowList */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -110,6 +113,7 @@
 				89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */,
 				890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */,
 				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
+				890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -151,7 +155,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -190,7 +194,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -381,6 +385,14 @@
 				minimumVersion = 1.1.1;
 			};
 		};
+		890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/vtourraine/acknowlist.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.4.0;
+			};
+		};
 		89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
@@ -401,6 +413,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */;
 			productName = MijickCalendarView;
+		};
+		890C97632F205DBB00FC58E8 /* AcknowList */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */;
+			productName = AcknowList;
 		};
 		89BA72072F0C9BC10017A928 /* SQLiteData */ = {
 			isa = XCSwiftPackageProductDependency;

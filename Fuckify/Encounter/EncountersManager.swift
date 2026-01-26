@@ -20,10 +20,15 @@ class EncountersManager {
     @ObservationIgnored
     @Dependency(\.partnerService) private var partnerService
 
-    var encounters: [SQLEncounter] = []
+    var encountersWithRelationships: [EncounterWithRelationships] = []
     var searchText: String = ""
     var errorMessage: String?
     var isLoading = false
+    
+    // Convenience accessor for just encounters
+    var encounters: [SQLEncounter] {
+        encountersWithRelationships.map(\.encounter)
+    }
 
     init() {
         // Don't fetch in init - let views trigger it
@@ -39,18 +44,20 @@ class EncountersManager {
             // Capture service before detached task to avoid actor isolation issues
             let service = encounterService
             
-            // Perform database I/O off main thread
+            // Perform database I/O off main thread with batch loading
+            // This loads all encounters with their relationships in just 4 queries
+            // instead of 3N+1 queries (where N = number of encounters)
             let fetchedEncounters = try await Task.detached {
-                try service.fetchAll()
+                try service.fetchAllWithRelationships()
             }.value
             
             // Update UI on main thread
-            encounters = fetchedEncounters
-            logger.info("Fetched \(self.encounters.count) encounters")
+            encountersWithRelationships = fetchedEncounters
+            logger.info("Fetched \(self.encounters.count) encounters with relationships")
         } catch {
             logger.error("Failed to fetch encounters: \(error.localizedDescription)")
             errorMessage = "Unable to load encounters. Please try again."
-            encounters = []
+            encountersWithRelationships = []
         }
         
         isLoading = false
@@ -160,14 +167,17 @@ class EncountersManager {
 
     // MARK: - Computed Properties
 
-    var filteredEncounters: [SQLEncounter] {
+    var filteredEncounters: [EncounterWithRelationships] {
         if searchText.isEmpty {
-            return encounters
+            return encountersWithRelationships
         }
-        return encounters.filter { encounter in
-            encounter.location.localizedCaseInsensitiveContains(searchText) ||
-            encounter.notes.localizedCaseInsensitiveContains(searchText)
-            // TODO: Filter by partner names once we have them loaded
+        return encountersWithRelationships.filter { item in
+            let encounter = item.encounter
+            let partnerNames = item.partners.map(\.name).joined(separator: " ")
+            
+            return encounter.location.localizedCaseInsensitiveContains(searchText) ||
+                   encounter.notes.localizedCaseInsensitiveContains(searchText) ||
+                   partnerNames.localizedCaseInsensitiveContains(searchText)
         }
     }
 

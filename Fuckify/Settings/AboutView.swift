@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import AcknowList
 
 struct AboutView: View {
     private var appVersion: String {
@@ -20,7 +21,7 @@ struct AboutView: View {
             Section {
                 VStack(spacing: 16) {
                     // App Icon
-                    if let appIcon = UIImage(named: "AppIcon") {
+                    if let appIcon = UIImage(named: "CatIcon60x60-Image") {
                         Image(uiImage: appIcon)
                             .resizable()
                             .frame(width: 100, height: 100)
@@ -65,6 +66,18 @@ struct AboutView: View {
                 Text("Fuckify is a sexual health companion app designed to help you track your encounters and maintain your wellness.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
+            }
+            
+            Section("Open Source") {
+                NavigationLink {
+                    AcknowledgementsView()
+                } label: {
+                    HStack {
+//                        Image(systemName: "heart.text.square.fill")
+//                            .foregroundColor(.red)
+                        Text("Acknowledgements")
+                    }
+                }
             }
         }
         .navigationTitle("About")
