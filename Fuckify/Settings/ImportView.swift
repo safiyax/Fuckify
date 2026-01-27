@@ -252,6 +252,22 @@ struct ImportView: View {
             .task {
                 await loadData()
             }
+            .onChange(of: showingPartnerImport) { _, isShowing in
+                if !isShowing {
+                    // Sheet was dismissed, reload data
+                    Task {
+                        await loadData()
+                    }
+                }
+            }
+            .onChange(of: showingEncounterImport) { _, isShowing in
+                if !isShowing {
+                    // Sheet was dismissed, reload data
+                    Task {
+                        await loadData()
+                    }
+                }
+            }
             .onAppear {
                 // Pre-generate export files so ShareLink has them ready
                 if !allPartners.isEmpty && partnerExportURL == nil {
