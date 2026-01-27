@@ -12,23 +12,30 @@ struct ContentView: View {
     @SceneStorage("selectedTab") var selectedTab = 0
     @State private var partnersManager = PartnersManager()
     @State private var encountersManager = EncountersManager()
+    @State private var profile = UserProfile.shared
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Activity", systemImage: "heart.fill", value: 0) {
-                EncountersListView()
+            Tab("Activity", systemImage: "bed.double", value: 0) {
+//                EncountersListView()
+                CalendarView()
+                    .environment(encountersManager)
+            }
+            
+            Tab("Summary", systemImage: "chart.bar.xaxis", value: 2) {
+                StatisticsView()
                     .environment(encountersManager)
             }
 
-            Tab("Partners", systemImage: "person.2.fill", value: 1) {
+            Tab("Partners", systemImage: "bolt.heart", value: 1) {
                 PartnersListView()
                     .environment(partnersManager)
             }
 
-            Tab("Summary", systemImage: "circle.hexagonpath.fill", value: 2) {
-                StatisticsView()
-                    .environment(encountersManager)
+            Tab("Profile", systemImage: "person.crop.circle", value: 3) {
+                ProfileView()
             }
+
 
             Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
                 withAnimation {

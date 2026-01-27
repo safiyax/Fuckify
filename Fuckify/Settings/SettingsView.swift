@@ -59,10 +59,6 @@ struct SettingsView: View {
                                 .foregroundColor(.blue)
                             Text("Import & Export")
                                 .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         }
                     }
 
@@ -77,7 +73,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Section {
+                Section("More") {
                     NavigationLink {
                         AboutView()
                     } label: {
@@ -85,6 +81,18 @@ struct SettingsView: View {
                             Image(systemName: "info.circle.fill")
                                 .foregroundColor(.blue)
                             Text("About")
+                        }
+                    }
+                    NavigationLink {
+//                        CalendarView()
+                        ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
+                            .navigationTitle("Experiments")
+
+                    } label: {
+                        HStack {
+                            Image(systemName: "gear.badge.questionmark")
+                                .foregroundColor(.green)
+                            Text("Experiments")
                         }
                     }
                 }

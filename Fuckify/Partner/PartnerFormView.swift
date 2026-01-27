@@ -54,6 +54,8 @@ struct PartnerFormView: View {
                                 }
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(colorName.capitalized)
+                            .accessibilityAddTraits(avatarColor == colorName ? .isSelected : [])
                         }
                     }
                     .padding(.vertical, 8)
@@ -83,10 +85,12 @@ struct PartnerFormView: View {
 
                 Section("Health") {
                     Toggle("On PrEP", isOn: $isOnPrep)
+                        .accessibilityHint("Indicates whether this partner is on pre-exposure prophylaxis")
                 }
 
                 Section("Display") {
                     Toggle("Pinned", isOn: $isPinned)
+                        .accessibilityHint("Pin this partner to the top of your partners list")
                 }
 
                 Section("Notes") {

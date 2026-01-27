@@ -1,0 +1,690 @@
+//
+//  CalendarView.swift
+//  Fuckify
+//
+//  Calendar view with month grid and encounter list
+//  Matches iOS Calendar app split mode design
+//
+
+import SwiftUI
+import SQLiteData
+import Dependencies
+
+struct CalendarView: View {
+    @FetchAll private var encounters: [SQLEncounter]
+    @FetchAll private var partners: [SQLPartner]
+    @Dependency(\.encounterService) var encounterService
+    
+    @State private var selectedDate: Date = Date()
+    @State private var displayedMonth: Date = Date()
+    @State private var encountersByDate: [Date: [SQLEncounter]] = [:]
+    @State private var partnerColorsByDate: [Date: [Color]] = [:]
+    @State private var showingAddEncounter = false
+    @State private var scrollPosition: Date?
+    @State private var scrollPhase: ScrollPhase?
+    @State private var monthHeight: CGFloat = 250
+    
+    private let calendar = Calendar.current
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                calendarSection
+                
+            }
+            .padding(.top, -6)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                toolbarContent
+            }
+            .sheet(isPresented: $showingAddEncounter) {
+                EncounterFormView(preselectedDate: selectedDate)
+            }
+            .task {
+                await loadEncounters()
+            }
+            .onChange(of: encounters.count) { _, _ in
+                Task {
+                    await loadEncounters()
+                }
+            }
+            .onAppear {
+                scrollPosition = displayedMonth
+                monthHeight = calculateMonthHeight(for: displayedMonth)
+            }
+        }
+    }
+    
+    private var calendarSection: some View {
+        VStack(spacing: 0) {
+            calendarHeader(displayedMonth)
+            weekdayHeaders
+            AdjustableDivider(height: 1.5)
+            
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 20) {
+                    ForEach(monthsToDisplay, id: \.self) { month in
+                        monthDayGrid(for: month)
+                            .id(month)
+//                            .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: 0, alignment: .center)
+
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $scrollPosition)
+            .scrollIndicators(.hidden)
+            .onScrollPhaseChange { oldPhase, newPhase in
+                if oldPhase == .decelerating && newPhase == .idle {
+                    if let newMonth = scrollPosition {
+                        displayedMonth = newMonth
+                        updateMonthHeight(for: newMonth)
+                    }
+                }
+                if oldPhase == .animating && newPhase == .decelerating {
+                    if let newMonth = scrollPosition {
+                        displayedMonth = newMonth
+                        updateMonthHeight(for: newMonth)
+                    }
+                }
+//                if oldPhase == .decelerating && newPhase == .animating {
+//                    if let newMonth = scrollPosition {
+//                        displayedMonth = newMonth
+//                        updateMonthHeight(for: newMonth)
+//                    }
+//                }
+            }
+            .onChange(of: scrollPosition) { oldValue, newValue in
+                if let newMonth = newValue {
+                    updateMonthHeight(for: newMonth)
+                }
+            }
+            .frame(maxHeight: monthHeight)
+            .animation(.easeInOut(duration: 0.1), value: monthHeight)
+            
+            
+            AdjustableDivider(fill: .secondary.opacity(0.1))
+            
+            encountersListSection()
+        }
+        .padding(.bottom, 0)
+        .background(Color(.systemBackground))
+        
+        
+    }
+    
+//    @
+    
+    @ViewBuilder
+    private func calendarHeader(_ month: Date) -> some View {
+        HStack {
+            Text(month.formatted(.dateTime.month(.wide)))
+                .font(.largeTitle)
+                .fontWeight(.bold)
+//                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.top, 12)
+            Spacer()
+            Text(month.formatted(.dateTime.year(.defaultDigits)))
+                .font(.title2)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+//                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.top, 12)
+//            Spacer()
+        }
+    }
+    
+    private func monthDayGrid(for month: Date) -> some View {
+        let days = daysInMonth(for: month)
+        
+        return VStack(spacing: 0) {
+            ForEach(0..<6, id: \.self) { weekIndex in
+                weekContent(for: weekIndex, days: days, month: month)
+            }
+        }
+    }
+    
+    private var weekdayHeaders: some View {
+        HStack(spacing: 0) {
+            ForEach(calendar.shortWeekdaySymbols, id: \.self) { day in
+                Text(day.prefix(1))
+                    .font(.system(size: 10))
+                    .fontWeight(.semibold)
+                    .foregroundColor(weekdayHeaderTextColor(day))
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 2)
+        .padding(.top, 10)
+    }
+    
+    private func weekdayHeaderTextColor(_ day: String) -> Color {
+        if day.prefix(3) == "Sat" || day.prefix(3) == "Sun" {
+            return .secondary
+        }
+        return .primary
+    }
+    
+    @ViewBuilder
+    private func weekContent(for weekIndex: Int, days: [Date], month: Date) -> some View {
+        if weekHasCurrentMonthDays(weekIndex, days: days, month: month) {
+            weekRow(for: weekIndex, days: days, month: month)
+            
+            if weekIndex < 5 && weekHasCurrentMonthDays(weekIndex + 1, days: days, month: month) {
+                AdjustableDivider(height: 1)
+            }
+        }
+    }
+    
+    private func weekRow(for weekIndex: Int, days: [Date], month: Date) -> some View {
+        HStack(spacing: 0) {
+            ForEach(0..<7, id: \.self) { dayIndex in
+                let dateIndex = weekIndex * 7 + dayIndex
+                if dateIndex < days.count {
+                    let date = days[dateIndex]
+                    CalendarDayCell(
+                        date: date,
+                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                        isToday: calendar.isDateInToday(date),
+                        isWeekend: dayIndex == 0 || dayIndex == 6,
+                        isCurrentMonth: calendar.isDate(date, equalTo: month, toGranularity: .month),
+                        partnerColors: partnerColors(for: date),
+                        encounterCount: encounterCount(for: date)
+                    )
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedDate = date
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top, 5)
+        .padding(.bottom, 0)
+    }
+    
+    private func weekHasCurrentMonthDays(_ weekIndex: Int, days: [Date], month: Date) -> Bool {
+        let weekDates = (0..<7).compactMap { dayIndex -> Date? in
+            let dateIndex = weekIndex * 7 + dayIndex
+            return dateIndex < days.count ? days[dateIndex] : nil
+        }
+        
+        return weekDates.contains { date in
+            calendar.isDate(date, equalTo: month, toGranularity: .month)
+        }
+    }
+    
+    @ViewBuilder
+    private func encountersListSection() -> some View {
+        if encountersForSelectedDate.isEmpty {
+            emptyStateView
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(encountersForSelectedDate) { encounter in
+                        NavigationLink {
+                            EncounterDetailView(encounter: encounter)
+                        } label: {
+                            CalendarEncounterRow(encounter: encounter)
+                        }
+                        .buttonStyle(.plain)
+                        
+//                        Divider()
+//                            .padding(.leading, 68)
+                    }
+                }
+            }
+//            .background(Color(.systemGroupedBackground))
+        }
+    }
+    
+    private var emptyStateView: some View {
+        
+        ContentUnavailableView("No Activity", systemImage: "calendar.badge.exclamationmark")
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+    }
+    
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button(action: { showingAddEncounter = true }) {
+                Label("Add Encounter", systemImage: "plus")
+            }
+        }
+        
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                withAnimation {
+                selectedDate = Date()
+                displayedMonth = Date()
+                scrollPosition = displayedMonth
+                monthHeight = calculateMonthHeight(for: displayedMonth)
+                }
+            } label: {
+//                Label("Today", systemImage: "calendar")
+                Text("Today")
+                    .fontWeight(.medium)
+            }
+        }
+        
+        ToolbarItem(placement: .bottomBar) {
+            Spacer()
+        }
+        
+        ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink {
+                
+                ContentUnavailableView("Under Construction", systemImage: "hourglass")
+                    .navigationTitle("Invitations")
+                    .navigationBarTitleDisplayMode(.large)
+                
+            } label: {
+                Label("Invitations", systemImage: "tray")
+            }
+
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var monthsToDisplay: [Date] {
+        var months: [Date] = []
+        
+        // Generate 25 months: 12 before, current, 12 after
+        for offset in -2...2 {
+            if let month = calendar.date(byAdding: .month, value: offset, to: displayedMonth) {
+                months.append(month)
+            }
+        }
+        
+        return months
+    }
+    
+    private func daysInMonth(for month: Date) -> [Date] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: month),
+              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) else {
+            return []
+        }
+        
+        var dates: [Date] = []
+        var date = monthFirstWeek.start
+        
+        // Generate 6 weeks (42 days) to ensure complete grid
+        for _ in 0..<42 {
+            dates.append(date)
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: date) else { break }
+            date = nextDate
+        }
+        
+        return dates
+    }
+    
+    private var encountersForSelectedDate: [SQLEncounter] {
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        return encountersByDate[startOfDay] ?? []
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func updateMonthHeight(for month: Date) {
+        let newHeight = calculateMonthHeight(for: month)
+        if newHeight != monthHeight {
+            monthHeight = newHeight
+        }
+    }
+    
+    private func calculateMonthHeight(for month: Date) -> CGFloat {
+        let days = daysInMonth(for: month)
+        var visibleWeeks = 0
+        
+        for weekIndex in 0..<6 {
+            if weekHasCurrentMonthDays(weekIndex, days: days, month: month) {
+                visibleWeeks += 1
+            }
+        }
+        
+        // Calculate height based on:
+        // - Week row height: ~44pt per week (5pt top padding + 29pt day cell + 10pt spacing)
+        // - Dividers: 1pt between weeks
+        let weekHeight: CGFloat = 50
+        let dividerHeight: CGFloat = 1
+        let totalHeight = CGFloat(visibleWeeks) * weekHeight + CGFloat(max(0, visibleWeeks - 1)) * dividerHeight
+        
+        return totalHeight
+    }
+    
+    private func partnerColors(for date: Date) -> [Color] {
+        let startOfDay = calendar.startOfDay(for: date)
+        return partnerColorsByDate[startOfDay] ?? []
+    }
+    
+    private func encounterCount(for date: Date) -> Int {
+        let startOfDay = calendar.startOfDay(for: date)
+        return encountersByDate[startOfDay]?.count ?? 0
+    }
+    
+    private func previousMonth() {
+        guard let newDate = calendar.date(byAdding: .month, value: -1, to: displayedMonth) else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            displayedMonth = newDate
+            scrollPosition = newDate
+        }
+    }
+    
+    private func nextMonth() {
+        guard let newDate = calendar.date(byAdding: .month, value: 1, to: displayedMonth) else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            displayedMonth = newDate
+            scrollPosition = newDate
+        }
+    }
+    
+    @MainActor
+    private func loadEncounters() async {
+        var grouped: [Date: [SQLEncounter]] = [:]
+        var colorsByDate: [Date: [Color]] = [:]
+        
+        for encounter in encounters {
+            guard let date = encounter.date else { continue }
+            let startOfDay = calendar.startOfDay(for: date)
+            grouped[startOfDay, default: []].append(encounter)
+        }
+        
+        // Now build color array based on unique partners across ALL encounters on that day
+        for (date, dayEncounters) in grouped {
+            var allPartnerColors: [Color] = []
+            var seenPartnerIDs: Set<UUID> = []
+            
+            // Go through each encounter on this day
+            for encounter in dayEncounters {
+                do {
+                    let encounterPartners = try encounterService.fetchPartners(for: encounter.id)
+                    for partner in encounterPartners {
+                        // Only add each unique partner once (by ID), but we still show pill if multiple encounters
+                        if !seenPartnerIDs.contains(partner.id) {
+                            seenPartnerIDs.insert(partner.id)
+                            allPartnerColors.append(Color.fromPartnerColorName(partner.avatarColor))
+                        }
+                    }
+                } catch {
+                    // Silent fail
+                }
+            }
+            
+            colorsByDate[date] = allPartnerColors
+        }
+        
+        // Sort encounters within each day by time (most recent first)
+        for (date, encounters) in grouped {
+            grouped[date] = encounters.sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+        }
+        
+        encountersByDate = grouped
+        partnerColorsByDate = colorsByDate
+    }
+}
+
+// MARK: - Calendar Day Cell
+
+struct CalendarDayCell: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let isWeekend: Bool
+    let isCurrentMonth: Bool
+    let partnerColors: [Color]
+    let encounterCount: Int
+    
+    private let calendar = Calendar.current
+    
+    
+    var body: some View {
+        if isCurrentMonth {
+            VStack(spacing: 0) {
+                ZStack {
+                    // Selected background circle
+                    if isSelected {
+                        Circle()
+                            .fill(circleColor)
+                    }
+                    // Day number
+                    Text("\(calendar.component(.day, from: date))")
+                        .font(textFont)
+                        .foregroundColor(textColor)
+                }
+                .frame(width: 29, height: 29)
+                
+                // Partner color indicators
+                partnerIndicator
+                    .padding(.top, 3)
+                    .padding(.bottom, 7)
+                
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        } else {
+            // Empty space for non-current-month days
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 29)
+        }
+    }
+    
+    @ViewBuilder
+    private var partnerIndicator: some View {
+        let dotSize: CGFloat = 6
+        let colorCount = min(partnerColors.count, 6)
+        let pillWidth = dotSize * CGFloat(colorCount) // Width grows with number of colors
+        let altPillWidth = dotSize * CGFloat(min(encounterCount, 6))
+        
+        if partnerColors.isEmpty || encounterCount == 0 {
+            Color.clear.frame(height: dotSize)
+        } else if encounterCount == 1 && partnerColors.count == 1 {
+            // Single encounter, single partner - show dot
+            Circle()
+                .fill(partnerColors[0])
+                .frame(width: dotSize, height: dotSize)
+        } else if encounterCount > 1 && partnerColors.count == 1 {
+            HStack(spacing: 0) {
+                ForEach(0..<min(encounterCount, 6), id: \.self) { index in
+                    partnerColors[0]
+                }
+            }
+            .frame(width: altPillWidth, height: dotSize)
+            .clipShape(Capsule())
+        } else {
+            // Multiple encounters OR multiple partners - show pill with color segments
+            HStack(spacing: 0) {
+                ForEach(0..<colorCount, id: \.self) { index in
+                    partnerColors[index]
+                }
+            }
+            .frame(width: pillWidth, height: dotSize)
+            .clipShape(Capsule())
+        }
+    }
+    
+    private var circleColor: Color {
+        if isSelected && isToday {
+            return .accentColor
+        } else {
+            return .init(uiColor: .label)
+        }
+    }
+    
+    private var textColor: Color {
+        if isSelected {
+            return .init(uiColor: .systemBackground)
+        } else if isToday && isSelected{
+            return .primary
+        } else if isToday {
+            return .accentColor
+        } else if !isCurrentMonth {
+            return .secondary.opacity(0.5)
+        } else if isWeekend {
+            return .secondary
+        } else {
+            return .primary
+        }
+    }
+    
+    private var textFont: Font {
+        if isSelected || isToday {
+            return .system(size: 18, weight: .bold)
+        }
+        return .system(size: 18, weight: .semibold)
+    }
+}
+
+// MARK: - Calendar Encounter Row
+
+struct CalendarEncounterRow: View {
+    let encounter: SQLEncounter
+    
+    @Dependency(\.encounterService) var encounterService
+    @State private var partners: [SQLPartner] = []
+    @State private var activities: [SQLActivityType] = []
+    @State private var protectionMethods: [SQLProtectionMethod] = []
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Time indicator (colored bar with partner colors)
+            partnerColorBar
+            
+            VStack(alignment: .leading, spacing: 4) {
+                // Time
+//                if let date = encounter.date {
+//                    Text(date.formatted(date: .omitted, time: .shortened))
+//                        .font(.subheadline)
+//                        .foregroundColor(.secondary)
+//                }
+                HStack(spacing: 8) {
+                    // Partners
+                    if !partners.isEmpty {
+                        Text(partners.map(\.name).joined(separator: ", "))
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    } else {
+                        Text("No partners")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    if encounter.duration > 0 {
+                        Text("\(encounter.formattedDuration)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Activities and Duration
+                HStack(spacing: 8) {
+                    if !activities.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(activities.prefix(4), id: \.self) { activity in
+                                Image(systemName: activity.icon)
+                                    .font(.subheadline)
+                                    .foregroundColor(.purple)
+                            }
+                            if activities.count > 4 {
+                                Text("+\(activities.count - 4)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    Spacer()
+                    if !protectionMethods.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(protectionMethods, id: \.self) { protectionMethod in
+                                Image(systemName: protectionMethod.icon)
+                                    .font(.subheadline)
+                                    .foregroundColor(.green)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .task {
+            await loadData()
+        }
+    }
+    
+    @ViewBuilder
+    private var partnerColorBar: some View {
+        let partnerColors = partners.map { Color.fromPartnerColorName($0.avatarColor) }
+        
+        if partnerColors.isEmpty {
+            // Fallback to accent color if no partners
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.accentColor)
+                .frame(width: 4)
+        } else if partnerColors.count == 1 {
+            // Single partner - solid color
+            RoundedRectangle(cornerRadius: 8)
+                .fill(partnerColors[0])
+                .frame(width: 4)
+        } else {
+            // Multiple partners - split vertically
+            VStack(spacing: 0) {
+                ForEach(0..<partnerColors.count, id: \.self) { index in
+                    partnerColors[index]
+                }
+            }
+            .frame(width: 4)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+    
+    @MainActor
+    private func loadData() async {
+        do {
+            partners = try encounterService.fetchPartners(for: encounter.id)
+            activities = try encounterService.fetchActivities(for: encounter.id)
+            protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+        } catch {
+            // Silent fail
+        }
+    }
+}
+
+struct AdjustableDivider: View {
+    var fill: Color = Color(uiColor: .separator)
+    var height: CGFloat = 1
+    
+    var body: some View {
+        Rectangle()
+            .fill(fill)
+            .frame(height: height)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    
+    return CalendarView()
+}

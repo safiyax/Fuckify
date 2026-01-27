@@ -78,6 +78,8 @@ struct StatisticsView: View {
                 Text(selectedYear.map(String.init) ?? "All")
             }
         }
+        .accessibilityLabel("Filter by year")
+        .accessibilityValue(selectedYear.map(String.init) ?? "All years")
     }
 
     var body: some View {
@@ -458,6 +460,9 @@ struct AverageRatingSection: View {
                             .font(.title2)
                     }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Average rating")
+                .accessibilityValue(String(format: "%.1f out of 5 stars", rating))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(String(format: "%.1f", rating))
