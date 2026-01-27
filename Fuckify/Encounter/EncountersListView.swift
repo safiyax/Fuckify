@@ -41,6 +41,7 @@ struct EncountersListView: View {
                     Button(action: { showingAddEncounter = true }) {
                         Label("Add Encounter", systemImage: "plus")
                     }
+                    .accessibilityHint("Opens form to log a new encounter")
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     if #available(iOS 26.0, *) {
@@ -50,6 +51,8 @@ struct EncountersListView: View {
                             }
                         }
                         .buttonStyle(.glassProminent)
+                        .accessibilityLabel("View profile")
+                        .accessibilityHint("Shows your profile settings")
                     } else {
                         Button(action: { showProfile = true }) {
                             ZStack {
@@ -57,6 +60,8 @@ struct EncountersListView: View {
                             }
                         }
                         .buttonStyle(.compatibleGlassProminent)
+                        .accessibilityLabel("View profile")
+                        .accessibilityHint("Shows your profile settings")
                     }
                 }
             }
@@ -165,6 +170,7 @@ struct EncounterRowView: View {
                             Image(systemName: activity.icon)
                                 .foregroundColor(.purple)
                                 .font(.caption)
+                                .accessibilityLabel(activity.displayName)
                         }
                         if activities.count > 3 {
                             Text("+\(activities.count - 3)")
@@ -172,6 +178,7 @@ struct EncounterRowView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .accessibilityElement(children: .combine)
                 }
 
                 if !protectionMethods.isEmpty {
@@ -180,8 +187,10 @@ struct EncounterRowView: View {
                             Image(systemName: protection.icon)
                                 .foregroundColor(.green)
                                 .font(.caption)
+                                .accessibilityLabel(protection.displayName)
                         }
                     }
+                    .accessibilityElement(children: .combine)
                 }
             }
         }

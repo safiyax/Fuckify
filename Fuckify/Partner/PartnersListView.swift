@@ -101,6 +101,7 @@ struct PartnersListView: View {
                         Button(action: { showingAddPartner = true }) {
                             Label("Add Partner", systemImage: "plus")
                         }
+                        .accessibilityHint("Opens form to add a new partner")
                     }
                 }
             }
@@ -176,6 +177,7 @@ struct PinnedPartnerView: View {
                     .compatibleGlassEffect()
 //                    .background(Circle().fill(Color.orange))
                     .offset(x: 3, y: 3)
+                    .accessibilityLabel("Pinned partner")
             }
 
             Text(partner.name)
@@ -209,6 +211,7 @@ struct PartnerRowView: View {
                     .font(.headline)
                     .foregroundColor(.white)
             }
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(partner.name)

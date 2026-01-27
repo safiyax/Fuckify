@@ -31,7 +31,7 @@ func appDatabase() throws -> any DatabaseWriter {
     var migrator = DatabaseMigrator()
     
 #if DEBUG
-    migrator.eraseDatabaseOnSchemaChange = true
+    migrator.eraseDatabaseOnSchemaChange = false
 #endif
     
     // Register migrations

@@ -63,6 +63,7 @@ struct EncounterDetailView: View {
                                             .font(.caption)
                                             .foregroundColor(.white)
                                     }
+                                    .accessibilityHidden(true)
 
                                     Text(partner.name)
                                 }
@@ -81,6 +82,7 @@ struct EncounterDetailView: View {
                             HStack {
                                 Image(systemName: activity.icon)
                                     .foregroundColor(.purple)
+                                    .accessibilityHidden(true)
                                 Text(activity.displayName)
                             }
                         }
@@ -94,6 +96,7 @@ struct EncounterDetailView: View {
                             HStack {
                                 Image(systemName: protection.icon)
                                     .foregroundColor(.green)
+                                    .accessibilityHidden(true)
                                 Text(protection.displayName)
                             }
                         }
@@ -113,6 +116,9 @@ struct EncounterDetailView: View {
                                         .font(.caption)
                                 }
                             }
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("Rating")
+                            .accessibilityValue("\(encounter.rating) out of 5 stars")
                         }
                     }
 

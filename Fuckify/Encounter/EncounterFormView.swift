@@ -19,6 +19,7 @@ struct EncounterFormView: View {
 
     var encounter: SQLEncounter?
     var preselectedPartners: [SQLPartner] = []
+    var preselectedDate: Date?
 
     @State private var date: Date = Date()
     @State private var durationHours: Int = 0
@@ -48,14 +49,14 @@ struct EncounterFormView: View {
                     HStack {
                         Text("Duration")
                         Spacer()
-                        Picker("Hours", selection: $durationHours) {
+                        Picker(selection: $durationHours, label: EmptyView()) {
                             ForEach(0..<24) { hour in
                                 Text("\(hour)h").tag(hour)
                             }
                         }
                         .pickerStyle(.menu)
 
-                        Picker("Minutes", selection: $durationMinutes) {
+                        Picker(selection: $durationMinutes, label: EmptyView()) {
                             ForEach([0, 15, 30, 45], id: \.self) { minute in
                                 Text("\(minute)m").tag(minute)
                             }
@@ -79,9 +80,11 @@ struct EncounterFormView: View {
                                     if selectedPartnerIDs.contains(partner.id) {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(.blue)
+                                            .accessibilityHidden(true)
                                     }
                                 }
                             }
+                            .accessibilityAddTraits(selectedPartnerIDs.contains(partner.id) ? .isSelected : [])
                         }
                     }
                 }
@@ -93,15 +96,18 @@ struct EncounterFormView: View {
                             HStack {
                                 Image(systemName: activity.icon)
                                     .foregroundColor(.purple)
+                                    .accessibilityHidden(true)
                                 Text(activity.displayName)
                                     .foregroundColor(.primary)
                                 Spacer()
                                 if selectedActivities.contains(activity) {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
+                                        .accessibilityHidden(true)
                                 }
                             }
                         }
+                        .accessibilityAddTraits(selectedActivities.contains(activity) ? .isSelected : [])
                     }
                 }
 
@@ -112,15 +118,18 @@ struct EncounterFormView: View {
                             HStack {
                                 Image(systemName: protection.icon)
                                     .foregroundColor(.green)
+                                    .accessibilityHidden(true)
                                 Text(protection.displayName)
                                     .foregroundColor(.primary)
                                 Spacer()
                                 if selectedProtection.contains(protection) {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
+                                        .accessibilityHidden(true)
                                 }
                             }
                         }
+                        .accessibilityAddTraits(selectedProtection.contains(protection) ? .isSelected : [])
                     }
                 }
 
@@ -137,12 +146,16 @@ struct EncounterFormView: View {
                                         .font(.title2)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("\(star) star\(star > 1 ? "s" : "")")
+                                .accessibilityAddTraits(rating == star ? [.isSelected] : [])
+                                .accessibilityHint("Double tap to rate this encounter")
                             }
                         }
                     }
                     .padding(.vertical, 4)
 
                     Toggle("Reached Orgasm", isOn: $reachedOrgasm)
+                        .accessibilityHint("Track whether you reached orgasm during this encounter")
                 }
 
                 // Location
@@ -192,9 +205,16 @@ struct EncounterFormView: View {
         // Load encounter data if editing
         if let encounter = encounter {
             await loadEncounter(encounter)
-        } else if !preselectedPartners.isEmpty {
-            // Preselect partners
-            selectedPartnerIDs = Set(preselectedPartners.map(\.id))
+        } else {
+            // Preselect date if provided
+            if let preselectedDate = preselectedDate {
+                date = preselectedDate
+            }
+            
+            // Preselect partners if provided
+            if !preselectedPartners.isEmpty {
+                selectedPartnerIDs = Set(preselectedPartners.map(\.id))
+            }
         }
     }
 

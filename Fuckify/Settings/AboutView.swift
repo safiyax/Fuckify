@@ -15,6 +15,10 @@ struct AboutView: View {
     private var buildNumber: String {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
     }
+    
+    private var displayName: String {
+        Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "Unknown"
+    }
 
     var body: some View {
         Form {
@@ -39,7 +43,7 @@ struct AboutView: View {
                     }
 
                     // App Name
-                    Text("Fuckify")
+                    Text(displayName)
                         .font(.title)
                         .fontWeight(.bold)
 
@@ -63,7 +67,7 @@ struct AboutView: View {
             }
 
             Section {
-                Text("Fuckify is a sexual health companion app designed to help you track your encounters and maintain your wellness.")
+                Text("\(displayName) is a sexual health companion app designed to help you track your encounters and maintain your wellness.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }

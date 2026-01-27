@@ -95,6 +95,8 @@ struct PartnerDetailView: View {
                                 }
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(colorName.capitalized)
+                            .accessibilityAddTraits(editAvatarColor == colorName ? .isSelected : [])
                         }
                     }
                     .padding(.vertical, 8)
@@ -170,6 +172,7 @@ struct PartnerDetailView: View {
             Section("Health") {
                 if isEditing {
                     Toggle("On PrEP", isOn: $editIsOnPrep)
+                        .accessibilityHint("Indicates whether this partner is on pre-exposure prophylaxis")
                 } else {
                     HStack {
                         Text("PrEP Status")
@@ -189,6 +192,7 @@ struct PartnerDetailView: View {
             if isEditing {
                 Section("Display") {
                     Toggle("Pinned", isOn: $editIsPinned)
+                        .accessibilityHint("Pin this partner to the top of your partners list")
                 }
             }
 
@@ -258,6 +262,7 @@ struct PartnerDetailView: View {
                     Button(action: { showingAddEncounter = true }) {
                         Label("Add Encounter", systemImage: "plus")
                     }
+                    .accessibilityHint("Opens form to log a new encounter")
                 }
             }
         }
