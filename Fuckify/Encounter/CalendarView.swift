@@ -20,9 +20,6 @@ struct CalendarView: View {
     @State private var encountersByDate: [Date: [SQLEncounter]] = [:]
     @State private var partnerColorsByDate: [Date: [Color]] = [:]
     @State private var showingAddEncounter = false
-    @State private var scrollPosition: Date?
-    @State private var scrollPhase: ScrollPhase?
-    @State private var monthHeight: CGFloat = 250
     
     private let calendar = Calendar.current
     
@@ -49,10 +46,6 @@ struct CalendarView: View {
                     await loadEncounters()
                 }
             }
-            .onAppear {
-                scrollPosition = displayedMonth
-                monthHeight = calculateMonthHeight(for: displayedMonth)
-            }
         }
     }
     
@@ -62,49 +55,25 @@ struct CalendarView: View {
             weekdayHeaders
             AdjustableDivider(height: 1.5)
             
-            ScrollView(.vertical) {
-                LazyVStack(spacing: 20) {
-                    ForEach(monthsToDisplay, id: \.self) { month in
-                        monthDayGrid(for: month)
-                            .id(month)
-//                            .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: 0, alignment: .center)
-
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $scrollPosition)
-            .scrollIndicators(.hidden)
-            .onScrollPhaseChange { oldPhase, newPhase in
-                if oldPhase == .decelerating && newPhase == .idle {
-                    if let newMonth = scrollPosition {
-                        displayedMonth = newMonth
-                        updateMonthHeight(for: newMonth)
-                    }
-                }
-                if oldPhase == .animating && newPhase == .decelerating {
-                    if let newMonth = scrollPosition {
-                        displayedMonth = newMonth
-                        updateMonthHeight(for: newMonth)
-                    }
-                }
-//                if oldPhase == .decelerating && newPhase == .animating {
-//                    if let newMonth = scrollPosition {
-//                        displayedMonth = newMonth
-//                        updateMonthHeight(for: newMonth)
-//                    }
-//                }
-            }
-            .onChange(of: scrollPosition) { oldValue, newValue in
-                if let newMonth = newValue {
-                    updateMonthHeight(for: newMonth)
-                }
-            }
-            .frame(maxHeight: monthHeight)
-            .animation(.easeInOut(duration: 0.1), value: monthHeight)
-            
+            monthDayGrid(for: displayedMonth)
+                .gesture(
+                    DragGesture(minimumDistance: 50)
+                        .onEnded { value in
+                            let verticalMovement = value.translation.height
+                            
+                            // Swipe down = previous month
+                            // Swipe up = next month
+                            if verticalMovement > 0 {
+                                previousMonth()
+                            } else if verticalMovement < 0 {
+                                nextMonth()
+                            }
+                        }
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
             
             AdjustableDivider(fill: .secondary.opacity(0.1))
             
@@ -112,31 +81,41 @@ struct CalendarView: View {
         }
         .padding(.bottom, 0)
         .background(Color(.systemBackground))
-        
-        
     }
     
 //    @
     
     @ViewBuilder
     private func calendarHeader(_ month: Date) -> some View {
-        HStack {
+        HStack(alignment: .lastTextBaseline) {
             Text(month.formatted(.dateTime.month(.wide)))
                 .font(.largeTitle)
                 .fontWeight(.bold)
-//                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
-                .padding(.top, 12)
             Spacer()
-            Text(month.formatted(.dateTime.year(.defaultDigits)))
-                .font(.title2)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
-//                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                .padding(.top, 12)
-//            Spacer()
+            
+            HStack {
+                Button {
+                    previousMonth()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.title3)
+                }
+                Text(month.formatted(.dateTime.year(.defaultDigits)))
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                //                .padding(.horizontal)
+                Button {
+                    nextMonth()
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.title3)
+                }
+            }
+            .padding(.trailing)
         }
+        .padding(.top, 12)
     }
     
     private func monthDayGrid(for month: Date) -> some View {
@@ -263,13 +242,10 @@ struct CalendarView: View {
         ToolbarItem(placement: .topBarLeading) {
             Button {
                 withAnimation {
-                selectedDate = Date()
-                displayedMonth = Date()
-                scrollPosition = displayedMonth
-                monthHeight = calculateMonthHeight(for: displayedMonth)
+                    selectedDate = Date()
+                    displayedMonth = Date()
                 }
             } label: {
-//                Label("Today", systemImage: "calendar")
                 Text("Today")
                     .fontWeight(.medium)
             }
@@ -294,19 +270,6 @@ struct CalendarView: View {
     }
     
     // MARK: - Computed Properties
-    
-    private var monthsToDisplay: [Date] {
-        var months: [Date] = []
-        
-        // Generate 25 months: 12 before, current, 12 after
-        for offset in -2...2 {
-            if let month = calendar.date(byAdding: .month, value: offset, to: displayedMonth) {
-                months.append(month)
-            }
-        }
-        
-        return months
-    }
     
     private func daysInMonth(for month: Date) -> [Date] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: month),
@@ -334,33 +297,6 @@ struct CalendarView: View {
     
     // MARK: - Helper Methods
     
-    private func updateMonthHeight(for month: Date) {
-        let newHeight = calculateMonthHeight(for: month)
-        if newHeight != monthHeight {
-            monthHeight = newHeight
-        }
-    }
-    
-    private func calculateMonthHeight(for month: Date) -> CGFloat {
-        let days = daysInMonth(for: month)
-        var visibleWeeks = 0
-        
-        for weekIndex in 0..<6 {
-            if weekHasCurrentMonthDays(weekIndex, days: days, month: month) {
-                visibleWeeks += 1
-            }
-        }
-        
-        // Calculate height based on:
-        // - Week row height: ~44pt per week (5pt top padding + 29pt day cell + 10pt spacing)
-        // - Dividers: 1pt between weeks
-        let weekHeight: CGFloat = 50
-        let dividerHeight: CGFloat = 1
-        let totalHeight = CGFloat(visibleWeeks) * weekHeight + CGFloat(max(0, visibleWeeks - 1)) * dividerHeight
-        
-        return totalHeight
-    }
-    
     private func partnerColors(for date: Date) -> [Color] {
         let startOfDay = calendar.startOfDay(for: date)
         return partnerColorsByDate[startOfDay] ?? []
@@ -373,17 +309,27 @@ struct CalendarView: View {
     
     private func previousMonth() {
         guard let newDate = calendar.date(byAdding: .month, value: -1, to: displayedMonth) else { return }
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             displayedMonth = newDate
-            scrollPosition = newDate
+            // If new month is current month, select today; otherwise select 1st
+            if calendar.isDate(newDate, equalTo: Date(), toGranularity: .month) {
+                selectedDate = Date()
+            } else {
+                selectedDate = calendar.date(from: calendar.dateComponents([.year, .month], from: newDate)) ?? newDate
+            }
         }
     }
     
     private func nextMonth() {
         guard let newDate = calendar.date(byAdding: .month, value: 1, to: displayedMonth) else { return }
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             displayedMonth = newDate
-            scrollPosition = newDate
+            // If new month is current month, select today; otherwise select 1st
+            if calendar.isDate(newDate, equalTo: Date(), toGranularity: .month) {
+                selectedDate = Date()
+            } else {
+                selectedDate = calendar.date(from: calendar.dateComponents([.year, .month], from: newDate)) ?? newDate
+            }
         }
     }
     
@@ -660,8 +606,12 @@ struct CalendarEncounterRow: View {
     private func loadData() async {
         do {
             partners = try encounterService.fetchPartners(for: encounter.id)
-            activities = try encounterService.fetchActivities(for: encounter.id)
-            protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+            activities = try encounterService
+                .fetchActivities(for: encounter.id)
+                .sorted { $0.displayName < $1.displayName }
+            protectionMethods = try encounterService
+                .fetchProtectionMethods(for: encounter.id)
+                .sorted { $0.displayName < $1.displayName }
         } catch {
             // Silent fail
         }
