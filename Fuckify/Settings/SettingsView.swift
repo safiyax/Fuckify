@@ -8,6 +8,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    private let config = SettingsConfig.shared
 
     var body: some View {
         NavigationStack {
@@ -18,80 +19,101 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
 
-                Section("Personalization") {
-                    NavigationLink {
-                        AppIconSettingsView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "app.fill")
-                                .foregroundColor(.pink)
-                            Text("App Icon")
+                if config.showPersonalizationSection {
+                    Section("Personalization") {
+                        if config.showAppIconPicker {
+                            NavigationLink {
+                                AppIconSettingsView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "app.fill")
+                                        .foregroundColor(.pink)
+                                    Text("App Icon")
+                                }
+                            }
                         }
-                    }
 
-                    NavigationLink {
-                        ActivitiesSettingsView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "heart.circle.fill")
-                                .foregroundColor(.purple)
-                            Text("Activities")
+                        if config.showActivities {
+                            NavigationLink {
+                                ActivitiesSettingsView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "heart.circle.fill")
+                                        .foregroundColor(.purple)
+                                    Text("Activities")
+                                }
+                            }
                         }
-                    }
 
-                    NavigationLink {
-                        ProtectionMethodsSettingsView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "shield.fill")
-                                .foregroundColor(.green)
-                            Text("Protection Methods")
-                        }
-                    }
-                }
-
-                Section("Data") {
-                    NavigationLink {
-                        ImportView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.up.arrow.down")
-                                .foregroundColor(.blue)
-                            Text("Import & Export")
-                                .foregroundColor(.primary)
-                        }
-                    }
-
-                    NavigationLink {
-                        DeleteDataView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash.fill")
-                                .foregroundColor(.red)
-                            Text("Delete Data")
+                        if config.showProtectionMethods {
+                            NavigationLink {
+                                ProtectionMethodsSettingsView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "shield.fill")
+                                        .foregroundColor(.green)
+                                    Text("Protection Methods")
+                                }
+                            }
                         }
                     }
                 }
 
-                Section("More") {
-                    NavigationLink {
-                        AboutView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
-                            Text("About")
+                if config.showDataSection {
+                    Section("Data") {
+                        if config.showImportExport {
+                            NavigationLink {
+                                ImportView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "arrow.up.arrow.down")
+                                        .foregroundColor(.blue)
+                                    Text("Import & Export")
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                        }
+
+                        if config.showDeleteData {
+                            NavigationLink {
+                                DeleteDataView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "trash.fill")
+                                        .foregroundColor(.red)
+                                    Text("Delete Data")
+                                }
+                            }
                         }
                     }
-                    NavigationLink {
-                        ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
-                            .navigationTitle("Experiments")
+                }
 
-                    } label: {
-                        HStack {
-                            Image(systemName: "gear.badge.questionmark")
-                                .foregroundColor(.green)
-                            Text("Experiments")
+                if config.showMoreSection {
+                    Section("More") {
+                        if config.showAbout {
+                            NavigationLink {
+                                AboutView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "info.circle.fill")
+                                        .foregroundColor(.blue)
+                                    Text("About")
+                                }
+                            }
+                        }
+                        
+                        if config.showExperiments {
+                            NavigationLink {
+                                ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
+                                    .navigationTitle("Experiments")
+
+                            } label: {
+                                HStack {
+                                    Image(systemName: "gear.badge.questionmark")
+                                        .foregroundColor(.green)
+                                    Text("Experiments")
+                                }
+                            }
                         }
                     }
                 }

@@ -23,7 +23,6 @@ struct ProfileView: View {
 
 
     @State private var isEditing = false
-    @State private var viewId = UUID()
 
     var body: some View {
         NavigationStack {
@@ -78,6 +77,7 @@ struct ProfileView: View {
                                     get: { editDateOfBirth ?? Date() },
                                     set: { editDateOfBirth = $0 }
                                 ),
+                                in: ...Date(),
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
@@ -99,9 +99,11 @@ struct ProfileView: View {
                                     get: { editLastSTITestDate ?? Date() },
                                     set: { editLastSTITestDate = $0 }
                                 ),
+                                in: ...Date(),
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
+//                            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
                         }
                     } else {
                         HStack {
@@ -194,17 +196,12 @@ struct ProfileView: View {
                 .onChange(of: isEditing) { oldValue, newValue in
                     if oldValue == true && newValue == false {
                         // Save changes when exiting edit mode
-                        print("save")
                         saveChanges()
-                        viewId = UUID()
                     } else if oldValue == false && newValue == true {
                         // Reload fields when entering edit mode
-                        print("load editable")
                         loadEditableFields()
-                        viewId = UUID()
                     }
                 }
-                .id(viewId)
         }
     }
 

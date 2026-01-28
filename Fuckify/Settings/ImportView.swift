@@ -11,6 +11,7 @@ struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
+    @Dependency(\.databaseService) private var databaseService
     
     @State private var allPartners: [SQLPartner] = []
     @State private var allEncounters: [SQLEncounter] = []
@@ -18,6 +19,7 @@ struct ImportView: View {
     @State private var showingEncounterImport = false
     @State private var partnerExportURL: URL?
     @State private var encounterExportURL: URL?
+    @State private var databaseExportURL: URL?
 
     var body: some View {
         NavigationStack {
@@ -236,6 +238,83 @@ struct ImportView: View {
                         }
                         .padding(.horizontal)
                     }
+                    
+                    // Advanced Section
+                    VStack(spacing: 16) {
+                        HStack {
+                            Image(systemName: "gearshape.2")
+                                .font(.title2)
+                                .foregroundColor(.orange)
+
+                            Text("Advanced")
+                                .font(.title2)
+                                .fontWeight(.bold)
+
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+
+                        VStack(spacing: 12) {
+                            if let url = databaseExportURL {
+                                ShareLink(item: url) {
+                                    HStack {
+                                        Image(systemName: "cylinder.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.orange)
+                                            .frame(width: 50)
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Export Database")
+                                                .font(.headline)
+                                                .foregroundColor(.primary)
+
+                                            Text("Raw SQLite database file")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Button(action: { exportDatabase() }) {
+                                    HStack {
+                                        Image(systemName: "cylinder.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.orange)
+                                            .frame(width: 50)
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Export Database")
+                                                .font(.headline)
+                                                .foregroundColor(.primary)
+
+                                            Text("Raw SQLite database file")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
 
                     Spacer()
                 }
@@ -275,6 +354,9 @@ struct ImportView: View {
                 }
                 if !allEncounters.isEmpty && encounterExportURL == nil {
                     exportEncounters()
+                }
+                if databaseExportURL == nil {
+                    exportDatabase()
                 }
             }
         }
@@ -366,6 +448,49 @@ struct ImportView: View {
             return "\"\(escaped)\""
         }
         return field
+    }
+    
+    private func exportDatabase() {
+        do {
+            // Get the database path (might be a file:// URL string or a path)
+            let dbPathString = try databaseService.getDatabasePath()
+            
+            // Convert to URL, handling both file:// URLs and plain paths
+            let sourceURL: URL
+            if dbPathString.hasPrefix("file://") {
+                guard let url = URL(string: dbPathString) else {
+                    print("Failed to parse database URL: \(dbPathString)")
+                    return
+                }
+                sourceURL = url
+            } else {
+                sourceURL = URL(fileURLWithPath: dbPathString)
+            }
+            
+            // Verify source file exists
+            guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+                print("Database file does not exist at: \(sourceURL.path)")
+                return
+            }
+            
+            // Create a copy in the temp directory for sharing
+            let tempDir = FileManager.default.temporaryDirectory
+            let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let fileURL = tempDir.appendingPathComponent("CoitalComrade_\(timestamp).db")
+            
+            // Remove existing temp file if present
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+            }
+            
+            // Copy the database file
+            try FileManager.default.copyItem(at: sourceURL, to: fileURL)
+            
+            print("Database exported successfully to: \(fileURL.path)")
+            databaseExportURL = fileURL
+        } catch {
+            print("Failed to export database: \(error)")
+        }
     }
 }
 

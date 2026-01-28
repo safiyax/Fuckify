@@ -15,8 +15,14 @@ struct EncounterDetailView: View {
     @State private var activities: [SQLActivityType] = []
     @State private var protectionMethods: [SQLProtectionMethod] = []
     @State private var isLoading = true
+    @State private var currentEncounter: SQLEncounter
     
     @Dependency(\.encounterService) private var encounterService
+    
+    init(encounter: SQLEncounter) {
+        self.encounter = encounter
+        _currentEncounter = State(initialValue: encounter)
+    }
 
     var body: some View {
         List {
@@ -27,7 +33,7 @@ struct EncounterDetailView: View {
             } else {
                 // Date and Duration Section
                 Section("When") {
-                    if let date = encounter.date {
+                    if let date = currentEncounter.date {
                         HStack {
                             Text("Date")
                             Spacer()
@@ -36,11 +42,11 @@ struct EncounterDetailView: View {
                         }
                     }
 
-                    if !encounter.duration.isZero {
+                    if !currentEncounter.duration.isZero {
                         HStack {
                             Text("Duration")
                             Spacer()
-                            Text(encounter.formattedDuration)
+                            Text(currentEncounter.formattedDuration)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -105,27 +111,27 @@ struct EncounterDetailView: View {
 
                 // Experience Section
                 Section("Experience") {
-                    if encounter.rating > 0 {
+                    if currentEncounter.rating > 0 {
                         HStack {
                             Text("Rating")
                             Spacer()
                             HStack(spacing: 4) {
                                 ForEach(1...5, id: \.self) { star in
-                                    Image(systemName: star <= encounter.rating ? "star.fill" : "star")
-                                        .foregroundColor(star <= encounter.rating ? .yellow : .gray)
+                                    Image(systemName: star <= currentEncounter.rating ? "star.fill" : "star")
+                                        .foregroundColor(star <= currentEncounter.rating ? .yellow : .gray)
                                         .font(.caption)
                                 }
                             }
                             .accessibilityElement(children: .ignore)
                             .accessibilityLabel("Rating")
-                            .accessibilityValue("\(encounter.rating) out of 5 stars")
+                            .accessibilityValue("\(currentEncounter.rating) out of 5 stars")
                         }
                     }
 
                     HStack {
                         Text("Orgasm")
                         Spacer()
-                        if encounter.reachedOrgasm {
+                        if currentEncounter.reachedOrgasm {
                             Label("Yes", systemImage: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                         } else {
@@ -136,17 +142,17 @@ struct EncounterDetailView: View {
                 }
 
                 // Location Section
-                if !encounter.location.isEmpty {
+                if !currentEncounter.location.isEmpty {
                     Section("Location") {
-                        Text(encounter.location)
+                        Text(currentEncounter.location)
                             .foregroundColor(.secondary)
                     }
                 }
 
                 // Notes Section
-                if !encounter.notes.isEmpty {
+                if !currentEncounter.notes.isEmpty {
                     Section("Notes") {
-                        Text(encounter.notes)
+                        Text(currentEncounter.notes)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -156,7 +162,7 @@ struct EncounterDetailView: View {
                     HStack {
                         Text("Added")
                         Spacer()
-                        Text(encounter.dateAdded.formatted(date: .abbreviated, time: .shortened))
+                        Text(currentEncounter.dateAdded.formatted(date: .abbreviated, time: .shortened))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -173,6 +179,14 @@ struct EncounterDetailView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             EncounterFormView(encounter: encounter)
+        }
+        .onChange(of: showingEditSheet) { _, isShowing in
+            if !isShowing {
+                // Sheet was dismissed, refresh encounter data
+                Task {
+                    await refreshEncounter()
+                }
+            }
         }
         .task {
             await loadEncounterData()
@@ -197,6 +211,27 @@ struct EncounterDetailView: View {
         }
         
         isLoading = false
+    }
+    
+    @MainActor
+    private func refreshEncounter() async {
+        // Fetch the updated encounter from database
+        let service = encounterService
+        let encounterId = encounter.id
+        
+        do {
+            if let updatedEncounter = try service.fetchByID(encounterId) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    currentEncounter = updatedEncounter
+                }
+            }
+            // Also reload related data
+            partners = try service.fetchPartners(for: encounterId)
+            activities = try service.fetchActivities(for: encounterId)
+            protectionMethods = try service.fetchProtectionMethods(for: encounterId)
+        } catch {
+            // Silent error handling
+        }
     }
 }
 
