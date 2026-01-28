@@ -11,10 +11,14 @@
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
+		89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C228592F2996EB00B9A0DF /* StoreKit.framework */; };
+		89C2285C2F2997DA00B9A0DF /* CoitalComrade.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		893C5D2E2EBF711200981CDC /* Fuckify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuckify.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		89C228592F2996EB00B9A0DF /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = CoitalComrade.storekit; path = Fuckify/CoitalComrade.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +36,7 @@
 			files = (
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
+				89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
 			);
@@ -43,7 +48,9 @@
 		893C5D252EBF711200981CDC = {
 			isa = PBXGroup;
 			children = (
+				89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */,
 				893C5D302EBF711200981CDC /* Fuckify */,
+				89C228582F2996EB00B9A0DF /* Frameworks */,
 				893C5D2F2EBF711200981CDC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +61,14 @@
 				893C5D2E2EBF711200981CDC /* Fuckify.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		89C228582F2996EB00B9A0DF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				89C228592F2996EB00B9A0DF /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -130,6 +145,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				89C2285C2F2997DA00B9A0DF /* CoitalComrade.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

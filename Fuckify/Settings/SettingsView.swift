@@ -102,6 +102,18 @@ struct SettingsView: View {
                             }
                         }
                         
+                        if config.showSupport {
+                            NavigationLink {
+                                SupportView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "heart.fill")
+                                        .foregroundColor(.pink)
+                                    Text("Support the App")
+                                }
+                            }
+                        }
+                        
                         if config.showExperiments {
                             NavigationLink {
                                 ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")

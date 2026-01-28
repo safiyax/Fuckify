@@ -22,7 +22,7 @@ struct ContentView: View {
                     .environment(encountersManager)
             }
             
-            Tab("Summary", systemImage: "chart.bar.xaxis", value: 2) {
+            Tab("Summary", systemImage: "chart.pie.fill", value: 2) {
                 StatisticsView()
                     .environment(encountersManager)
             }

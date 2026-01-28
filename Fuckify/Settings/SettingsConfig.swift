@@ -34,6 +34,9 @@ struct SettingsConfig {
     /// Show/hide About
     let showAbout = true
     
+    /// Show/hide Support (Buy Me a Coffee)
+    let showSupport = true
+    
     /// Show/hide Experiments
     let showExperiments = false
     
@@ -51,6 +54,6 @@ struct SettingsConfig {
     
     /// Whether to show the entire More section
     var showMoreSection: Bool {
-        showAbout || showExperiments
+        showAbout || showSupport || showExperiments
     }
 }
