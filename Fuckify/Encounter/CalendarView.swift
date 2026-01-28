@@ -14,12 +14,19 @@ struct CalendarView: View {
     @FetchAll private var encounters: [SQLEncounter]
     @FetchAll private var partners: [SQLPartner]
     @Dependency(\.encounterService) var encounterService
+    private let config = EncountersConfig.shared
     
     @State private var selectedDate: Date = Date()
     @State private var displayedMonth: Date = Date()
     @State private var encountersByDate: [Date: [SQLEncounter]] = [:]
     @State private var partnerColorsByDate: [Date: [Color]] = [:]
     @State private var showingAddEncounter = false
+    @State private var encounterToEdit: SQLEncounter?
+    @State private var encounterToDelete: SQLEncounter?
+    @State private var showingDeleteAlert = false
+    @State private var refreshTrigger = false
+    @State private var isInitialLoad = true
+    @State private var showContent = false
     
     private let calendar = Calendar.current
     
@@ -27,8 +34,8 @@ struct CalendarView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 calendarSection
-                
             }
+            .opacity(showContent ? 1 : 0)
             .padding(.top, -6)
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -38,12 +45,36 @@ struct CalendarView: View {
             .sheet(isPresented: $showingAddEncounter) {
                 EncounterFormView(preselectedDate: selectedDate)
             }
+            .sheet(item: $encounterToEdit) { encounter in
+                EncounterFormView(encounter: encounter)
+                    .onDisappear {
+                        // Sheet was dismissed, trigger refresh with animation
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            refreshTrigger.toggle()
+                        }
+                    }
+            }
+            .alert("Delete Encounter", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    if let encounter = encounterToDelete {
+                        deleteEncounter(encounter)
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to delete this encounter? This action cannot be undone.")
+            }
             .task {
-                await loadEncounters()
+                await loadEncountersAnimated()
             }
             .onChange(of: encounters.count) { _, _ in
                 Task {
-                    await loadEncounters()
+                    await loadEncountersAnimated()
+                }
+            }
+            .onChange(of: refreshTrigger) { _, _ in
+                Task {
+                    await loadEncounters()  // Don't toggle again, just reload
                 }
             }
         }
@@ -214,11 +245,24 @@ struct CalendarView: View {
                             CalendarEncounterRow(encounter: encounter)
                         }
                         .buttonStyle(.plain)
-                        
-//                        Divider()
-//                            .padding(.leading, 68)
+                        .contextMenu {
+                            Button {
+                                encounterToEdit = encounter
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                encounterToDelete = encounter
+                                showingDeleteAlert = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
+                .id(refreshTrigger)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 //            .background(Color(.systemGroupedBackground))
         }
@@ -255,17 +299,19 @@ struct CalendarView: View {
             Spacer()
         }
         
-        ToolbarItem(placement: .topBarTrailing) {
-            NavigationLink {
+        if config.showInvitesItem {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    
+                    ContentUnavailableView("Under Construction", systemImage: "hourglass")
+                        .navigationTitle("Invitations")
+                        .navigationBarTitleDisplayMode(.large)
+                    
+                } label: {
+                    Label("Invitations", systemImage: "tray")
+                }
                 
-                ContentUnavailableView("Under Construction", systemImage: "hourglass")
-                    .navigationTitle("Invitations")
-                    .navigationBarTitleDisplayMode(.large)
-                
-            } label: {
-                Label("Invitations", systemImage: "tray")
             }
-
         }
     }
     
@@ -329,6 +375,40 @@ struct CalendarView: View {
                 selectedDate = Date()
             } else {
                 selectedDate = calendar.date(from: calendar.dateComponents([.year, .month], from: newDate)) ?? newDate
+            }
+        }
+    }
+    
+    private func deleteEncounter(_ encounter: SQLEncounter) {
+        Task {
+            do {
+                try encounterService.delete(encounter.id)
+                await loadEncounters()
+            } catch {
+                print("Failed to delete encounter: \(error)")
+            }
+        }
+    }
+    
+    @MainActor
+    private func loadEncountersAnimated() async {
+        if isInitialLoad {
+            // First load - load data then animate in
+            await loadEncounters()
+            isInitialLoad = false
+            
+            // Small delay to ensure view is laid out
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            
+            withAnimation(.easeInOut(duration: 0.4)) {
+                showContent = true
+                refreshTrigger.toggle()
+            }
+        } else {
+            // Subsequent loads
+            await loadEncounters()
+            withAnimation(.easeInOut(duration: 0.3)) {
+                refreshTrigger.toggle()
             }
         }
     }

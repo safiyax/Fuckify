@@ -14,6 +14,7 @@ struct PartnerDetailView: View {
     @State private var showingAddEncounter = false
     @State private var encounters: [SQLEncounter] = []
     @State private var isLoadingEncounters = true
+    @State private var currentPartner: SQLPartner
     
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
@@ -28,6 +29,11 @@ struct PartnerDetailView: View {
     @State private var editShowDateMetPicker: Bool = false
     @State private var editAvatarColor: String = ""
     @State private var editIsPinned: Bool = false
+    
+    init(partner: SQLPartner) {
+        self.partner = partner
+        _currentPartner = State(initialValue: partner)
+    }
 
     private var isEditing: Bool {
         editMode?.wrappedValue.isEditing == true
@@ -42,20 +48,20 @@ struct PartnerDetailView: View {
                     VStack(spacing: 12) {
                         ZStack {
                             Circle()
-                                .fill(isEditing ? Color.fromPartnerColorName(editAvatarColor) : partner.color)
+                                .fill(isEditing ? Color.fromPartnerColorName(editAvatarColor) : currentPartner.color)
                                 .frame(width: 100, height: 100)
 
-                            Text(isEditing ? editName.initials : partner.initials)
+                            Text(isEditing ? editName.initials : currentPartner.initials)
                                 .font(.system(size: 40, weight: .bold))
                                 .foregroundColor(.white)
                         }
 
                         if !isEditing {
-                            Text(partner.name)
+                            Text(currentPartner.name)
                                 .font(.title2)
                                 .fontWeight(.bold)
 
-                            Text(partner.relationshipType.displayName)
+                            Text(currentPartner.relationshipType.displayName)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -104,11 +110,11 @@ struct PartnerDetailView: View {
             } else {
                 // Contact Information
                 Section("Contact") {
-                    if !partner.phoneNumber.isEmpty {
+                    if !currentPartner.phoneNumber.isEmpty {
                         HStack {
                             Text("Phone")
                             Spacer()
-                            Text(partner.phoneNumber)
+                            Text(currentPartner.phoneNumber)
                                 .foregroundColor(.secondary)
                         }
                     } else {
@@ -141,7 +147,7 @@ struct PartnerDetailView: View {
                         .datePickerStyle(.compact)
                     }
                 } else {
-                    if let dateMet = partner.dateMet {
+                    if let dateMet = currentPartner.dateMet {
                         HStack {
                             Text("Date Met")
                             Spacer()
@@ -153,11 +159,11 @@ struct PartnerDetailView: View {
                     HStack {
                         Text("Added")
                         Spacer()
-                        Text(partner.dateAdded.formatted(date: .abbreviated, time: .omitted))
+                        Text(currentPartner.dateAdded.formatted(date: .abbreviated, time: .omitted))
                             .foregroundColor(.secondary)
                     }
 
-                    if let lastEncounter = partner.lastEncounterDate {
+                    if let lastEncounter = currentPartner.lastEncounterDate {
                         HStack {
                             Text("Last Encounter")
                             Spacer()
@@ -177,7 +183,7 @@ struct PartnerDetailView: View {
                     HStack {
                         Text("PrEP Status")
                         Spacer()
-                        if partner.isOnPrep {
+                        if currentPartner.isOnPrep {
                             Label("On PrEP", systemImage: "checkmark.circle.fill")
                                 .foregroundColor(.blue)
                         } else {
@@ -201,8 +207,8 @@ struct PartnerDetailView: View {
                 if isEditing {
                     TextEditor(text: $editNotes)
                         .frame(minHeight: 100)
-                } else if !partner.notes.isEmpty {
-                    Text(partner.notes)
+                } else if !currentPartner.notes.isEmpty {
+                    Text(currentPartner.notes)
                         .foregroundColor(.secondary)
                 } else {
                     Text("No notes")
@@ -269,6 +275,14 @@ struct PartnerDetailView: View {
         .sheet(isPresented: $showingAddEncounter) {
             EncounterFormView(preselectedPartners: [partner])
         }
+        .onChange(of: showingAddEncounter) { _, isShowing in
+            if !isShowing {
+                // Sheet was dismissed, reload encounters
+                Task {
+                    await loadEncounters()
+                }
+            }
+        }
         .task {
             loadEditableFields()
             await loadEncounters()
@@ -298,19 +312,19 @@ struct PartnerDetailView: View {
     // MARK: - Functions
 
     private func loadEditableFields() {
-        editName = partner.name
-        editNotes = partner.notes
-        editPhoneNumber = partner.phoneNumber
-        editIsOnPrep = partner.isOnPrep
-        editRelationshipType = partner.relationshipType
-        editDateMet = partner.dateMet
-        editShowDateMetPicker = partner.dateMet != nil
-        editAvatarColor = partner.avatarColor
-        editIsPinned = partner.isPinned
+        editName = currentPartner.name
+        editNotes = currentPartner.notes
+        editPhoneNumber = currentPartner.phoneNumber
+        editIsOnPrep = currentPartner.isOnPrep
+        editRelationshipType = currentPartner.relationshipType
+        editDateMet = currentPartner.dateMet
+        editShowDateMetPicker = currentPartner.dateMet != nil
+        editAvatarColor = currentPartner.avatarColor
+        editIsPinned = currentPartner.isPinned
     }
 
     private func saveChanges() async {
-        var updatedPartner = partner
+        var updatedPartner = currentPartner
         updatedPartner.name = editName
         updatedPartner.notes = editNotes
         updatedPartner.phoneNumber = editPhoneNumber
@@ -328,6 +342,11 @@ struct PartnerDetailView: View {
             try await Task.detached {
                 try await service.update(updatedPartner)
             }.value
+            
+            // Update the current partner to reflect changes with animation
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPartner = updatedPartner
+            }
         } catch {
             print("Failed to update partner: \(error)")
         }
