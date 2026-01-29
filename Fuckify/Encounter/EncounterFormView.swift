@@ -222,7 +222,9 @@ struct EncounterFormView: View {
                     selectedPartnerIDs: $selectedPartnerIDs,
                     searchText: $partnerSearchText
                 )
+                .dismissOnAppLock()
             }
+            .dismissOnAppLock()
         }
     }
 

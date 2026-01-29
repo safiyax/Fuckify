@@ -47,6 +47,7 @@ struct SupportView: View {
                         if let product = store.product {
                             // Coffee Button
                             Button {
+                                store.isPurchasing = false
                                 Task { await store.purchase() }
                             } label: {
                                 HStack(spacing: 16) {
@@ -260,6 +261,7 @@ final class SupportViewModel: ObservableObject {
     @Published var product: Product?
     @Published var purchaseSuccess = false
     @Published var coffeeCount = 0
+    @Published var isPurchasing = false
     
     init() {
         Task {
@@ -272,8 +274,18 @@ final class SupportViewModel: ObservableObject {
     }
     
     func loadProduct() async {
-        if let loaded = try? await Product.products(for: [productIdentifier]).first {
-            product = loaded
+        do {
+            let products = try await Product.products(for: [productIdentifier])
+            if let loaded = products.first {
+                product = loaded
+                print("✅ Product loaded: \(loaded.id) - \(loaded.displayName)")
+            } else {
+                print("⚠️ No product found for ID: \(productIdentifier)")
+                print("⚠️ Make sure product ID matches App Store Connect exactly")
+            }
+        } catch {
+            print("❌ Failed to load product: \(error.localizedDescription)")
+            print("❌ Error details: \(error)")
         }
     }
     
@@ -302,10 +314,16 @@ final class SupportViewModel: ObservableObject {
     func purchase() async {
         guard let product else { return }
         
+        // Disable biometric auto-prompt while IAP is active
+        isPurchasing = true
+        
         if case .success(let result) = try? await product.purchase(),
            case .verified(let transaction) = result {
             await handleTransaction(transaction)
         }
+        
+        // Re-enable biometric auto-prompt after IAP completes
+        isPurchasing = false
     }
     
     func resetSuccessState() {
