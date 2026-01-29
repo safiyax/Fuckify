@@ -33,9 +33,22 @@ struct EncounterFormView: View {
     @State private var reachedOrgasm: Bool = false
     @State private var settings = UserSettings.shared
     @State private var errorMessage: String?
+    @State private var showingPartnerPicker = false
+    @State private var partnerSearchText = ""
 
     var isEditing: Bool {
         encounter != nil
+    }
+    
+    var selectedPartners: [SQLPartner] {
+        allPartners.filter { selectedPartnerIDs.contains($0.id) }
+    }
+    
+    var filteredPartners: [SQLPartner] {
+        if partnerSearchText.isEmpty {
+            return allPartners
+        }
+        return allPartners.filter { $0.name.localizedCaseInsensitiveContains(partnerSearchText) }
     }
 
     var body: some View {
@@ -67,24 +80,29 @@ struct EncounterFormView: View {
 
                 // Partners
                 Section("Partners") {
-                    if allPartners.isEmpty {
-                        Text("No partners available")
-                            .foregroundColor(.secondary)
-                    } else {
-                        ForEach(allPartners) { partner in
-                            Button(action: { togglePartner(partner.id) }) {
-                                HStack {
-                                    Text(partner.name)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    if selectedPartnerIDs.contains(partner.id) {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.blue)
-                                            .accessibilityHidden(true)
-                                    }
-                                }
+                    // Selected partners as chips - using a custom wrapper
+                    ChipContainer {
+                        ForEach(selectedPartners) { partner in
+                            PartnerChip(
+                                partner: partner,
+                                onRemove: { togglePartner(partner.id) }
+                            )
+                        }
+                        
+                        // Add button chip
+                        Button {
+                            showingPartnerPicker = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add")
                             }
-                            .accessibilityAddTraits(selectedPartnerIDs.contains(partner.id) ? .isSelected : [])
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue.opacity(0.15))
+                            .cornerRadius(16)
                         }
                     }
                 }
@@ -197,6 +215,13 @@ struct EncounterFormView: View {
             }
             .task {
                 await loadData()
+            }
+            .sheet(isPresented: $showingPartnerPicker) {
+                PartnerPickerSheet(
+                    allPartners: allPartners,
+                    selectedPartnerIDs: $selectedPartnerIDs,
+                    searchText: $partnerSearchText
+                )
             }
         }
     }
@@ -331,6 +356,249 @@ struct EncounterFormView: View {
             dismiss()
         } catch {
             errorMessage = "Failed to save encounter. Please try again."
+        }
+    }
+}
+
+// MARK: - Partner Chip Component
+
+struct PartnerChip: View {
+    let partner: SQLPartner
+    let onRemove: () -> Void
+    
+    var partnerColor: Color {
+        Color.fromPartnerColorName(partner.avatarColor)
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(partner.name)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .foregroundColor(partnerColor)
+            
+            Button {
+                onRemove()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption)
+                    .foregroundColor(partnerColor)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            partnerColor
+                .opacity(0.15)
+        )
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Chip Container
+
+struct ChipContainer<Content: View>: View {
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            content
+        }
+        .padding(4)
+    }
+}
+
+// MARK: - Flow Layout
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.replacingUnspecifiedDimensions().width
+        let result = FlowResult(in: width, subviews: subviews, spacing: spacing)
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        for (index, subview) in subviews.enumerated() {
+            let position = CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y)
+            subview.place(at: position, proposal: .unspecified)
+        }
+    }
+    
+    struct FlowResult {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                
+                if currentX + size.width > maxWidth && currentX > 0 {
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                positions.append(CGPoint(x: currentX, y: currentY))
+                currentX += size.width + spacing
+                lineHeight = max(lineHeight, size.height)
+            }
+            
+            self.size = CGSize(width: maxWidth, height: currentY + lineHeight)
+        }
+    }
+}
+
+// MARK: - Partner Picker Sheet
+
+struct PartnerPickerSheet: View {
+    let allPartners: [SQLPartner]
+    @Binding var selectedPartnerIDs: Set<UUID>
+    @Binding var searchText: String
+    @Environment(\.dismiss) private var dismiss
+    
+    var filteredPartners: [SQLPartner] {
+        let partners: [SQLPartner]
+        if searchText.isEmpty {
+            partners = allPartners
+        } else {
+            partners = allPartners.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        }
+        
+        // Sort: pinned first, then by name
+        return partners.sorted { lhs, rhs in
+            if lhs.isPinned != rhs.isPinned {
+                return lhs.isPinned // Pinned partners come first
+            }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+    
+    var pinnedPartners: [SQLPartner] {
+        filteredPartners.filter { $0.isPinned }
+    }
+    
+    var unpinnedPartners: [SQLPartner] {
+        filteredPartners.filter { !$0.isPinned }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                if allPartners.isEmpty {
+                    ContentUnavailableView(
+                        "No Partners",
+                        systemImage: "person.2.slash",
+                        description: Text("Add partners first to log encounters with them")
+                    )
+                } else {
+                    // Pinned Partners Section
+                    if !pinnedPartners.isEmpty {
+                        Section("Pinned") {
+                            ForEach(pinnedPartners) { partner in
+                                PartnerPickerRow(
+                                    partner: partner,
+                                    isSelected: selectedPartnerIDs.contains(partner.id),
+                                    onTap: { togglePartner(partner.id) }
+                                )
+                            }
+                        }
+                    }
+                    
+                    // All Partners Section
+                    if !unpinnedPartners.isEmpty {
+                        Section(pinnedPartners.isEmpty ? "" : "All Partners") {
+                            ForEach(unpinnedPartners) { partner in
+                                PartnerPickerRow(
+                                    partner: partner,
+                                    isSelected: selectedPartnerIDs.contains(partner.id),
+                                    onTap: { togglePartner(partner.id) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText, prompt: "Search partners")
+            .navigationTitle("Select Partners")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func togglePartner(_ partnerID: UUID) {
+        if selectedPartnerIDs.contains(partnerID) {
+            selectedPartnerIDs.remove(partnerID)
+        } else {
+            selectedPartnerIDs.insert(partnerID)
+        }
+    }
+}
+
+// MARK: - Partner Picker Row
+
+struct PartnerPickerRow: View {
+    let partner: SQLPartner
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // Color avatar
+                Circle()
+                    .fill(Color.fromPartnerColorName(partner.avatarColor))
+                    .frame(width: 40, height: 40)
+                    .overlay {
+                        Text(partner.name.prefix(1).uppercased())
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(partner.name)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                        
+                        if partner.isPinned {
+                            Image(systemName: "pin.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    if !partner.notes.isEmpty {
+                        Text(partner.notes)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title3)
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 }
