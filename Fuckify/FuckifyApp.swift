@@ -47,6 +47,7 @@ extension View {
 struct FuckifyApp: App {
     @State private var isUnlocked: Bool
     @State private var securitySettings = SecuritySettings.shared
+    @StateObject private var iapState = IAPStateManager.shared
     @Environment(\.scenePhase) private var scenePhase
     
     init() {
@@ -76,6 +77,7 @@ struct FuckifyApp: App {
             }
             .animation(nil, value: isUnlocked) // Disable animation for instant appearance
             .onChange(of: scenePhase) { oldPhase, newPhase in
+                print("\(oldPhase) -> \(newPhase)")
                 guard securitySettings.isSecurityEnabled else { return }
                 
                 switch newPhase {
@@ -83,9 +85,14 @@ struct FuckifyApp: App {
                     // Don't unlock automatically, let LockScreenView handle authentication
                     break
                 case .inactive:
-                    // Lock when inactive (app switcher, system alerts, IAP sheets)
-//                    isUnlocked = false
-                    break
+                    // Lock when inactive, UNLESS an IAP purchase is in progress
+                    print("🔒 [FuckifyApp] .inactive - isIAPInProgress: \(iapState.isIAPInProgress)")
+                    if !iapState.isIAPInProgress {
+                        isUnlocked = false
+                        print("🔒 [FuckifyApp] Locking app")
+                    } else {
+                        print("🛒 [FuckifyApp] Skipping lock - IAP in progress")
+                    }
                 case .background:
                     // Lock when backgrounded
                     isUnlocked = false
