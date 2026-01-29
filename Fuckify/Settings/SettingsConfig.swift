@@ -21,6 +21,9 @@ struct SettingsConfig {
     /// Show/hide Protection Methods customization
     let showProtectionMethods = true
     
+    /// Show/hide Security (PIN and biometric)
+    let showSecurity = true
+    
     // MARK: - Data Section
     
     /// Show/hide Import & Export
@@ -44,7 +47,7 @@ struct SettingsConfig {
     
     /// Whether to show the entire Personalization section
     var showPersonalizationSection: Bool {
-        showAppIconPicker || showActivities || showProtectionMethods
+        showAppIconPicker || showActivities || showProtectionMethods || showSecurity
     }
     
     /// Whether to show the entire Data section

@@ -56,6 +56,18 @@ struct SettingsView: View {
                                 }
                             }
                         }
+                        
+                        if config.showSecurity {
+                            NavigationLink {
+                                SecurityView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundColor(.orange)
+                                    Text("Security")
+                                }
+                            }
+                        }
                     }
                 }
 

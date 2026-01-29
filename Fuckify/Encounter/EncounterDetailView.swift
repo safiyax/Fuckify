@@ -16,6 +16,7 @@ struct EncounterDetailView: View {
     @State private var protectionMethods: [SQLProtectionMethod] = []
     @State private var isLoading = true
     @State private var currentEncounter: SQLEncounter
+    @State private var selectedPartner: SQLPartner?
     
     @Dependency(\.encounterService) private var encounterService
     
@@ -55,26 +56,17 @@ struct EncounterDetailView: View {
                 // Partners Section
                 Section("Partners") {
                     if !partners.isEmpty {
-                        ForEach(partners) { partner in
-                            NavigationLink {
-                                PartnerDetailView(partner: partner)
-                            } label: {
-                                HStack {
-                                    ZStack {
-                                        Circle()
-                                            .fill(partner.color)
-                                            .frame(width: 35, height: 35)
-
-                                        Text(partner.initials)
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                    }
-                                    .accessibilityHidden(true)
-
-                                    Text(partner.name)
+                        FlowLayout(spacing: 8) {
+                            ForEach(partners) { partner in
+                                Button {
+                                    selectedPartner = partner
+                                } label: {
+                                    EncounterDetailPartnerChip(partner: partner)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .padding(4)
                     } else {
                         Text("No partners recorded")
                             .foregroundColor(.secondary)
@@ -191,6 +183,9 @@ struct EncounterDetailView: View {
         .task {
             await loadEncounterData()
         }
+        .navigationDestination(item: $selectedPartner) { partner in
+            PartnerDetailView(partner: partner)
+        }
     }
     
     @MainActor
@@ -232,6 +227,46 @@ struct EncounterDetailView: View {
         } catch {
             // Silent error handling
         }
+    }
+}
+
+// MARK: - Encounter Detail Partner Chip
+
+struct EncounterDetailPartnerChip: View {
+    let partner: SQLPartner
+    
+    var partnerColor: Color {
+        Color.fromPartnerColorName(partner.avatarColor)
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(partner.name)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .foregroundColor(partnerColor)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            partnerColor
+                .opacity(0.15)
+        )
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Chip Container for Detail View
+
+struct EncounterDetailChipContainer<Content: View>: View {
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            content
+        }
+        .padding(4)
     }
 }
 
