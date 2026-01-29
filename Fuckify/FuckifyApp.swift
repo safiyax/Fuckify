@@ -48,6 +48,7 @@ struct FuckifyApp: App {
     @State private var isUnlocked: Bool
     @State private var securitySettings = SecuritySettings.shared
     @StateObject private var iapState = IAPStateManager.shared
+    @State private var wasInactive = false
     @Environment(\.scenePhase) private var scenePhase
     
     init() {
@@ -77,25 +78,37 @@ struct FuckifyApp: App {
             }
             .animation(nil, value: isUnlocked) // Disable animation for instant appearance
             .onChange(of: scenePhase) { oldPhase, newPhase in
-                print("\(oldPhase) -> \(newPhase)")
+                print("📱 [ScenePhase] \(oldPhase) -> \(newPhase), isUnlocked: \(isUnlocked)")
                 guard securitySettings.isSecurityEnabled else { return }
                 
                 switch newPhase {
                 case .active:
-                    // Don't unlock automatically, let LockScreenView handle authentication
-                    break
+                    // Clear the inactive flag when we're truly active
+                    wasInactive = false
+                    
                 case .inactive:
-                    // Lock when inactive, UNLESS an IAP purchase is in progress
-                    print("🔒 [FuckifyApp] .inactive - isIAPInProgress: \(iapState.isIAPInProgress)")
-                    if !iapState.isIAPInProgress {
-                        isUnlocked = false
-                        print("🔒 [FuckifyApp] Locking app")
-                    } else {
-                        print("🛒 [FuckifyApp] Skipping lock - IAP in progress")
+                    // Only lock if we're currently unlocked
+                    // This prevents locking an already-locked app
+                    if isUnlocked {
+                        // Mark that we've been inactive
+                        wasInactive = true
+                        
+                        // Lock immediately when inactive, UNLESS an IAP purchase is in progress
+                        print("🔒 [FuckifyApp] .inactive - isIAPInProgress: \(iapState.isIAPInProgress)")
+                        if !iapState.isIAPInProgress {
+                            isUnlocked = false
+                            print("🔒 [FuckifyApp] Locking app")
+                        } else {
+                            print("🛒 [FuckifyApp] Skipping lock - IAP in progress")
+                        }
                     }
+                    
                 case .background:
                     // Lock when backgrounded
+                    wasInactive = false
                     isUnlocked = false
+                    print("🔒 [FuckifyApp] .background - locking app")
+                    
                 @unknown default:
                     // Lock for any unknown future states
                     isUnlocked = false

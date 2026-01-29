@@ -145,9 +145,15 @@ struct LockScreenView: View {
         .onAppear {
             // Auto-trigger biometric if enabled when lock screen first appears
             if settings.isBiometricEnabled && !isAuthenticating {
-                // Small delay to let the view settle
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    authenticateWithBiometrics()
+                // Delay to let the view settle and ensure we're actually active
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    // Only trigger if scene is active (prevents app switcher race)
+                    if scenePhase == .active && !isAuthenticating {
+                        print("🔐 [LockScreen] onAppear - Triggering Face ID")
+                        authenticateWithBiometrics()
+                    } else {
+                        print("🔐 [LockScreen] onAppear - Skipping Face ID (scenePhase: \(scenePhase))")
+                    }
                 }
             }
         }
@@ -155,8 +161,16 @@ struct LockScreenView: View {
             // Re-trigger biometric when app becomes active from any non-active state
             // This includes app switcher (.inactive → .active) and backgrounding (.background → .active)
             if oldPhase != .active && newPhase == .active && settings.isBiometricEnabled && !isAuthenticating {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    authenticateWithBiometrics()
+                print("🔐 [LockScreen] Scene became active, scheduling Face ID check...")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    // Double-check we're still active before prompting (prevents app switcher race condition)
+                    print("🔐 [LockScreen] Delayed check - scenePhase: \(scenePhase), isAuthenticating: \(isAuthenticating)")
+                    if scenePhase == .active && !isAuthenticating {
+                        print("🔐 [LockScreen] Triggering Face ID")
+                        authenticateWithBiometrics()
+                    } else {
+                        print("🔐 [LockScreen] Skipping Face ID - not active or already authenticating")
+                    }
                 }
             }
         }
