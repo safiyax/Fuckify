@@ -189,6 +189,7 @@ struct ProfileView: View {
                 }
                 .sheet(isPresented: $showingSettings) {
                     SettingsView()
+                        .dismissOnAppLock()
                 }
                 .onAppear {
                     loadEditableFields()

@@ -151,6 +151,7 @@ struct SettingsView: View {
                     
                 }
             }
+            .dismissOnAppLock()
         }
     }
 }

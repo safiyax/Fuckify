@@ -20,8 +20,14 @@ struct LockScreenView: View {
     
     var body: some View {
         ZStack {
-            // Background
+            // Background with blur when inactive (for app switcher privacy)
             Color.black.ignoresSafeArea()
+            
+            if scenePhase == .inactive {
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                    .blur(radius: 20)
+            }
             
             VStack(spacing: 40) {
                 Spacer()
@@ -137,7 +143,7 @@ struct LockScreenView: View {
         .scaleEffect(unlockAnimation ? 1.5 : 1.0)
         .opacity(unlockAnimation ? 0 : 1)
         .onAppear {
-            // Auto-trigger biometric if enabled (regardless of PIN)
+            // Auto-trigger biometric if enabled when lock screen first appears
             if settings.isBiometricEnabled && !isAuthenticating {
                 // Small delay to let the view settle
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -146,7 +152,8 @@ struct LockScreenView: View {
             }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            // Re-trigger biometric when app becomes active
+            // Re-trigger biometric when app becomes active from any non-active state
+            // This includes app switcher (.inactive → .active) and backgrounding (.background → .active)
             if oldPhase != .active && newPhase == .active && settings.isBiometricEnabled && !isAuthenticating {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     authenticateWithBiometrics()

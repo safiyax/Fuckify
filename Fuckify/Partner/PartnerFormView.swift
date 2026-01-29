@@ -128,6 +128,7 @@ struct PartnerFormView: View {
                 // Set a default color for new partners
                 avatarColor = PartnerColors.randomColorName()
             }
+            .dismissOnAppLock()
         }
     }
 
