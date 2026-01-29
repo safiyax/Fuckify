@@ -10,8 +10,19 @@ import StoreKit
 import Combine
 import Foundation
 
+// MARK: - Shared IAP State Manager
+
+@MainActor
+final class IAPStateManager: ObservableObject {
+    static let shared = IAPStateManager()
+    @Published var isIAPInProgress: Bool = false
+    
+    private init() {}
+}
+
 struct SupportView: View {
     @StateObject private var store = SupportViewModel()
+    @StateObject private var iapState = IAPStateManager.shared
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -47,7 +58,6 @@ struct SupportView: View {
                         if let product = store.product {
                             // Coffee Button
                             Button {
-                                store.isPurchasing = false
                                 Task { await store.purchase() }
                             } label: {
                                 HStack(spacing: 16) {
@@ -211,6 +221,7 @@ struct SupportView: View {
                 // Reset success state when view appears
                 store.resetSuccessState()
             }
+            .dismissOnAppLock()
 //            .toolbar {
 //                ToolbarItem(placement: .cancellationAction) {
 //                    Button {
@@ -220,6 +231,10 @@ struct SupportView: View {
 //                    }
 //                }
 //            }
+        }
+        .onChange(of: store.isPurchasing) { oldValue, newValue in
+            print("💳 [SupportView] store.isPurchasing old: \(oldValue) new: \(newValue)")
+            iapState.isIAPInProgress = newValue  // Update shared state
         }
     }
 }
