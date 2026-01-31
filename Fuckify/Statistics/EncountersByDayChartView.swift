@@ -21,10 +21,10 @@ struct EncountersByDayChartView: View {
         let id = UUID()
         let day: String
         let dayNumber: Int
-        let average: Double
+        let count: Int
     }
 
-    // Computed property to calculate average encounters by day of week
+    // Computed property to calculate total encounters by day of week
     private var encountersByDayOfWeek: [DayData] {
         let calendar = Calendar.current
         let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -40,21 +40,6 @@ struct EncountersByDayChartView: View {
             filteredEncounters = encounters
         }
 
-        guard !filteredEncounters.isEmpty else {
-            return (1...7).map { dayNum in
-                DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, average: 0)
-            }
-        }
-
-        // Find the date range
-        let sortedDates = filteredEncounters.compactMap { $0.date }.sorted()
-        guard let firstDate = sortedDates.first,
-              let lastDate = sortedDates.last else {
-            return (1...7).map { dayNum in
-                DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, average: 0)
-            }
-        }
-
         // Count encounters per day of week
         var dayCounts: [Int: Int] = [:]
         for encounter in filteredEncounters {
@@ -63,27 +48,16 @@ struct EncountersByDayChartView: View {
             dayCounts[weekday, default: 0] += 1
         }
 
-        // Calculate number of occurrences of each weekday in the date range
-        var dayOccurrences: [Int: Int] = [:]
-        var currentDate = firstDate
-        while currentDate <= lastDate {
-            let weekday = calendar.component(.weekday, from: currentDate)
-            dayOccurrences[weekday, default: 0] += 1
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-
-        // Calculate averages
+        // Return total counts for each day
         return (1...7).map { dayNum in
-            let count = Double(dayCounts[dayNum] ?? 0)
-            let occurrences = Double(dayOccurrences[dayNum] ?? 1)
-            let average = occurrences > 0 ? count / occurrences : 0
-            return DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, average: average)
+            let count = dayCounts[dayNum] ?? 0
+            return DayData(day: dayNames[dayNum - 1], dayNumber: dayNum, count: count)
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Average Encounters by Day")
+            Text("Encounters by Day of Week")
                 .font(.title2)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -92,7 +66,7 @@ struct EncountersByDayChartView: View {
             Chart(encountersByDayOfWeek) { data in
                 BarMark(
                     x: .value("Day", data.day),
-                    y: .value("Average", data.average)
+                    y: .value("Count", data.count)
                 )
                 .foregroundStyle(.purple.gradient)
             }
