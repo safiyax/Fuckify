@@ -7,6 +7,39 @@
 
 import SwiftUI
 import SQLiteData
+import UIKit
+
+// MARK: - Shake Detection
+
+extension NSNotification.Name {
+    static let deviceDidShake = NSNotification.Name("deviceDidShake")
+}
+
+extension UIWindow {
+    open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        super.motionEnded(motion, with: event)
+        if motion == .motionShake {
+            NotificationCenter.default.post(name: .deviceDidShake, object: nil)
+        }
+    }
+}
+
+struct ShakeDetectorModifier: ViewModifier {
+    let onShake: () -> Void
+    
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+                onShake()
+            }
+    }
+}
+
+extension View {
+    func onShake(perform action: @escaping () -> Void) -> some View {
+        modifier(ShakeDetectorModifier(onShake: action))
+    }
+}
 
 // MARK: - Environment Key for App Lock State
 
@@ -68,6 +101,13 @@ struct FuckifyApp: App {
                 // Always render main app in background
                 ContentView()
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
+                    .onShake {
+                        // Lock immediately on shake if security is enabled and unlocked
+                        if securitySettings.isSecurityEnabled && isUnlocked {
+                            print("📳 [Shake] Locking app")
+                            isUnlocked = false
+                        }
+                    }
                 
                 // Show lock screen on top if security is enabled and not unlocked
                 if securitySettings.isSecurityEnabled && !isUnlocked {
