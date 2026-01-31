@@ -6,6 +6,15 @@
 
 import SwiftUI
 import Dependencies
+import UniformTypeIdentifiers
+import SQLiteData
+
+extension UTType {
+    static var database: UTType {
+        // Use .data to accept any file, or create a specific one for .db files
+        UTType(filenameExtension: "db") ?? .data
+    }
+}
 
 struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +29,12 @@ struct ImportView: View {
     @State private var partnerExportURL: URL?
     @State private var encounterExportURL: URL?
     @State private var databaseExportURL: URL?
+    @State private var showingDatabaseImport = false
+    @State private var showingImportConfirmation = false
+    @State private var importError: String?
+    @State private var showingImportError = false
+    @State private var selectedDatabaseURL: URL?
+    @State private var showingImportSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -255,10 +270,40 @@ struct ImportView: View {
                         .padding(.horizontal)
 
                         VStack(spacing: 12) {
+                            // Import Database Button
+                            Button(action: { showingDatabaseImport = true }) {
+                                HStack {
+                                    Image(systemName: "cylinder.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.orange)
+                                        .frame(width: 50)
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Import Database")
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+
+                                        Text("Replace current database")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(12)
+                            }
+                            .buttonStyle(.plain)
+                            
+                            // Export Database Button
                             if let url = databaseExportURL {
                                 ShareLink(item: url) {
                                     HStack {
-                                        Image(systemName: "cylinder.fill")
+                                        Image(systemName: "square.and.arrow.up")
                                             .font(.title2)
                                             .foregroundColor(.orange)
                                             .frame(width: 50)
@@ -286,7 +331,7 @@ struct ImportView: View {
                             } else {
                                 Button(action: { exportDatabase() }) {
                                     HStack {
-                                        Image(systemName: "cylinder.fill")
+                                        Image(systemName: "square.and.arrow.up")
                                             .font(.title2)
                                             .foregroundColor(.orange)
                                             .frame(width: 50)
@@ -327,6 +372,41 @@ struct ImportView: View {
             }
             .sheet(isPresented: $showingEncounterImport) {
                 EncounterImportView()
+            }
+            .fileImporter(
+                isPresented: $showingDatabaseImport,
+                allowedContentTypes: [.database, .item],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let files):
+                    if let fileURL = files.first {
+                        handleDatabaseImport(from: fileURL)
+                    }
+                case .failure(let error):
+                    importError = error.localizedDescription
+                    showingImportError = true
+                }
+            }
+            .alert("Import Database", isPresented: $showingImportConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Replace", role: .destructive) {
+                    Task {
+                        await performDatabaseImport()
+                    }
+                }
+            } message: {
+                Text("This will replace your current database with the imported one. All existing data will be lost. This cannot be undone.")
+            }
+            .alert("Import Error", isPresented: $showingImportError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(importError ?? "Unknown error occurred")
+            }
+            .alert("Import Successful", isPresented: $showingImportSuccess) {
+                Button("OK") { }
+            } message: {
+                Text("Database imported successfully. Please close and reopen the app to see the imported data.")
             }
             .task {
                 await loadData()
@@ -490,6 +570,84 @@ struct ImportView: View {
             databaseExportURL = fileURL
         } catch {
             print("Failed to export database: \(error)")
+        }
+    }
+    
+    private func handleDatabaseImport(from url: URL) {
+        // Start accessing the security-scoped resource
+        guard url.startAccessingSecurityScopedResource() else {
+            importError = "Unable to access the selected file"
+            showingImportError = true
+            return
+        }
+        
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+        
+        // Verify it's a valid database file
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            importError = "Selected file does not exist"
+            showingImportError = true
+            return
+        }
+        
+        // Store the URL and show confirmation
+        selectedDatabaseURL = url
+        showingImportConfirmation = true
+    }
+    
+    private func performDatabaseImport() async {
+        guard let sourceURL = selectedDatabaseURL else {
+            importError = "No file selected"
+            showingImportError = true
+            return
+        }
+        
+        do {
+            // Start accessing the security-scoped resource
+            guard sourceURL.startAccessingSecurityScopedResource() else {
+                importError = "Unable to access the selected file"
+                showingImportError = true
+                return
+            }
+            
+            defer {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
+            
+            // Copy the imported database to a persistent location (Application Support)
+            let persistentDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let tempURL = persistentDir.appendingPathComponent("pending_import.db")
+            
+            // Remove existing temp file if present
+            if FileManager.default.fileExists(atPath: tempURL.path) {
+                try FileManager.default.removeItem(at: tempURL)
+            }
+            
+            // Read the database file data
+            let databaseData = try Data(contentsOf: sourceURL)
+            print("📥 Read database file: \(databaseData.count) bytes")
+            
+            // Store the database data in UserDefaults
+            UserDefaults.standard.set(databaseData, forKey: "pendingDatabaseImport")
+            UserDefaults.standard.synchronize()
+            
+            print("📥 Database data stored in UserDefaults")
+            print("📥 UserDefaults has data: \(UserDefaults.standard.data(forKey: "pendingDatabaseImport") != nil)")
+            
+            // Clear the selected URL
+            selectedDatabaseURL = nil
+            
+            // Show success alert instructing user to restart
+            await MainActor.run {
+                showingImportSuccess = true
+            }
+            
+        } catch {
+            importError = "Failed to import database: \(error.localizedDescription)"
+            showingImportError = true
+            print("Failed to import database: \(error)")
         }
     }
 }
