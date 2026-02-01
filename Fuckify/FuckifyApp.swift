@@ -8,6 +8,7 @@
 import SwiftUI
 import SQLiteData
 import UIKit
+import UserNotifications
 
 // MARK: - Shake Detection
 
@@ -81,6 +82,7 @@ struct FuckifyApp: App {
     @State private var isUnlocked: Bool
     @State private var securitySettings = SecuritySettings.shared
     @StateObject private var iapState = IAPStateManager.shared
+    @State private var liveActivityManager = LiveActivityManager.shared
     @State private var wasInactive = false
     @Environment(\.scenePhase) private var scenePhase
     
@@ -93,6 +95,11 @@ struct FuckifyApp: App {
         // Initialize lock state based on security settings
         // Start locked if security is enabled
         _isUnlocked = State(initialValue: !SecuritySettings.shared.isSecurityEnabled)
+        
+        // Request notification permissions for 8-hour warnings
+        Task {
+            try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+        }
     }
 
     var body: some Scene {
@@ -117,6 +124,24 @@ struct FuckifyApp: App {
                 }
             }
             .animation(nil, value: isUnlocked) // Disable animation for instant appearance
+            .onOpenURL { url in
+                handleDeepLink(url)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("togglePauseEncounter"))) { _ in
+                Task {
+                    await handleTogglePause()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("finishEncounter"))) { _ in
+                Task {
+                    await handleFinishEncounter()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .encounterAutoSaved)) { notification in
+                Task {
+                    await handleAutoSavedEncounter(notification)
+                }
+            }
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 print("📱 [ScenePhase] \(oldPhase) -> \(newPhase), isUnlocked: \(isUnlocked)")
                 guard securitySettings.isSecurityEnabled else { return }
@@ -154,6 +179,100 @@ struct FuckifyApp: App {
                     isUnlocked = false
                 }
             }
+        }
+    }
+    
+    // MARK: - Deep Link Handling
+    
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "coitalcomrade" else { return }
+        
+        if url.host == "active-encounter" {
+            // Show active encounter view
+            NotificationCenter.default.post(name: Notification.Name("showActiveEncounter"), object: nil)
+        }
+    }
+    
+    // MARK: - Live Activity Handlers
+    
+    @MainActor
+    private func handleTogglePause() async {
+        guard let state = liveActivityManager.currentState() else { return }
+        
+        if state.isPaused {
+            await liveActivityManager.resumeEncounter()
+        } else {
+            await liveActivityManager.pauseEncounter()
+        }
+    }
+    
+    @MainActor
+    private func handleFinishEncounter() async {
+        guard let data = await liveActivityManager.finishEncounter() else { return }
+        
+        // Create encounter with the tracked data
+        await createAndEditEncounter(
+            duration: data.duration,
+            partnerIDs: data.partnerIDs,
+            encounterID: data.encounterID,
+            startTime: data.startTime
+        )
+    }
+    
+    @MainActor
+    private func handleAutoSavedEncounter(_ notification: Notification) async {
+        guard let userInfo = notification.userInfo,
+              let duration = userInfo["duration"] as? TimeInterval,
+              let partnerIDs = userInfo["partnerIDs"] as? [UUID],
+              let encounterID = userInfo["encounterID"] as? UUID,
+              let startTime = userInfo["startTime"] as? Date else {
+            return
+        }
+        
+        await createAndEditEncounter(
+            duration: duration,
+            partnerIDs: partnerIDs,
+            encounterID: encounterID,
+            startTime: startTime
+        )
+    }
+    
+    @MainActor
+    private func createAndEditEncounter(duration: TimeInterval, partnerIDs: [UUID], encounterID: UUID, startTime: Date) async {
+        // Import dependencies
+        @Dependency(\.encounterService) var encounterService
+        
+        // Create the encounter
+        let draft = SQLEncounter.Draft(
+            id: encounterID,
+            date: startTime,
+            duration: duration,
+            location: "",
+            notes: "",
+            rating: 0,
+            reachedOrgasm: false,
+            dateAdded: Date()
+        )
+        
+        do {
+            _ = try encounterService.create(
+                draft,
+                partnerIDs: partnerIDs,
+                activities: [],
+                protectionMethods: []
+            )
+            
+            // Fetch the created encounter to pass to edit form
+            if let encounter = try encounterService.fetchByID(encounterID) {
+                // Post notification to open edit form
+                NotificationCenter.default.post(
+                    name: Notification.Name("editEncounter"),
+                    object: nil,
+                    userInfo: ["encounter": encounter]
+                )
+            }
+        } catch {
+            print("Failed to create encounter: \(error)")
         }
     }
 }

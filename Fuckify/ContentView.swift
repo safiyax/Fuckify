@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var partnersManager = PartnersManager()
     @State private var encountersManager = EncountersManager()
     @State private var profile = UserProfile.shared
+    @State private var showingActiveEncounter = false
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -45,6 +46,12 @@ struct ContentView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .sheet(isPresented: $showingActiveEncounter) {
+            ActiveEncounterView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("showActiveEncounter"))) { _ in
+            showingActiveEncounter = true
+        }
     }
 }
 

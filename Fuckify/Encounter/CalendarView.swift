@@ -27,6 +27,7 @@ struct CalendarView: View {
     @State private var refreshTrigger = false
     @State private var isInitialLoad = true
     @State private var showContent = false
+    @State private var showingLiveActivityStart = false
     
     private let calendar = Calendar.current
     
@@ -54,6 +55,9 @@ struct CalendarView: View {
                         }
                     }
             }
+            .sheet(isPresented: $showingLiveActivityStart) {
+                LiveActivityPartnerSelector()
+            }
             .alert("Delete Encounter", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
@@ -75,6 +79,11 @@ struct CalendarView: View {
             .onChange(of: refreshTrigger) { _, _ in
                 Task {
                     await loadEncounters()  // Don't toggle again, just reload
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("editEncounter"))) { notification in
+                if let encounter = notification.userInfo?["encounter"] as? SQLEncounter {
+                    encounterToEdit = encounter
                 }
             }
         }
@@ -278,8 +287,20 @@ struct CalendarView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            Button(action: { showingAddEncounter = true }) {
-                Label("Add Encounter", systemImage: "plus")
+            Menu {
+                Button {
+                    showingAddEncounter = true
+                } label: {
+                    Label("Create Encounter", systemImage: "square.and.pencil")
+                }
+                
+                Button {
+                    showingLiveActivityStart = true
+                } label: {
+                    Label("Start Live Tracking", systemImage: "timer")
+                }
+            } label: {
+                Label("Add", systemImage: "plus")
             }
         }
         
