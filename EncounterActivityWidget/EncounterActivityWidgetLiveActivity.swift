@@ -8,20 +8,28 @@
 import ActivityKit
 import WidgetKit
 import SwiftUI
+import OSLog
+import AppIntents
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify.widget", category: "LiveActivity")
+
+// Helper function to format partner names
+private func formatPartnerNames(_ partners: [PartnerData]) -> String {
+    let names = partners.map(\.name)
+    if names.count <= 2 {
+        return names.joined(separator: " & ")
+    } else if names.count == 3 {
+        return "\(names[0]), \(names[1]) & \(names[2])"
+    } else {
+        return "\(names[0]), \(names[1]) & \(names.count - 2) more"
+    }
+}
 
 struct EncounterActivityWidgetLiveActivity: Widget {
     
-    private func partnerNames(for partners: [PartnerData]) -> String {
-        let names = partners.map(\.name)
-        if names.count <= 2 {
-            return names.joined(separator: " & ")
-        } else if names.count == 3 {
-            return "\(names[0]), \(names[1]) & \(names[2])"
-        } else {
-            return "\(names[0]), \(names[1]) & \(names.count - 2) more"
-        }
+    private func effectiveStartTime(_ state: EncounterActivityAttributes.ContentState) -> Date {
+        return state.startTime.addingTimeInterval(state.totalPausedDuration)
     }
-    
     
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: EncounterActivityAttributes.self) { context in
@@ -45,7 +53,7 @@ struct EncounterActivityWidgetLiveActivity: Widget {
                         .buttonBorderShape(.circle)
                         .tint(.accent)
                         
-                        Button(intent: FinishEncounterIntent()) {
+                        Link(destination: URL(string: "coitalcomrade://finish-encounter?encounterID=\(context.attributes.encounterID)&startTime=\(context.state.startTime.timeIntervalSince1970)&duration=\(context.state.elapsedActiveTime())&partnerIDs=\(context.attributes.partners.map(\.id.uuidString).joined(separator: ","))")!) {
                             Image(systemName: "checkmark")
                                 .font(.title2)
                                 .scaledToFit()
@@ -63,8 +71,7 @@ struct EncounterActivityWidgetLiveActivity: Widget {
                 }
                 
                 DynamicIslandExpandedRegion(.center) {
-                    
-                    Text(partnerNames(for: context.attributes.partners))
+                    Text(formatPartnerNames(context.attributes.partners))
                         .font(.footnote)
                         .fontWeight(.medium)
                         .foregroundStyle(.accent)
@@ -166,7 +173,7 @@ struct LockScreenView: View {
             .buttonBorderShape(.circle)
             .tint(.accent)
             
-            Button(intent: FinishEncounterIntent()) {
+            Link(destination: URL(string: "coitalcomrade://finish-encounter?encounterID=\(context.attributes.encounterID)&startTime=\(context.state.startTime.timeIntervalSince1970)&duration=\(context.state.elapsedActiveTime())&partnerIDs=\(context.attributes.partners.map(\.id.uuidString).joined(separator: ","))")!) {
                 Image(systemName: "checkmark")
                     .font(.title2)
                     .scaledToFit()
@@ -230,38 +237,8 @@ struct PartnerGridView: View {
 }
 
 // MARK: - App Intents for Buttons
-
-import AppIntents
-
-struct TogglePauseIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Toggle Pause"
-    static var description: IntentDescription = IntentDescription("Pause or resume the encounter timer")
-    
-    init() {}
-    
-    func perform() async throws -> some IntentResult {
-        NotificationCenter.default.post(
-            name: Notification.Name("togglePauseEncounter"),
-            object: nil
-        )
-        return .result()
-    }
-}
-
-struct FinishEncounterIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Finish Encounter"
-    static var description: IntentDescription = IntentDescription("Finish the current encounter")
-    
-    init() {}
-    
-    func perform() async throws -> some IntentResult {
-        NotificationCenter.default.post(
-            name: Notification.Name("finishEncounter"),
-            object: nil
-        )
-        return .result()
-    }
-}
+// NOTE: Intent implementations are in Fuckify/Shared/LiveActivity/LiveActivityIntents.swift
+// That file must be added to BOTH the main app target AND widget extension target
 
 // MARK: - Previews
 

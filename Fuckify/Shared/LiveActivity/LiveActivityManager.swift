@@ -340,6 +340,13 @@ class LiveActivityManager {
     func currentState() -> EncounterActivityAttributes.ContentState? {
         currentActivity?.content.state
     }
+    
+    /// Clear the current activity reference (called when activity is ended externally)
+    func clearCurrentActivity() {
+        currentActivity = nil
+        cancelTimers()
+        logger.info("Cleared current activity reference")
+    }
 }
 
 // MARK: - Notification Names

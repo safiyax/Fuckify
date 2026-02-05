@@ -9,6 +9,9 @@ import SwiftUI
 import SQLiteData
 import UIKit
 import UserNotifications
+import OSLog
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "App")
 
 // MARK: - Shake Detection
 
@@ -111,7 +114,7 @@ struct FuckifyApp: App {
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
                         if securitySettings.isSecurityEnabled && isUnlocked {
-                            print("📳 [Shake] Locking app")
+                            logger.info("Shake detected - locking app")
                             isUnlocked = false
                         }
                     }
@@ -132,9 +135,9 @@ struct FuckifyApp: App {
                     await handleTogglePause()
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("finishEncounter"))) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("finishEncounter"))) { notification in
                 Task {
-                    await handleFinishEncounter()
+                    await handleFinishEncounter(notification: notification)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .encounterAutoSaved)) { notification in
@@ -143,7 +146,7 @@ struct FuckifyApp: App {
                 }
             }
             .onChange(of: scenePhase) { oldPhase, newPhase in
-                print("📱 [ScenePhase] \(oldPhase) -> \(newPhase), isUnlocked: \(isUnlocked)")
+                logger.info("ScenePhase changed: \(String(describing: oldPhase)) -> \(String(describing: newPhase)), isUnlocked: \(isUnlocked)")
                 guard securitySettings.isSecurityEnabled else { return }
                 
                 switch newPhase {
@@ -159,12 +162,12 @@ struct FuckifyApp: App {
                         wasInactive = true
                         
                         // Lock immediately when inactive, UNLESS an IAP purchase is in progress
-                        print("🔒 [FuckifyApp] .inactive - isIAPInProgress: \(iapState.isIAPInProgress)")
+                        logger.info("Scene inactive - isIAPInProgress: \(iapState.isIAPInProgress)")
                         if !iapState.isIAPInProgress {
                             isUnlocked = false
-                            print("🔒 [FuckifyApp] Locking app")
+                            logger.info("Locking app due to inactive scene")
                         } else {
-                            print("🛒 [FuckifyApp] Skipping lock - IAP in progress")
+                            logger.info("Skipping lock - IAP purchase in progress")
                         }
                     }
                     
@@ -172,7 +175,7 @@ struct FuckifyApp: App {
                     // Lock when backgrounded
                     wasInactive = false
                     isUnlocked = false
-                    print("🔒 [FuckifyApp] .background - locking app")
+                    logger.info("Scene backgrounded - locking app")
                     
                 @unknown default:
                     // Lock for any unknown future states
@@ -190,7 +193,52 @@ struct FuckifyApp: App {
         if url.host == "active-encounter" {
             // Show active encounter view
             NotificationCenter.default.post(name: Notification.Name("showActiveEncounter"), object: nil)
+        } else if url.host == "finish-encounter" {
+            // Handle finish encounter deep link from Live Activity
+            // Format: coitalcomrade://finish-encounter?encounterID=...&startTime=...&duration=...&partnerIDs=...
+            Task {
+                await handleFinishEncounterDeepLink(url: url)
+            }
         }
+    }
+    
+    @MainActor
+    private func handleFinishEncounterDeepLink(url: URL) async {
+        // Parse URL parameters
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            logger.error("Invalid finish encounter URL - no query items")
+            return
+        }
+        
+        // Extract parameters
+        guard let encounterIDString = queryItems.first(where: { $0.name == "encounterID" })?.value,
+              let encounterID = UUID(uuidString: encounterIDString),
+              let startTimeString = queryItems.first(where: { $0.name == "startTime" })?.value,
+              let startTimeInterval = TimeInterval(startTimeString),
+              let durationString = queryItems.first(where: { $0.name == "duration" })?.value,
+              let duration = TimeInterval(durationString),
+              let partnerIDsString = queryItems.first(where: { $0.name == "partnerIDs" })?.value else {
+            logger.error("Missing required parameters in finish encounter URL")
+            return
+        }
+        
+        // Parse partner IDs
+        let partnerIDs = partnerIDsString.split(separator: ",").compactMap { UUID(uuidString: String($0)) }
+        let startTime = Date(timeIntervalSince1970: startTimeInterval)
+        
+        logger.info("Parsed finish encounter deep link - encounterID: \(encounterID), duration: \(duration)s, partners: \(partnerIDs.count)")
+        
+        // End the Live Activity
+        _ = await liveActivityManager.finishEncounter()
+        
+        // Create and edit encounter
+        await createAndEditEncounter(
+            duration: duration,
+            partnerIDs: partnerIDs,
+            encounterID: encounterID,
+            startTime: startTime
+        )
     }
     
     // MARK: - Live Activity Handlers
@@ -207,16 +255,43 @@ struct FuckifyApp: App {
     }
     
     @MainActor
-    private func handleFinishEncounter() async {
-        guard let data = await liveActivityManager.finishEncounter() else { return }
+    private func handleFinishEncounter(notification: Notification) async {
+        logger.info("handleFinishEncounter called")
         
-        // Create encounter with the tracked data
-        await createAndEditEncounter(
-            duration: data.duration,
-            partnerIDs: data.partnerIDs,
-            encounterID: data.encounterID,
-            startTime: data.startTime
-        )
+        // Clear LiveActivityManager state (activity was ended by intent)
+        liveActivityManager.clearCurrentActivity()
+        logger.info("Cleared LiveActivityManager state")
+        
+        // Check if notification contains encounter data (from LiveActivityIntent)
+        if let userInfo = notification.userInfo,
+           let duration = userInfo["duration"] as? TimeInterval,
+           let partnerIDs = userInfo["partnerIDs"] as? [UUID],
+           let encounterID = userInfo["encounterID"] as? UUID,
+           let startTime = userInfo["startTime"] as? Date {
+            // Data provided by intent - use it directly
+            logger.info("Got encounter data from notification - duration: \(duration)s, encounterID: \(encounterID)")
+            await createAndEditEncounter(
+                duration: duration,
+                partnerIDs: partnerIDs,
+                encounterID: encounterID,
+                startTime: startTime
+            )
+        } else {
+            // Old path - get data from LiveActivityManager
+            logger.warning("No userInfo in notification, falling back to LiveActivityManager")
+            guard let data = await liveActivityManager.finishEncounter() else { 
+                logger.error("LiveActivityManager returned no data")
+                return 
+            }
+            
+            logger.info("Got encounter data from LiveActivityManager - duration: \(data.duration)s")
+            await createAndEditEncounter(
+                duration: data.duration,
+                partnerIDs: data.partnerIDs,
+                encounterID: data.encounterID,
+                startTime: data.startTime
+            )
+        }
     }
     
     @MainActor
@@ -239,6 +314,8 @@ struct FuckifyApp: App {
     
     @MainActor
     private func createAndEditEncounter(duration: TimeInterval, partnerIDs: [UUID], encounterID: UUID, startTime: Date) async {
+        logger.info("createAndEditEncounter called - encounterID: \(encounterID), duration: \(duration)s")
+        
         // Import dependencies
         @Dependency(\.encounterService) var encounterService
         
@@ -255,24 +332,31 @@ struct FuckifyApp: App {
         )
         
         do {
+            logger.info("Creating encounter in database...")
             _ = try encounterService.create(
                 draft,
                 partnerIDs: partnerIDs,
                 activities: [],
                 protectionMethods: []
             )
+            logger.info("Encounter created successfully")
             
             // Fetch the created encounter to pass to edit form
             if let encounter = try encounterService.fetchByID(encounterID) {
+                logger.info("Fetched encounter, posting editEncounter notification")
+                
                 // Post notification to open edit form
                 NotificationCenter.default.post(
                     name: Notification.Name("editEncounter"),
                     object: nil,
                     userInfo: ["encounter": encounter]
                 )
+                logger.info("editEncounter notification posted successfully")
+            } else {
+                logger.error("Failed to fetch encounter after creation")
             }
         } catch {
-            print("Failed to create encounter: \(error)")
+            logger.error("Failed to create encounter: \(error.localizedDescription)")
         }
     }
 }

@@ -49,6 +49,7 @@
 		89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EncounterActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		89C22C982F34EC9600B9A0DF /* EncounterActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EncounterActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -73,10 +74,18 @@
 				Extensions/PartnerColors.swift,
 				"Extensions/String+Initials.swift",
 				Shared/LiveActivity/EncounterActivityAttributes.swift,
+				Shared/LiveActivity/LiveActivityIntents.swift,
 				Shared/LiveActivity/PartnerData.swift,
 				Shared/UI/FlowLayout.swift,
 			);
 			target = 89C229C72F2FE4C000B9A0DF /* EncounterActivityWidgetExtension */;
+		};
+		89EB926B2F34F3900040C86C /* Exceptions for "EncounterActivityWidget" folder in "Fuckify" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LiveActivityIntentsProvider.swift,
+			);
+			target = 893C5D2D2EBF711200981CDC /* Fuckify */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -93,6 +102,7 @@
 		89C229CD2F2FE4C000B9A0DF /* EncounterActivityWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				89EB926B2F34F3900040C86C /* Exceptions for "EncounterActivityWidget" folder in "Fuckify" target */,
 				89C229E12F2FE4C200B9A0DF /* Exceptions for "EncounterActivityWidget" folder in "EncounterActivityWidgetExtension" target */,
 			);
 			path = EncounterActivityWidget;
@@ -128,6 +138,7 @@
 		893C5D252EBF711200981CDC = {
 			isa = PBXGroup;
 			children = (
+				89C22C982F34EC9600B9A0DF /* EncounterActivityWidgetExtension.entitlements */,
 				89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */,
 				893C5D302EBF711200981CDC /* Fuckify */,
 				89C229CD2F2FE4C000B9A0DF /* EncounterActivityWidget */,
@@ -512,6 +523,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
@@ -545,6 +557,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;

@@ -37,8 +37,8 @@ struct EncounterService {
         protectionMethods: [SQLProtectionMethod]
     ) throws -> UUID {
         try database.write { db in
-            // Create a full SQLEncounter with a new UUID
-            let encounterID = UUID()
+            // Use the ID from the draft if provided, otherwise generate a new one
+            let encounterID = encounterDraft.id ?? UUID()
             let encounter = SQLEncounter(
                 id: encounterID,
                 date: encounterDraft.date,

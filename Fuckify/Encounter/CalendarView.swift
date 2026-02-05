@@ -9,6 +9,9 @@
 import SwiftUI
 import SQLiteData
 import Dependencies
+import OSLog
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "CalendarView")
 
 struct CalendarView: View {
     @FetchAll private var encounters: [SQLEncounter]
@@ -82,8 +85,13 @@ struct CalendarView: View {
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("editEncounter"))) { notification in
+                logger.info("Received editEncounter notification")
                 if let encounter = notification.userInfo?["encounter"] as? SQLEncounter {
+                    logger.info("Got encounter from notification: \(encounter.id)")
                     encounterToEdit = encounter
+                    logger.info("Set encounterToEdit, sheet should open now")
+                } else {
+                    logger.error("Failed to extract SQLEncounter from notification")
                 }
             }
         }
