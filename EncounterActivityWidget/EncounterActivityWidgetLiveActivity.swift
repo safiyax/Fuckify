@@ -10,140 +10,185 @@ import WidgetKit
 import SwiftUI
 
 struct EncounterActivityWidgetLiveActivity: Widget {
+    
+    private func partnerNames(for partners: [PartnerData]) -> String {
+        let names = partners.map(\.name)
+        if names.count <= 2 {
+            return names.joined(separator: " & ")
+        } else if names.count == 3 {
+            return "\(names[0]), \(names[1]) & \(names[2])"
+        } else {
+            return "\(names[0]), \(names[1]) & \(names.count - 2) more"
+        }
+    }
+    
+    
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: EncounterActivityAttributes.self) { context in
-            // Lock screen/banner UI
-            LockScreenLiveActivityView(context: context)
-                .activityBackgroundTint(Color.accentColor.opacity(0.2))
-                .activitySystemActionForegroundColor(Color.accentColor)
+            // Lock Screen presentation
+            LockScreenView(context: context)
+                .activityBackgroundTint(Color.accent.opacity(0.2))
+                .activitySystemActionForegroundColor(Color.accent)
 
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI - shown when long pressing the Dynamic Island
+                // Expanded presentation - matches Lock Screen layout
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bolt.heart.fill")
-                            .font(.title2)
-                            .foregroundColor(.accentColor)
+                    HStack(spacing: 8) {
+                        Button(intent: TogglePauseIntent()) {
+                            Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
+                                .font(.title2)
+                                .scaledToFit()
+                                .frame(width: 25, height: 25)
+                        }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.circle)
+                        .tint(.accent)
+                        
+                        Button(intent: FinishEncounterIntent()) {
+                            Image(systemName: "checkmark")
+                                .font(.title2)
+                                .scaledToFit()
+                                .frame(width: 25, height: 25)
+                        }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.circle)
+                        .tint(.primary)
                     }
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    TimerDisplayView(
-                        state: context.state,
-                        font: .title2,
-                        color: .accentColor
-                    )
+                        TimerText(state: context.state)
+                            .font(.largeTitle)
                 }
                 
-                DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 12) {
-                        // Partner chips in grid (max 4 slots: 3 partners + overflow)
-                        PartnerGridView(partners: context.attributes.partners)
-                        
-                        // Action buttons
-                        HStack(spacing: 12) {
-                            // Pause/Resume button
-                            Button(intent: TogglePauseIntent(encounterID: context.attributes.encounterID)) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
-                                        .font(.caption)
-                                    Text(context.state.isPaused ? "Resume" : "Pause")
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.accentColor.opacity(0.2))
-                                .cornerRadius(20)
-                            }
-                            .buttonStyle(.plain)
-                            
-                            // Finish button
-                            Button(intent: FinishEncounterIntent(encounterID: context.attributes.encounterID)) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "checkmark")
-                                        .font(.caption)
-                                    Text("Finish")
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.green.opacity(0.2))
-                                .cornerRadius(20)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.bottom, 8)
+                DynamicIslandExpandedRegion(.center) {
+                    
+                    Text(partnerNames(for: context.attributes.partners))
+                        .font(.footnote)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.accent)
                 }
                 
             } compactLeading: {
-                // Compact leading - just the icon
+                // Compact leading - icon only
                 Image(systemName: "bolt.heart.fill")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(.accent)
                 
             } compactTrailing: {
-                // Compact trailing - empty (icon shows on leading)
-                EmptyView()
+                // Compact trailing - timer only
+                TimerText(state: context.state)
+                    .foregroundColor(context.state.isPaused ? .gray : .accent)
                 
             } minimal: {
-                // Minimal - icon on leading, timer on trailing
-                HStack {
-                    Image(systemName: "bolt.heart.fill")
-                        .foregroundColor(.accentColor)
-                    
-                    Spacer()
-                    
-                    TimerDisplayView(
-                        state: context.state,
-                        font: .caption2,
-                        color: .accentColor
-                    )
-                }
+                // Minimal - just icon
+                Image(systemName: "bolt.heart.fill")
+                    .foregroundColor(.accent)
             }
             .widgetURL(URL(string: "coitalcomrade://active-encounter"))
-            .keylineTint(Color.accentColor)
+            .keylineTint(Color.accent)
+        }
+    }
+}
+
+// MARK: - Timer Text View
+
+struct TimerText: View {
+    let state: EncounterActivityAttributes.ContentState
+    
+    var body: some View {
+        Text(state.isPaused ? formatElapsedTime(state.elapsedActiveTime()) : maxStringFor(state.elapsedActiveTime()))
+            .monospacedDigit()
+            .hidden()
+            .overlay(alignment: .leading) {
+                if state.isPaused {
+                    Text(formatElapsedTime(state.elapsedActiveTime()))
+                        .monospacedDigit()
+                        .foregroundColor(.gray)
+                } else {
+                    Text(effectiveStartTime, style: .timer)
+                        .monospacedDigit()
+                        .foregroundColor(.accent)
+                }
+            }
+    }
+    
+    
+    private var effectiveStartTime: Date {
+        state.startTime.addingTimeInterval(state.totalPausedDuration)
+    }
+    
+    private func maxStringFor(_ time: TimeInterval) -> String {
+        if time < 600 { // 9:99
+            return "0:00"
+        }
+
+        if time < 3600 { // 59:59
+            return "00:00"
+        }
+
+        if time < 36000 { // 9:59:59
+            return "0:00:00"
+        }
+
+        return "00:00:00"// 99:59:59
+    }
+    
+    private func formatElapsedTime(_ interval: TimeInterval) -> String {
+        let totalSeconds = Int(interval)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%02d:%02d", minutes, seconds)
         }
     }
 }
 
 // MARK: - Lock Screen View
 
-struct LockScreenLiveActivityView: View {
+struct LockScreenView: View {
     let context: ActivityViewContext<EncounterActivityAttributes>
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon
-            Image(systemName: "bolt.heart.fill")
-                .font(.title2)
-                .foregroundColor(.accentColor)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                // Title
-                Text("Active Encounter")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                // Partners
-                Text(partnerNames)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+        
+        HStack(spacing: 8) {
+            Button(intent: TogglePauseIntent()) {
+                Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
+                    .font(.title2)
+                    .scaledToFit()
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .tint(.accent)
+            
+            Button(intent: FinishEncounterIntent()) {
+                Image(systemName: "checkmark")
+                    .font(.title2)
+                    .scaledToFit()
+                    .frame(width: 30, height: 30)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .tint(.primary)
             
             Spacer()
             
-            // Timer
-            TimerDisplayView(
-                state: context.state,
-                font: .title3,
-                color: .accentColor
-            )
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(partnerNames)
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.accent)
+                TimerText(state: context.state)
+                    .font(.largeTitle)
+            }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 10)
     }
     
     private var partnerNames: String {
@@ -192,23 +237,12 @@ struct TogglePauseIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Toggle Pause"
     static var description: IntentDescription = IntentDescription("Pause or resume the encounter timer")
     
-    @Parameter(title: "Encounter ID")
-    var encounterID: UUID
-    
-    init() {
-        self.encounterID = UUID()
-    }
-    
-    init(encounterID: UUID) {
-        self.encounterID = encounterID
-    }
+    init() {}
     
     func perform() async throws -> some IntentResult {
-        // This will be handled by the main app via notification
         NotificationCenter.default.post(
             name: Notification.Name("togglePauseEncounter"),
-            object: nil,
-            userInfo: ["encounterID": encounterID]
+            object: nil
         )
         return .result()
     }
@@ -218,23 +252,12 @@ struct FinishEncounterIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Finish Encounter"
     static var description: IntentDescription = IntentDescription("Finish the current encounter")
     
-    @Parameter(title: "Encounter ID")
-    var encounterID: UUID
-    
-    init() {
-        self.encounterID = UUID()
-    }
-    
-    init(encounterID: UUID) {
-        self.encounterID = encounterID
-    }
+    init() {}
     
     func perform() async throws -> some IntentResult {
-        // This will be handled by the main app via notification
         NotificationCenter.default.post(
             name: Notification.Name("finishEncounter"),
-            object: nil,
-            userInfo: ["encounterID": encounterID]
+            object: nil
         )
         return .result()
     }

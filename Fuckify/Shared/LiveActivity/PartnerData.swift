@@ -16,12 +16,14 @@ struct PartnerData: Codable, Hashable, Identifiable {
     let name: String
     let avatarColor: String
     
-    /// Convert from SQLPartner to PartnerData
+    #if !WIDGET_EXTENSION
+    /// Convert from SQLPartner to PartnerData (main app only)
     init(from partner: SQLPartner) {
         self.id = partner.id
         self.name = partner.name
         self.avatarColor = partner.avatarColor
     }
+    #endif
     
     /// Direct initializer
     init(id: UUID, name: String, avatarColor: String) {

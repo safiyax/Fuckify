@@ -115,11 +115,11 @@ struct ColorPickerRow: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(PartnerColors.availableColors, id: \.name) { colorOption in
+                    ForEach(PartnerColors.allColorNames, id: \.self) { colorName in
                         ColorCircle(
-                            colorName: colorOption.name,
-                            isSelected: selectedColor == colorOption.name,
-                            onTap: { selectedColor = colorOption.name }
+                            colorName: colorName,
+                            isSelected: selectedColor == colorName,
+                            onTap: { selectedColor = colorName }
                         )
                     }
                 }

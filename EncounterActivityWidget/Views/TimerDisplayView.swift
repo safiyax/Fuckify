@@ -19,16 +19,26 @@ struct TimerDisplayView: View {
     }
     
     var body: some View {
-        Text(timerString)
-            .font(font)
-            .fontWeight(.semibold)
-            .foregroundColor(color)
-            .monospacedDigit()
+        if state.isPaused {
+            // Show static time when paused
+            Text(formatDuration(state.elapsedActiveTime()))
+                .font(font)
+                .fontWeight(.semibold)
+                .foregroundColor(.orange)
+                .monospacedDigit()
+        } else {
+            // Show auto-updating timer when running
+            Text(effectiveStartTime, style: .timer)
+                .font(font)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+                .monospacedDigit()
+        }
     }
     
-    private var timerString: String {
-        let elapsed = state.elapsedActiveTime()
-        return formatDuration(elapsed)
+    private var effectiveStartTime: Date {
+        // Adjust start time to account for paused duration
+        state.startTime.addingTimeInterval(state.totalPausedDuration)
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
@@ -38,10 +48,8 @@ struct TimerDisplayView: View {
         let seconds = totalSeconds % 60
         
         if hours > 0 {
-            // Format: H:MM:SS or HH:MM:SS
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
         } else {
-            // Format: MM:SS
             return String(format: "%02d:%02d", minutes, seconds)
         }
     }
