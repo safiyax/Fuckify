@@ -259,17 +259,6 @@ struct EncounterDetailPartnerChip: View {
 
 // MARK: - Chip Container for Detail View
 
-struct EncounterDetailChipContainer<Content: View>: View {
-    @ViewBuilder let content: Content
-    
-    var body: some View {
-        FlowLayout(spacing: 8) {
-            content
-        }
-        .padding(4)
-    }
-}
-
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()

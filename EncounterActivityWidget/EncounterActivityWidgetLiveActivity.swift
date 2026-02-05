@@ -210,32 +210,6 @@ struct LockScreenView: View {
     }
 }
 
-// MARK: - Partner Grid View
-
-struct PartnerGridView: View {
-    let partners: [PartnerData]
-    
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
-            ForEach(displayedPartners) { partner in
-                LiveActivityPartnerChipView(partner: partner)
-            }
-            
-            if overflowCount > 0 {
-                OverflowPartnerChip(count: overflowCount)
-            }
-        }
-    }
-    
-    private var displayedPartners: [PartnerData] {
-        Array(partners.prefix(3))
-    }
-    
-    private var overflowCount: Int {
-        max(0, partners.count - 3)
-    }
-}
-
 // MARK: - App Intents for Buttons
 // NOTE: Intent implementations are in Fuckify/Shared/LiveActivity/LiveActivityIntents.swift
 // That file must be added to BOTH the main app target AND widget extension target
