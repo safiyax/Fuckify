@@ -8,6 +8,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = true
     private let config = SettingsConfig.shared
 
     var body: some View {
@@ -137,6 +138,18 @@ struct SettingsView: View {
                                         .foregroundColor(.green)
                                     Text("Experiments")
                                 }
+                            }
+                        }
+                        
+                        // Reset onboarding button
+                        Button {
+                            hasCompletedOnboarding = false
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.clockwise.circle.fill")
+                                    .foregroundColor(.purple)
+                                Text("View Onboarding")
+                                    .foregroundColor(.primary)
                             }
                         }
                     }

@@ -18,8 +18,17 @@ struct StatisticsView: View {
     
     @Dependency(\.encounterService) var encounterService
 
-    @State private var selectedYear: Int? = nil // nil means "All"
+    // Persist selected year filter across app launches
+    // -1 is used to represent "All Years" (since @AppStorage doesn't support Optional<Int>)
+    @AppStorage("statistics.selectedYear") private var selectedYearStorage: Int = -1
+    
     @State private var encounterRelationships: [UUID: EncounterRelationships] = [:]
+    
+    // Computed property to bridge @AppStorage with optional logic
+    private var selectedYear: Int? {
+        get { selectedYearStorage == -1 ? nil : selectedYearStorage }
+        set { selectedYearStorage = newValue ?? -1 }
+    }
     
     // MARK: - Cached Statistics (computed once when data changes, not on every render)
     @State private var cachedAverageDuration: String = "0m"
@@ -51,7 +60,9 @@ struct StatisticsView: View {
     
     private var yearFilterMenu: some View {
         Menu {
-            Button(action: { selectedYear = nil }) {
+            Button(action: { 
+                selectedYearStorage = -1 // Set to "All Years"
+            }) {
                 HStack {
                     Text("All Years")
                     if selectedYear == nil {
@@ -63,7 +74,9 @@ struct StatisticsView: View {
             Divider()
 
             ForEach(availableYears, id: \.self) { year in
-                Button(action: { selectedYear = year }) {
+                Button(action: { 
+                    selectedYearStorage = year
+                }) {
                     HStack {
                         Text(String(year))
                         if selectedYear == year {

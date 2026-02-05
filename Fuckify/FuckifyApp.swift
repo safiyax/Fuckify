@@ -82,6 +82,7 @@ extension View {
 
 @main
 struct FuckifyApp: App {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var isUnlocked: Bool
     @State private var securitySettings = SecuritySettings.shared
     @StateObject private var iapState = IAPStateManager.shared
@@ -107,9 +108,13 @@ struct FuckifyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                // Always render main app in background
-                ContentView()
+            if !hasCompletedOnboarding {
+                // Show onboarding for first-time users
+                OnboardingView()
+            } else {
+                ZStack {
+                    // Always render main app in background
+                    ContentView()
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
@@ -181,6 +186,7 @@ struct FuckifyApp: App {
                     // Lock for any unknown future states
                     isUnlocked = false
                 }
+            }
             }
         }
     }
