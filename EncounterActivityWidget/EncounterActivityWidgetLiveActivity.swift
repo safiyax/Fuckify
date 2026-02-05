@@ -215,15 +215,15 @@ struct LockScreenView: View {
 // That file must be added to BOTH the main app target AND widget extension target
 
 // MARK: - Previews
-
-#Preview("Notification - Running", as: .content, using: EncounterActivityAttributes.preview) {
-   EncounterActivityWidgetLiveActivity()
-} contentStates: {
-    EncounterActivityAttributes.ContentState.running
-}
-
-#Preview("Notification - Paused", as: .content, using: EncounterActivityAttributes.preview) {
-   EncounterActivityWidgetLiveActivity()
-} contentStates: {
-    EncounterActivityAttributes.ContentState.paused
-}
+//
+//#Preview("Notification - Running", as: .content, using: EncounterActivityAttributes.preview) {
+//   EncounterActivityWidgetLiveActivity()
+//} contentStates: {
+//    EncounterActivityAttributes.ContentState.running
+//}
+//
+//#Preview("Notification - Paused", as: .content, using: EncounterActivityAttributes.preview) {
+//   EncounterActivityWidgetLiveActivity()
+//} contentStates: {
+//    EncounterActivityAttributes.ContentState.paused
+//}

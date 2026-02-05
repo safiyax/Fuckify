@@ -38,7 +38,7 @@ struct SettingsConfig {
     let showAbout = true
     
     /// Show/hide Support (Buy Me a Coffee)
-    let showSupport = true
+    let showSupport = false
     
     /// Show/hide Experiments
     let showExperiments = false

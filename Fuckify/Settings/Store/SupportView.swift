@@ -9,6 +9,9 @@ import SwiftUI
 import StoreKit
 import Combine
 import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "IAP")
 
 // MARK: - Shared IAP State Manager
 
@@ -233,7 +236,7 @@ struct SupportView: View {
 //            }
         }
         .onChange(of: store.isPurchasing) { oldValue, newValue in
-            print("💳 [SupportView] store.isPurchasing old: \(oldValue) new: \(newValue)")
+            logger.info("IAP purchasing state changed: \(oldValue) -> \(newValue)")
             iapState.isIAPInProgress = newValue  // Update shared state
         }
     }
@@ -271,7 +274,16 @@ struct FeatureRow: View {
 
 @MainActor
 final class SupportViewModel: ObservableObject {
-    private let productIdentifier = "buymeacoffee"
+    // Product IDs to try (in order of preference)
+    // Try both with and without bundle ID prefix
+    private let productIdentifiers = [
+        "baby.safi.Fuckify.buymeacoffee",  // With bundle ID prefix (recommended)
+        "buymeacoffee"                      // Without prefix (fallback)
+    ]
+    
+    private var productIdentifier: String {
+        productIdentifiers.first ?? "baby.safi.Fuckify.buymeacoffee"
+    }
     
     @Published var product: Product?
     @Published var purchaseSuccess = false
@@ -289,28 +301,54 @@ final class SupportViewModel: ObservableObject {
     }
     
     func loadProduct() async {
+        logger.info("Attempting to load IAP products...")
+        logger.info("Trying product IDs: \(self.productIdentifiers.joined(separator: ", "))")
+        
         do {
-            let products = try await Product.products(for: [productIdentifier])
+            // Try to load all possible product IDs
+            let products = try await Product.products(for: productIdentifiers)
+            logger.info("Product.products() returned \(products.count) products")
+            
             if let loaded = products.first {
                 product = loaded
-                print("✅ Product loaded: \(loaded.id) - \(loaded.displayName)")
+                logger.info("✅ Product loaded successfully!")
+                logger.info("  ID: \(loaded.id)")
+                logger.info("  Name: \(loaded.displayName)")
+                logger.info("  Price: \(loaded.displayPrice)")
+                logger.info("  Description: \(loaded.description)")
             } else {
-                print("⚠️ No product found for ID: \(productIdentifier)")
-                print("⚠️ Make sure product ID matches App Store Connect exactly")
+                logger.warning("⚠️ No products found for any of the following IDs:")
+                for id in self.productIdentifiers {
+                    logger.warning("  - \(id)")
+                }
+                logger.warning("")
+                logger.warning("⚠️ Troubleshooting steps:")
+                logger.warning("  1. Check App Store Connect - Product ID must match EXACTLY (case-sensitive)")
+                logger.warning("  2. Verify 'Paid Applications Agreement' is Active in App Store Connect")
+                logger.warning("  3. Ensure Bundle ID matches: baby.safi.Fuckify")
+                logger.warning("  4. Wait 15-30 minutes after creating product in App Store Connect")
+                logger.warning("  5. Try using local StoreKit config file for testing first")
             }
         } catch {
-            print("❌ Failed to load product: \(error.localizedDescription)")
-            print("❌ Error details: \(error)")
+            logger.error("❌ Failed to load products from App Store Connect")
+            logger.error("Error: \(error.localizedDescription)")
+            logger.error("Error type: \(String(describing: type(of: error)))")
+            
+            // Check if this is a StoreKit config issue
+            if error.localizedDescription.contains("Configuration") {
+                logger.error("💡 Tip: Make sure StoreKit Configuration is set to 'None' in scheme")
+                logger.error("   Xcode → Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration")
+            }
         }
     }
     
     func loadCoffeeCount() async {
         var count = 0
         
-        // Iterate through all transactions for this product
+        // Iterate through all transactions for any of our product IDs
         for await result in StoreKit.Transaction.all {
             if case .verified(let transaction) = result,
-               transaction.productID == productIdentifier,
+               productIdentifiers.contains(transaction.productID),
                transaction.revocationDate == nil {
                 count += 1
             }
@@ -366,7 +404,7 @@ final class SupportViewModel: ObservableObject {
         Task {
             for await update in StoreKit.Transaction.updates {
                 if case .verified(let transaction) = update,
-                   transaction.productID == productIdentifier {
+                   productIdentifiers.contains(transaction.productID) {
                     await handleTransaction(transaction)
                 }
             }
