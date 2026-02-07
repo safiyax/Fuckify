@@ -37,15 +37,23 @@ struct ActiveEncounterView: View {
                         // Icon
                         Image(systemName: "bolt.heart.fill")
                             .font(.system(size: 80))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.pink, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .symbolEffect(.pulse, options: .repeating)
                         
                         // Timer display
                         VStack(spacing: 8) {
-                            Text(formatDuration(state.elapsedActiveTime(currentTime: currentTime)))
-                                .font(.system(size: 72, weight: .bold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundColor(.primary)
+                            TimelineView(.periodic(from: Date(), by: 1.0)) { context in
+                                Text(formatDuration(state.elapsedActiveTime(currentTime: context.date)))
+                                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundColor(.primary)
+                            }
                             
                             if state.isPaused {
                                 HStack(spacing: 4) {
@@ -169,8 +177,8 @@ struct ActiveEncounterView: View {
             } message: {
                 Text("Are you sure you want to cancel this encounter? All tracking data will be lost.")
             }
-            .onReceive(timer) { _ in
-                currentTime = Date()
+            .onReceive(timer) { time in
+                currentTime = time
             }
         }
     }
