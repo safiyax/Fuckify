@@ -123,7 +123,7 @@ struct StatisticsView: View {
             VStack(spacing: 20) {
                 OverviewSection(
                     encountersCount: filteredEncounters.count,
-                    partnersCount: partners.count,
+                    partnersCount: uniquePartnersCount,  // FIX: Use filtered partners
                     averageDuration: cachedAverageDuration,
                     recentCount: cachedRecentEncountersCount
                 )
@@ -279,6 +279,12 @@ struct StatisticsView: View {
 
         let totalRating = ratedEncounters.reduce(0) { $0 + $1.rating }
         return Double(totalRating) / Double(ratedEncounters.count)
+    }
+    
+    private var uniquePartnersCount: Int {
+        // Get all unique partner IDs from filtered encounters
+        let allPartnerIDs = filteredEncounters.compactMap { encounterRelationships[$0.id]?.partnerIDs }.flatMap { $0 }
+        return Set(allPartnerIDs).count
     }
 }
 
