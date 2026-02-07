@@ -15,10 +15,28 @@ import GRDB
 struct EncounterWithRelationships: Identifiable {
     let encounter: SQLEncounter
     let partners: [SQLPartner]
-    let activities: [SQLActivityType]
-    let protectionMethods: [SQLProtectionMethod]
+    let activities: [SQLActivityType]              // Deprecated: use activityEntities
+    let protectionMethods: [SQLProtectionMethod]   // Deprecated: use protectionEntities
+    let activityEntities: [SQLActivityTypeEntity]?
+    let protectionEntities: [SQLProtectionMethodEntity]?
     
     var id: UUID { encounter.id }
+    
+    init(
+        encounter: SQLEncounter,
+        partners: [SQLPartner],
+        activities: [SQLActivityType] = [],
+        protectionMethods: [SQLProtectionMethod] = [],
+        activityEntities: [SQLActivityTypeEntity]? = nil,
+        protectionEntities: [SQLProtectionMethodEntity]? = nil
+    ) {
+        self.encounter = encounter
+        self.partners = partners
+        self.activities = activities
+        self.protectionMethods = protectionMethods
+        self.activityEntities = activityEntities
+        self.protectionEntities = protectionEntities
+    }
 }
 
 /// Service layer for Encounter database operations
@@ -28,13 +46,13 @@ struct EncounterService {
     
     // MARK: - Create
     
-    /// Create an encounter with partners, activities, and protection methods
+    /// Create an encounter with partners, activities, and protection methods (NEW: UUID-based)
     /// All operations in a single transaction
     func create(
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
-        activities: [SQLActivityType],
-        protectionMethods: [SQLProtectionMethod]
+        activityTypeIDs: [UUID],
+        protectionMethodIDs: [UUID]
     ) throws -> UUID {
         try database.write { db in
             // Use the ID from the draft if provided, otherwise generate a new one
@@ -66,25 +84,27 @@ struct EncounterService {
             }
             .execute(db)
             
-            // Link activities
+            // Link activities using UUIDs
             try EncounterActivity.insert {
-                activities.map { activity in
+                activityTypeIDs.map { activityTypeID in
                     EncounterActivity.Draft(
                         id: UUID(),
                         encounterId: encounterID,
-                        activityType: activity
+                        activityTypeId: activityTypeID,
+                        activityType: nil  // New approach: use UUID
                     )
                 }
             }
             .execute(db)
             
-            // Link protection methods
+            // Link protection methods using UUIDs
             try EncounterProtectionMethod.insert {
-                protectionMethods.map { method in
+                protectionMethodIDs.map { methodID in
                     EncounterProtectionMethod.Draft(
                         id: UUID(),
                         encounterId: encounterID,
-                        protectionMethod: method
+                        protectionMethodId: methodID,
+                        protectionMethod: nil  // New approach: use UUID
                     )
                 }
             }
@@ -92,6 +112,26 @@ struct EncounterService {
             
             return encounterID
         }
+    }
+    
+    /// Create an encounter with partners, activities, and protection methods (DEPRECATED: enum-based)
+    /// All operations in a single transaction
+    @available(*, deprecated, message: "Use create(_:partnerIDs:activityTypeIDs:protectionMethodIDs:) instead")
+    func createLegacy(
+        _ encounterDraft: SQLEncounter.Draft,
+        partnerIDs: [UUID],
+        activities: [SQLActivityType],
+        protectionMethods: [SQLProtectionMethod]
+    ) throws -> UUID {
+        // Convert enums to UUIDs and use new method
+        let activityTypeIDs = activities.map { $0.predefinedUUID }
+        let protectionMethodIDs = protectionMethods.map { $0.predefinedUUID }
+        return try create(
+            encounterDraft,
+            partnerIDs: partnerIDs,
+            activityTypeIDs: activityTypeIDs,
+            protectionMethodIDs: protectionMethodIDs
+        )
     }
     
     // MARK: - Read
@@ -139,24 +179,52 @@ struct EncounterService {
                 }
             }
             
-            // 3. Batch load ALL activities
+            // 3. Batch load ALL activities (NEW: UUID-based)
             let allActivities = try EncounterActivity
                 .where { encounterIDs.contains($0.encounterId) }
                 .fetchAll(db)
             
-            var activitiesByEncounter: [UUID: [SQLActivityType]] = [:]
+            // Get all unique activity type IDs
+            let allActivityTypeIDs = Set(allActivities.compactMap { $0.activityTypeId })
+            
+            // Batch load activity type entities
+            let activityTypeEntities = try SQLActivityTypeEntity
+                .where { allActivityTypeIDs.contains($0.id) }
+                .fetchAll(db)
+            
+            let activityTypesByID = Dictionary(uniqueKeysWithValues: activityTypeEntities.map { ($0.id, $0) })
+            
+            // Group by encounter
+            var activityEntitiesByEncounter: [UUID: [SQLActivityTypeEntity]] = [:]
             for activity in allActivities {
-                activitiesByEncounter[activity.encounterId, default: []].append(activity.activityType)
+                if let activityTypeID = activity.activityTypeId,
+                   let entity = activityTypesByID[activityTypeID] {
+                    activityEntitiesByEncounter[activity.encounterId, default: []].append(entity)
+                }
             }
             
-            // 4. Batch load ALL protection methods
+            // 4. Batch load ALL protection methods (NEW: UUID-based)
             let allProtectionMethods = try EncounterProtectionMethod
                 .where { encounterIDs.contains($0.encounterId) }
                 .fetchAll(db)
             
-            var protectionByEncounter: [UUID: [SQLProtectionMethod]] = [:]
+            // Get all unique protection method IDs
+            let allProtectionMethodIDs = Set(allProtectionMethods.compactMap { $0.protectionMethodId })
+            
+            // Batch load protection method entities
+            let protectionMethodEntities = try SQLProtectionMethodEntity
+                .where { allProtectionMethodIDs.contains($0.id) }
+                .fetchAll(db)
+            
+            let protectionMethodsByID = Dictionary(uniqueKeysWithValues: protectionMethodEntities.map { ($0.id, $0) })
+            
+            // Group by encounter
+            var protectionEntitiesByEncounter: [UUID: [SQLProtectionMethodEntity]] = [:]
             for protection in allProtectionMethods {
-                protectionByEncounter[protection.encounterId, default: []].append(protection.protectionMethod)
+                if let protectionMethodID = protection.protectionMethodId,
+                   let entity = protectionMethodsByID[protectionMethodID] {
+                    protectionEntitiesByEncounter[protection.encounterId, default: []].append(entity)
+                }
             }
             
             // 5. Combine everything
@@ -164,8 +232,10 @@ struct EncounterService {
                 EncounterWithRelationships(
                     encounter: encounter,
                     partners: partnersByEncounter[encounter.id] ?? [],
-                    activities: activitiesByEncounter[encounter.id] ?? [],
-                    protectionMethods: protectionByEncounter[encounter.id] ?? []
+                    activities: [],  // Deprecated
+                    protectionMethods: [],  // Deprecated
+                    activityEntities: activityEntitiesByEncounter[encounter.id],
+                    protectionEntities: protectionEntitiesByEncounter[encounter.id]
                 )
             }
         }
@@ -199,12 +269,12 @@ struct EncounterService {
     
     // MARK: - Update
     
-    /// Update an encounter and optionally its relationships
+    /// Update an encounter and optionally its relationships (NEW: UUID-based)
     func update(
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
-        activities: [SQLActivityType]? = nil,
-        protectionMethods: [SQLProtectionMethod]? = nil
+        activityTypeIDs: [UUID]? = nil,
+        protectionMethodIDs: [UUID]? = nil
     ) throws {
         try database.write { db in
             // Update encounter
@@ -231,44 +301,65 @@ struct EncounterService {
                 .execute(db)
             }
             
-            // Update activities if provided
-            if let newActivities = activities {
+            // Update activities if provided (NEW: UUID-based)
+            if let newActivityTypeIDs = activityTypeIDs {
                 try EncounterActivity
                     .where { $0.encounterId.eq(encounter.id) }
                     .delete()
                     .execute(db)
                 
                 try EncounterActivity.insert {
-                    newActivities.map { activity in
+                    newActivityTypeIDs.map { activityTypeID in
                         EncounterActivity.Draft(
                             id: UUID(),
                             encounterId: encounter.id,
-                            activityType: activity
+                            activityTypeId: activityTypeID,
+                            activityType: nil
                         )
                     }
                 }
                 .execute(db)
             }
             
-            // Update protection methods if provided
-            if let newMethods = protectionMethods {
+            // Update protection methods if provided (NEW: UUID-based)
+            if let newProtectionMethodIDs = protectionMethodIDs {
                 try EncounterProtectionMethod
                     .where { $0.encounterId.eq(encounter.id) }
                     .delete()
                     .execute(db)
                 
                 try EncounterProtectionMethod.insert {
-                    newMethods.map { method in
+                    newProtectionMethodIDs.map { methodID in
                         EncounterProtectionMethod.Draft(
                             id: UUID(),
                             encounterId: encounter.id,
-                            protectionMethod: method
+                            protectionMethodId: methodID,
+                            protectionMethod: nil
                         )
                     }
                 }
                 .execute(db)
             }
         }
+    }
+    
+    /// Update an encounter and optionally its relationships (DEPRECATED: enum-based)
+    @available(*, deprecated, message: "Use update(_:partnerIDs:activityTypeIDs:protectionMethodIDs:) instead")
+    func updateLegacy(
+        _ encounter: SQLEncounter,
+        partnerIDs: [UUID]? = nil,
+        activities: [SQLActivityType]? = nil,
+        protectionMethods: [SQLProtectionMethod]? = nil
+    ) throws {
+        // Convert enums to UUIDs and use new method
+        let activityTypeIDs = activities?.map { $0.predefinedUUID }
+        let protectionMethodIDs = protectionMethods?.map { $0.predefinedUUID }
+        try update(
+            encounter,
+            partnerIDs: partnerIDs,
+            activityTypeIDs: activityTypeIDs,
+            protectionMethodIDs: protectionMethodIDs
+        )
     }
     
     // MARK: - Delete
@@ -336,23 +427,65 @@ struct EncounterService {
         }
     }
     
-    /// Get activities for a specific encounter
+    /// Get activity type entities for a specific encounter (NEW: UUID-based)
+    func fetchActivityEntities(for encounterID: UUID) throws -> [SQLActivityTypeEntity] {
+        try database.read { db in
+            // Fetch activity junction records
+            let activityJunctions = try EncounterActivity
+                .where { $0.encounterId.eq(encounterID) }
+                .fetchAll(db)
+            
+            // Get unique activity type IDs
+            let activityTypeIDs = activityJunctions.compactMap { $0.activityTypeId }
+            
+            guard !activityTypeIDs.isEmpty else { return [] }
+            
+            // Fetch activity type entities
+            return try SQLActivityTypeEntity
+                .where { activityTypeIDs.contains($0.id) }
+                .fetchAll(db)
+        }
+    }
+    
+    /// Get protection method entities for a specific encounter (NEW: UUID-based)
+    func fetchProtectionMethodEntities(for encounterID: UUID) throws -> [SQLProtectionMethodEntity] {
+        try database.read { db in
+            // Fetch protection method junction records
+            let protectionJunctions = try EncounterProtectionMethod
+                .where { $0.encounterId.eq(encounterID) }
+                .fetchAll(db)
+            
+            // Get unique protection method IDs
+            let protectionMethodIDs = protectionJunctions.compactMap { $0.protectionMethodId }
+            
+            guard !protectionMethodIDs.isEmpty else { return [] }
+            
+            // Fetch protection method entities
+            return try SQLProtectionMethodEntity
+                .where { protectionMethodIDs.contains($0.id) }
+                .fetchAll(db)
+        }
+    }
+    
+    /// Get activities for a specific encounter (DEPRECATED: enum-based)
+    @available(*, deprecated, message: "Use fetchActivityEntities(for:) instead")
     func fetchActivities(for encounterID: UUID) throws -> [SQLActivityType] {
         try database.read { db in
             try EncounterActivity
                 .where { $0.encounterId.eq(encounterID) }
                 .fetchAll(db)
-                .map(\.activityType)
+                .compactMap { $0.activityType }
         }
     }
     
-    /// Get protection methods for a specific encounter
+    /// Get protection methods for a specific encounter (DEPRECATED: enum-based)
+    @available(*, deprecated, message: "Use fetchProtectionMethodEntities(for:) instead")
     func fetchProtectionMethods(for encounterID: UUID) throws -> [SQLProtectionMethod] {
         try database.read { db in
             try EncounterProtectionMethod
                 .where { $0.encounterId.eq(encounterID) }
                 .fetchAll(db)
-                .map(\.protectionMethod)
+                .compactMap { $0.protectionMethod }
         }
     }
 }

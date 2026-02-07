@@ -173,38 +173,84 @@ struct SettingsView: View {
 
 struct ActivitiesSettingsView: View {
     @State private var settings = UserSettings.shared
+    @State private var activities: [SQLActivityTypeEntity] = []
+    @State private var showingAddActivity = false
+    @State private var activityToEdit: SQLActivityTypeEntity?
 
     var body: some View {
         Form {
             Section {
-                Text("Toggle which activities appear when logging encounters.")
+                Text("Toggle which activities appear when logging encounters. Tap to edit custom activities.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
             Section {
-                ForEach(SQLActivityType.allCases, id: \.self) { activity in
-                    Toggle(isOn: Binding(
-                        get: { settings.isActivityEnabled(activity) },
-                        set: { _ in settings.toggleActivity(activity) }
-                    )) {
-                        HStack {
-                            Image(systemName: activity.icon)
-                                .foregroundColor(.purple)
-                            Text(activity.displayName)
+                ForEach(activities) { activity in
+                    HStack {
+                        Toggle(isOn: Binding(
+                            get: { activity.isEnabled },
+                            set: { _ in
+                                settings.toggleActivity(activity.id)
+                                loadActivities()
+                            }
+                        )) {
+                            HStack {
+                                Image(systemName: activity.icon)
+                                    .foregroundColor(.purple)
+                                    .frame(width: 24)
+                                Text(activity.name)
+                                
+                                if activity.isBuiltIn {
+                                    Spacer()
+                                    Image(systemName: "lock.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        
+                        // Only allow editing custom activities
+                        if !activity.isBuiltIn {
+                            Button {
+                                activityToEdit = activity
+                            } label: {
+                                Image(systemName: "pencil.circle.fill")
+                                    .foregroundColor(.blue)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
             }
 
             Section {
-                Button("Enable All") {
-                    settings.enabledActivities = Set(SQLActivityType.allCases)
+                Button {
+                    showingAddActivity = true
+                } label: {
+                    Label("Add Custom Activity", systemImage: "plus.circle.fill")
                 }
             }
         }
         .navigationTitle("Activities")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadActivities()
+        }
+        .sheet(isPresented: $showingAddActivity) {
+            AddActivityView(onSave: {
+                loadActivities()
+            })
+        }
+        .sheet(item: $activityToEdit) { activity in
+            EditActivityView(activity: activity, onSave: {
+                loadActivities()
+            })
+        }
+    }
+    
+    private func loadActivities() {
+        activities = settings.allActivityTypes()
     }
 }
 
@@ -212,38 +258,84 @@ struct ActivitiesSettingsView: View {
 
 struct ProtectionMethodsSettingsView: View {
     @State private var settings = UserSettings.shared
+    @State private var protectionMethods: [SQLProtectionMethodEntity] = []
+    @State private var showingAddMethod = false
+    @State private var methodToEdit: SQLProtectionMethodEntity?
 
     var body: some View {
         Form {
             Section {
-                Text("Toggle which protection methods appear when logging encounters.")
+                Text("Toggle which protection methods appear when logging encounters. Tap to edit custom methods.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
             Section {
-                ForEach(SQLProtectionMethod.allCases, id: \.self) { method in
-                    Toggle(isOn: Binding(
-                        get: { settings.isProtectionMethodEnabled(method) },
-                        set: { _ in settings.toggleProtectionMethod(method) }
-                    )) {
-                        HStack {
-                            Image(systemName: method.icon)
-                                .foregroundColor(.green)
-                            Text(method.displayName)
+                ForEach(protectionMethods) { method in
+                    HStack {
+                        Toggle(isOn: Binding(
+                            get: { method.isEnabled },
+                            set: { _ in
+                                settings.toggleProtectionMethod(method.id)
+                                loadProtectionMethods()
+                            }
+                        )) {
+                            HStack {
+                                Image(systemName: method.icon)
+                                    .foregroundColor(.green)
+                                    .frame(width: 24)
+                                Text(method.name)
+                                
+                                if method.isBuiltIn {
+                                    Spacer()
+                                    Image(systemName: "lock.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        
+                        // Only allow editing custom methods
+                        if !method.isBuiltIn {
+                            Button {
+                                methodToEdit = method
+                            } label: {
+                                Image(systemName: "pencil.circle.fill")
+                                    .foregroundColor(.blue)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
             }
 
             Section {
-                Button("Enable All") {
-                    settings.enabledProtectionMethods = Set(SQLProtectionMethod.allCases)
+                Button {
+                    showingAddMethod = true
+                } label: {
+                    Label("Add Custom Protection Method", systemImage: "plus.circle.fill")
                 }
             }
         }
         .navigationTitle("Protection Methods")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadProtectionMethods()
+        }
+        .sheet(isPresented: $showingAddMethod) {
+            AddProtectionMethodView(onSave: {
+                loadProtectionMethods()
+            })
+        }
+        .sheet(item: $methodToEdit) { method in
+            EditProtectionMethodView(method: method, onSave: {
+                loadProtectionMethods()
+            })
+        }
+    }
+    
+    private func loadProtectionMethods() {
+        protectionMethods = settings.allProtectionMethods()
     }
 }
 

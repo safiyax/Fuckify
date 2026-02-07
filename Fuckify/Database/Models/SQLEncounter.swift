@@ -45,19 +45,86 @@ struct SQLEncounter: Identifiable {
 }
 
 
+// MARK: - Activity Type Entity (Customizable)
+
+@Table("activityType")
+struct SQLActivityTypeEntity: Identifiable {
+    let id: UUID
+    var name: String
+    var icon: String           // SF Symbol name
+    var isBuiltIn: Bool        // true for defaults, false for custom
+    var isEnabled: Bool        // visibility toggle
+    var sortOrder: Int         // for display ordering
+    var dateAdded: Date
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        icon: String,
+        isBuiltIn: Bool = false,
+        isEnabled: Bool = true,
+        sortOrder: Int = 0,
+        dateAdded: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.isBuiltIn = isBuiltIn
+        self.isEnabled = isEnabled
+        self.sortOrder = sortOrder
+        self.dateAdded = dateAdded
+    }
+}
+
+// MARK: - Protection Method Entity (Customizable)
+
+@Table("protectionMethodType")
+struct SQLProtectionMethodEntity: Identifiable {
+    let id: UUID
+    var name: String
+    var icon: String           // SF Symbol name
+    var isBuiltIn: Bool        // true for defaults, false for custom
+    var isEnabled: Bool        // visibility toggle
+    var sortOrder: Int         // for display ordering
+    var dateAdded: Date
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        icon: String,
+        isBuiltIn: Bool = false,
+        isEnabled: Bool = true,
+        sortOrder: Int = 0,
+        dateAdded: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.isBuiltIn = isBuiltIn
+        self.isEnabled = isEnabled
+        self.sortOrder = sortOrder
+        self.dateAdded = dateAdded
+    }
+}
+
+// MARK: - Junction Tables
+
 @Table("encounterActivity")
 struct EncounterActivity: Identifiable {
     let id: UUID
     var encounterId: UUID
-    var activityType: SQLActivityType
+    var activityTypeId: UUID?           // NEW: UUID reference
+    var activityType: SQLActivityType?  // OLD: Keep for migration safety
     
     init(
         id: UUID = UUID(),
         encounterId: UUID,
-        activityType: SQLActivityType
+        activityTypeId: UUID? = nil,
+        activityType: SQLActivityType? = nil
     ) {
         self.id = id
         self.encounterId = encounterId
+        self.activityTypeId = activityTypeId
         self.activityType = activityType
     }
 }
@@ -66,18 +133,23 @@ struct EncounterActivity: Identifiable {
 struct EncounterProtectionMethod: Identifiable {
     let id: UUID
     var encounterId: UUID
-    var protectionMethod: SQLProtectionMethod
+    var protectionMethodId: UUID?              // NEW: UUID reference
+    var protectionMethod: SQLProtectionMethod? // OLD: Keep for migration safety
     
     init(
         id: UUID = UUID(),
         encounterId: UUID,
-        protectionMethod: SQLProtectionMethod
+        protectionMethodId: UUID? = nil,
+        protectionMethod: SQLProtectionMethod? = nil
     ) {
         self.id = id
         self.encounterId = encounterId
+        self.protectionMethodId = protectionMethodId
         self.protectionMethod = protectionMethod
     }
 }
+
+// MARK: - Legacy Enums (Deprecated - Keep for migration)
 
 enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
     case oral = "Oral"
@@ -101,6 +173,31 @@ enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
         case .other: return "ellipsis.circle"
         }
     }
+    
+    // Predefined UUIDs for built-in activities (stable across installations)
+    var predefinedUUID: UUID {
+        switch self {
+        case .oral:    return UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        case .vaginal: return UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        case .anal:    return UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
+        case .manual:  return UUID(uuidString: "00000000-0000-0000-0000-000000000004")!
+        case .kissing: return UUID(uuidString: "00000000-0000-0000-0000-000000000005")!
+        case .other:   return UUID(uuidString: "00000000-0000-0000-0000-000000000006")!
+        }
+    }
+    
+    // Convert to entity representation
+    func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLActivityTypeEntity {
+        SQLActivityTypeEntity(
+            id: predefinedUUID,
+            name: displayName,
+            icon: icon,
+            isBuiltIn: true,
+            isEnabled: isEnabled,
+            sortOrder: sortOrder,
+            dateAdded: Date()
+        )
+    }
 }
 
 enum SQLProtectionMethod: String, Codable, CaseIterable, QueryBindable {
@@ -122,5 +219,29 @@ enum SQLProtectionMethod: String, Codable, CaseIterable, QueryBindable {
         case .none: return "xmark.circle"
         case .other: return "ellipsis.circle"
         }
+    }
+    
+    // Predefined UUIDs for built-in protection methods (stable across installations)
+    var predefinedUUID: UUID {
+        switch self {
+        case .condom:  return UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
+        case .prep:    return UUID(uuidString: "00000000-0000-0000-0000-000000000102")!
+        case .pullOut: return UUID(uuidString: "00000000-0000-0000-0000-000000000103")!
+        case .none:    return UUID(uuidString: "00000000-0000-0000-0000-000000000104")!
+        case .other:   return UUID(uuidString: "00000000-0000-0000-0000-000000000105")!
+        }
+    }
+    
+    // Convert to entity representation
+    func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLProtectionMethodEntity {
+        SQLProtectionMethodEntity(
+            id: predefinedUUID,
+            name: displayName,
+            icon: icon,
+            isBuiltIn: true,
+            isEnabled: isEnabled,
+            sortOrder: sortOrder,
+            dateAdded: Date()
+        )
     }
 }

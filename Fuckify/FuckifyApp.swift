@@ -342,8 +342,8 @@ struct FuckifyApp: App {
             _ = try encounterService.create(
                 draft,
                 partnerIDs: partnerIDs,
-                activities: [],
-                protectionMethods: []
+                activityTypeIDs: [],        // NEW: UUID-based
+                protectionMethodIDs: []     // NEW: UUID-based
             )
             logger.info("Encounter created successfully")
             

@@ -25,8 +25,8 @@ struct EncounterFormView: View {
     @State private var durationHours: Int = 0
     @State private var durationMinutes: Int = 30
     @State private var selectedPartnerIDs: Set<UUID> = []
-    @State private var selectedActivities: Set<SQLActivityType> = []
-    @State private var selectedProtection: Set<SQLProtectionMethod> = []
+    @State private var selectedActivityIDs: Set<UUID> = []        // NEW: UUID-based
+    @State private var selectedProtectionIDs: Set<UUID> = []      // NEW: UUID-based
     @State private var location: String = ""
     @State private var notes: String = ""
     @State private var rating: Int = 0
@@ -35,6 +35,10 @@ struct EncounterFormView: View {
     @State private var errorMessage: String?
     @State private var showingPartnerPicker = false
     @State private var partnerSearchText = ""
+    
+    // NEW: Load entities from database
+    @State private var availableActivities: [SQLActivityTypeEntity] = []
+    @State private var availableProtectionMethods: [SQLProtectionMethodEntity] = []
 
     var isEditing: Bool {
         encounter != nil
@@ -107,47 +111,47 @@ struct EncounterFormView: View {
                     }
                 }
 
-                // Activities
+                // Activities (NEW: database-backed)
                 Section("Activities") {
-                    ForEach(SQLActivityType.allCases.filter { settings.isActivityEnabled($0) }, id: \.self) { activity in
-                        Button(action: { toggleActivity(activity) }) {
+                    ForEach(availableActivities.filter { $0.isEnabled }) { activity in
+                        Button(action: { toggleActivity(activity.id) }) {
                             HStack {
                                 Image(systemName: activity.icon)
                                     .foregroundColor(.purple)
                                     .accessibilityHidden(true)
-                                Text(activity.displayName)
+                                Text(activity.name)
                                     .foregroundColor(.primary)
                                 Spacer()
-                                if selectedActivities.contains(activity) {
+                                if selectedActivityIDs.contains(activity.id) {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
                                         .accessibilityHidden(true)
                                 }
                             }
                         }
-                        .accessibilityAddTraits(selectedActivities.contains(activity) ? .isSelected : [])
+                        .accessibilityAddTraits(selectedActivityIDs.contains(activity.id) ? .isSelected : [])
                     }
                 }
 
-                // Protection
+                // Protection (NEW: database-backed)
                 Section("Protection") {
-                    ForEach(SQLProtectionMethod.allCases.filter { settings.isProtectionMethodEnabled($0) }, id: \.self) { protection in
-                        Button(action: { toggleProtection(protection) }) {
+                    ForEach(availableProtectionMethods.filter { $0.isEnabled }) { protection in
+                        Button(action: { toggleProtection(protection.id) }) {
                             HStack {
                                 Image(systemName: protection.icon)
                                     .foregroundColor(.green)
                                     .accessibilityHidden(true)
-                                Text(protection.displayName)
+                                Text(protection.name)
                                     .foregroundColor(.primary)
                                 Spacer()
-                                if selectedProtection.contains(protection) {
+                                if selectedProtectionIDs.contains(protection.id) {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
                                         .accessibilityHidden(true)
                                 }
                             }
                         }
-                        .accessibilityAddTraits(selectedProtection.contains(protection) ? .isSelected : [])
+                        .accessibilityAddTraits(selectedProtectionIDs.contains(protection.id) ? .isSelected : [])
                     }
                 }
 
@@ -229,6 +233,10 @@ struct EncounterFormView: View {
     }
 
     private func loadData() async {
+        // Load available activities and protection methods from database
+        availableActivities = settings.allActivityTypes()
+        availableProtectionMethods = settings.allProtectionMethods()
+        
         // Load encounter data if editing
         if let encounter = encounter {
             await loadEncounter(encounter)
@@ -253,19 +261,19 @@ struct EncounterFormView: View {
         }
     }
 
-    private func toggleActivity(_ activity: SQLActivityType) {
-        if selectedActivities.contains(activity) {
-            selectedActivities.remove(activity)
+    private func toggleActivity(_ activityID: UUID) {
+        if selectedActivityIDs.contains(activityID) {
+            selectedActivityIDs.remove(activityID)
         } else {
-            selectedActivities.insert(activity)
+            selectedActivityIDs.insert(activityID)
         }
     }
 
-    private func toggleProtection(_ protection: SQLProtectionMethod) {
-        if selectedProtection.contains(protection) {
-            selectedProtection.remove(protection)
+    private func toggleProtection(_ protectionID: UUID) {
+        if selectedProtectionIDs.contains(protectionID) {
+            selectedProtectionIDs.remove(protectionID)
         } else {
-            selectedProtection.insert(protection)
+            selectedProtectionIDs.insert(protectionID)
         }
     }
 
@@ -279,16 +287,16 @@ struct EncounterFormView: View {
         rating = encounter.rating
         reachedOrgasm = encounter.reachedOrgasm
         
-        // Load relationships
+        // Load relationships (NEW: UUID-based)
         do {
             let partners = try encounterService.fetchPartners(for: encounter.id)
             selectedPartnerIDs = Set(partners.map(\.id))
             
-            let activities = try encounterService.fetchActivities(for: encounter.id)
-            selectedActivities = Set(activities)
+            let activityEntities = try encounterService.fetchActivityEntities(for: encounter.id)
+            selectedActivityIDs = Set(activityEntities.map(\.id))
             
-            let protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
-            selectedProtection = Set(protectionMethods)
+            let protectionEntities = try encounterService.fetchProtectionMethodEntities(for: encounter.id)
+            selectedProtectionIDs = Set(protectionEntities.map(\.id))
         } catch {
             errorMessage = "Failed to load encounter data"
         }
@@ -300,6 +308,8 @@ struct EncounterFormView: View {
         
         let duration = TimeInterval(durationHours * 3600 + durationMinutes * 60)
         let partnerIDs = Array(selectedPartnerIDs)
+        let activityTypeIDs = Array(selectedActivityIDs)         // NEW: UUID arrays
+        let protectionMethodIDs = Array(selectedProtectionIDs)   // NEW: UUID arrays
 
         do {
             if let encounter = encounter {
@@ -312,14 +322,12 @@ struct EncounterFormView: View {
                 updated.rating = rating
                 updated.reachedOrgasm = reachedOrgasm
                 
-                let activities = Array(selectedActivities)
-                let protection = Array(selectedProtection)
-                
+                // NEW: Use UUID-based update
                 try encounterService.update(
                     updated,
                     partnerIDs: partnerIDs,
-                    activities: activities,
-                    protectionMethods: protection
+                    activityTypeIDs: activityTypeIDs,
+                    protectionMethodIDs: protectionMethodIDs
                 )
                 
                 // Update partner last encounter dates
@@ -339,14 +347,12 @@ struct EncounterFormView: View {
                     dateAdded: Date()
                 )
                 
-                let activities = Array(selectedActivities)
-                let protection = Array(selectedProtection)
-                
+                // NEW: Use UUID-based create
                 _ = try encounterService.create(
                     draft,
                     partnerIDs: partnerIDs,
-                    activities: activities,
-                    protectionMethods: protection
+                    activityTypeIDs: activityTypeIDs,
+                    protectionMethodIDs: protectionMethodIDs
                 )
                 
                 // Update partner last encounter dates

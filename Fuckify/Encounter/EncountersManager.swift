@@ -66,8 +66,8 @@ class EncountersManager {
     func addEncounter(
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
-        activities: [SQLActivityType],
-        protectionMethods: [SQLProtectionMethod]
+        activityTypeIDs: [UUID],            // NEW: UUID-based
+        protectionMethodIDs: [UUID]         // NEW: UUID-based
     ) async {
         do {
             // Capture services before detached task to avoid actor isolation issues
@@ -78,8 +78,8 @@ class EncountersManager {
                 try await encService.create(
                     encounterDraft,
                     partnerIDs: partnerIDs,
-                    activities: activities,
-                    protectionMethods: protectionMethods
+                    activityTypeIDs: activityTypeIDs,
+                    protectionMethodIDs: protectionMethodIDs
                 )
             }.value
             logger.info("Created encounter: \(encounterID)")
@@ -104,8 +104,8 @@ class EncountersManager {
     func updateEncounter(
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
-        activities: [SQLActivityType]? = nil,
-        protectionMethods: [SQLProtectionMethod]? = nil
+        activityTypeIDs: [UUID]? = nil,            // NEW: UUID-based
+        protectionMethodIDs: [UUID]? = nil         // NEW: UUID-based
     ) async {
         do {
             // Capture services before detached task to avoid actor isolation issues
@@ -117,8 +117,8 @@ class EncountersManager {
                 try await encService.update(
                     encounter,
                     partnerIDs: partnerIDs,
-                    activities: activities,
-                    protectionMethods: protectionMethods
+                    activityTypeIDs: activityTypeIDs,
+                    protectionMethodIDs: protectionMethodIDs
                 )
             }.value
             logger.info("Updated encounter: \(encounter.id)")
@@ -202,7 +202,38 @@ class EncountersManager {
         }
     }
     
-    /// Get activities for a specific encounter
+    /// Get activity entities for a specific encounter (NEW: UUID-based)
+    func activityEntities(for encounter: SQLEncounter) async -> [SQLActivityTypeEntity] {
+        do {
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            return try await Task.detached {
+                try await service.fetchActivityEntities(for: encounter.id)
+            }.value
+        } catch {
+            logger.error("Failed to fetch activities for encounter: \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    /// Get protection method entities for a specific encounter (NEW: UUID-based)
+    func protectionMethodEntities(for encounter: SQLEncounter) async -> [SQLProtectionMethodEntity] {
+        do {
+            // Capture service before detached task to avoid actor isolation issues
+            let service = encounterService
+            
+            return try await Task.detached {
+                try await service.fetchProtectionMethodEntities(for: encounter.id)
+            }.value
+        } catch {
+            logger.error("Failed to fetch protection methods for encounter: \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    /// Get activities for a specific encounter (DEPRECATED: enum-based)
+    @available(*, deprecated, message: "Use activityEntities(for:) instead")
     func activities(for encounter: SQLEncounter) async -> [SQLActivityType] {
         do {
             // Capture service before detached task to avoid actor isolation issues
@@ -217,7 +248,8 @@ class EncountersManager {
         }
     }
     
-    /// Get protection methods for a specific encounter
+    /// Get protection methods for a specific encounter (DEPRECATED: enum-based)
+    @available(*, deprecated, message: "Use protectionMethodEntities(for:) instead")
     func protectionMethods(for encounter: SQLEncounter) async -> [SQLProtectionMethod] {
         do {
             // Capture service before detached task to avoid actor isolation issues

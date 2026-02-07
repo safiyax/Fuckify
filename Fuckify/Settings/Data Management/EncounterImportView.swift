@@ -364,11 +364,15 @@ struct EncounterImportView: View {
             )
             
             do {
+                // Convert enums to UUIDs for the new API
+                let activityTypeIDs = encounterData.activities.map { $0.predefinedUUID }
+                let protectionMethodIDs = encounterData.protectionMethods.map { $0.predefinedUUID }
+                
                 _ = try encounterService.create(
                     encounterDraft,
                     partnerIDs: matchedPartnerIDs,
-                    activities: encounterData.activities,
-                    protectionMethods: encounterData.protectionMethods
+                    activityTypeIDs: activityTypeIDs,
+                    protectionMethodIDs: protectionMethodIDs
                 )
             } catch {
                 print("Failed to import encounter: \(error)")
