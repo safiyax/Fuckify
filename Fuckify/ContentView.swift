@@ -161,6 +161,7 @@ struct ContentView: View {
                     .contentShape(.rect)
             }
         }
+        .padding(.vertical, 15)
         .contentShape(.rect)
         .foregroundStyle(.primary)
         .padding(.horizontal, 15)
@@ -180,7 +181,7 @@ struct ContentView: View {
                 )
                 .frame(width: size.width, height: size.height)
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 0) {
                 if let partners = liveActivityManager.currentPartners {
                     Text(formatPartnerNames(partners))
                         .font(.callout)

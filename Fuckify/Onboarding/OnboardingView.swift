@@ -51,14 +51,15 @@ private let stepCount = onboardingSteps.count
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @State private var currentStep = 0
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         ZStack {
             // Background gradient
             LinearGradient(
                 colors: [
-                    onboardingSteps[currentStep].accentColor.opacity(0.1),
-                    .white
+                    onboardingSteps[currentStep].accentColor.opacity(0.4),
+                    colorScheme == .dark ? .black : .white
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
