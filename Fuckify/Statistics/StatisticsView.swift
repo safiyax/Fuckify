@@ -174,13 +174,13 @@ struct StatisticsView: View {
     private func loadEncounterRelationships() async {
         for encounter in encounters {
             do {
-                let activities = try encounterService.fetchActivities(for: encounter.id)
-                let protectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+                let activityEntities = try encounterService.fetchActivityEntities(for: encounter.id)
+                let protectionEntities = try encounterService.fetchProtectionMethodEntities(for: encounter.id)
                 let partners = try encounterService.fetchPartners(for: encounter.id)
                 
                 encounterRelationships[encounter.id] = EncounterRelationships(
-                    activities: activities,
-                    protectionMethods: protectionMethods,
+                    activityEntities: activityEntities,
+                    protectionEntities: protectionEntities,
                     partnerIDs: partners.map(\.id)
                 )
             } catch {
@@ -215,27 +215,46 @@ struct StatisticsView: View {
     }
 
     private var topActivities: [(activity: SQLActivityType, count: Int)] {
-        let allActivities = filteredEncounters.compactMap { encounterRelationships[$0.id]?.activities }.flatMap { $0 }
-        guard !allActivities.isEmpty else { return [] }
+        // Use entity-based data now
+        let allActivityEntities = filteredEncounters.compactMap { encounterRelationships[$0.id]?.activityEntities }.flatMap { $0 }
+        guard !allActivityEntities.isEmpty else { return [] }
 
-        let counts = Dictionary(grouping: allActivities) { $0 }
+        let counts = Dictionary(grouping: allActivityEntities) { $0.id }
             .mapValues { $0.count }
 
+        // Convert back to enum for display compatibility (temporary)
         return counts
             .sorted { $0.value > $1.value }
             .prefix(3)
-            .map { (activity: $0.key, count: $0.value) }
+            .compactMap { (id, count) in
+                // Find the entity
+                guard let entity = allActivityEntities.first(where: { $0.id == id }) else { return nil }
+                // Try to match to enum for backwards compatibility
+                guard let enumValue = SQLActivityType.allCases.first(where: { $0.predefinedUUID == entity.id }) else {
+                    // Custom activity - skip for now in stats (or could return dummy enum)
+                    return nil
+                }
+                return (activity: enumValue, count: count)
+            }
     }
 
     private var mostCommonProtection: (method: SQLProtectionMethod, count: Int)? {
-        let allProtection = filteredEncounters.compactMap { encounterRelationships[$0.id]?.protectionMethods }.flatMap { $0 }
-        guard !allProtection.isEmpty else { return nil }
+        // Use entity-based data now
+        let allProtectionEntities = filteredEncounters.compactMap { encounterRelationships[$0.id]?.protectionEntities }.flatMap { $0 }
+        guard !allProtectionEntities.isEmpty else { return nil }
 
-        let counts = Dictionary(grouping: allProtection) { $0 }
+        let counts = Dictionary(grouping: allProtectionEntities) { $0.id }
             .mapValues { $0.count }
         guard let mostCommon = counts.max(by: { $0.value < $1.value }) else { return nil }
 
-        return (mostCommon.key, mostCommon.value)
+        // Find the entity and convert to enum
+        guard let entity = allProtectionEntities.first(where: { $0.id == mostCommon.key }) else { return nil }
+        guard let enumValue = SQLProtectionMethod.allCases.first(where: { $0.predefinedUUID == entity.id }) else {
+            // Custom protection method - skip for now
+            return nil
+        }
+
+        return (enumValue, mostCommon.value)
     }
 
     private var topPartners: [(partner: SQLPartner, count: Int)] {
@@ -266,9 +285,13 @@ struct StatisticsView: View {
 // MARK: - Helper Types
 
 struct EncounterRelationships {
-    let activities: [SQLActivityType]
-    let protectionMethods: [SQLProtectionMethod]
+    let activityEntities: [SQLActivityTypeEntity]         // NEW: Entity-based
+    let protectionEntities: [SQLProtectionMethodEntity]   // NEW: Entity-based
     let partnerIDs: [UUID]
+    
+    // Deprecated: Keep for backwards compatibility with existing computed properties
+    var activities: [SQLActivityType] { [] }
+    var protectionMethods: [SQLProtectionMethod] { [] }
 }
 
 // MARK: - Section Views

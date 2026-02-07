@@ -12,8 +12,8 @@ struct EncounterDetailView: View {
     let encounter: SQLEncounter
     @State private var showingEditSheet = false
     @State private var partners: [SQLPartner] = []
-    @State private var activities: [SQLActivityType] = []
-    @State private var protectionMethods: [SQLProtectionMethod] = []
+    @State private var activityEntities: [SQLActivityTypeEntity] = []       // NEW: Entity-based
+    @State private var protectionEntities: [SQLProtectionMethodEntity] = [] // NEW: Entity-based
     @State private var isLoading = true
     @State private var currentEncounter: SQLEncounter
     @State private var selectedPartner: SQLPartner?
@@ -74,28 +74,28 @@ struct EncounterDetailView: View {
                 }
 
                 // Activities Section
-                if !activities.isEmpty {
+                if !activityEntities.isEmpty {
                     Section("Activities") {
-                        ForEach(activities, id: \.self) { activity in
+                        ForEach(activityEntities) { activity in
                             HStack {
                                 Image(systemName: activity.icon)
                                     .foregroundColor(.purple)
                                     .accessibilityHidden(true)
-                                Text(activity.displayName)
+                                Text(activity.name)
                             }
                         }
                     }
                 }
 
                 // Protection Section
-                if !protectionMethods.isEmpty {
+                if !protectionEntities.isEmpty {
                     Section("Protection") {
-                        ForEach(protectionMethods, id: \.self) { protection in
+                        ForEach(protectionEntities) { protection in
                             HStack {
                                 Image(systemName: protection.icon)
                                     .foregroundColor(.green)
                                     .accessibilityHidden(true)
-                                Text(protection.displayName)
+                                Text(protection.name)
                             }
                         }
                     }
@@ -199,8 +199,8 @@ struct EncounterDetailView: View {
         // Load all relationships - perform database I/O off main thread
         do {
             partners = try service.fetchPartners(for: encounterId)
-            activities = try service.fetchActivities(for: encounterId)
-            protectionMethods = try service.fetchProtectionMethods(for: encounterId)
+            activityEntities = try service.fetchActivityEntities(for: encounterId)              // NEW
+            protectionEntities = try service.fetchProtectionMethodEntities(for: encounterId)   // NEW
         } catch {
             // Silent error handling - keep empty arrays
         }
@@ -222,8 +222,8 @@ struct EncounterDetailView: View {
             }
             // Also reload related data
             partners = try service.fetchPartners(for: encounterId)
-            activities = try service.fetchActivities(for: encounterId)
-            protectionMethods = try service.fetchProtectionMethods(for: encounterId)
+            activityEntities = try service.fetchActivityEntities(for: encounterId)              // NEW
+            protectionEntities = try service.fetchProtectionMethodEntities(for: encounterId)   // NEW
         } catch {
             // Silent error handling
         }

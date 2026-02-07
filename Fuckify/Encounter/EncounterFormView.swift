@@ -306,6 +306,11 @@ struct EncounterFormView: View {
     private func saveEncounter() async {
         errorMessage = nil
         
+        print("🔍 EncounterFormView: saveEncounter called")
+        print("🔍 Partner IDs: \(selectedPartnerIDs)")
+        print("🔍 Activity IDs: \(selectedActivityIDs)")
+        print("🔍 Protection IDs: \(selectedProtectionIDs)")
+        
         let duration = TimeInterval(durationHours * 3600 + durationMinutes * 60)
         let partnerIDs = Array(selectedPartnerIDs)
         let activityTypeIDs = Array(selectedActivityIDs)         // NEW: UUID arrays
@@ -313,6 +318,7 @@ struct EncounterFormView: View {
 
         do {
             if let encounter = encounter {
+                print("🔍 Editing existing encounter: \(encounter.id)")
                 // Edit existing encounter
                 var updated = encounter
                 updated.date = date
@@ -330,11 +336,14 @@ struct EncounterFormView: View {
                     protectionMethodIDs: protectionMethodIDs
                 )
                 
+                print("🔍 Update successful")
+                
                 // Update partner last encounter dates
                 for partnerID in partnerIDs {
                     try? partnerService.updateLastEncounterDate(partnerID, date: date)
                 }
             } else {
+                print("🔍 Creating new encounter")
                 // Create new encounter
                 let draft = SQLEncounter.Draft(
                     id: UUID(),
@@ -355,15 +364,19 @@ struct EncounterFormView: View {
                     protectionMethodIDs: protectionMethodIDs
                 )
                 
+                print("🔍 Create successful")
+                
                 // Update partner last encounter dates
                 for partnerID in partnerIDs {
                     try? partnerService.updateLastEncounterDate(partnerID, date: date)
                 }
             }
             
+            print("🔍 Dismissing form")
             dismiss()
         } catch {
-            errorMessage = "Failed to save encounter. Please try again."
+            print("❌ Save failed: \(error)")
+            errorMessage = "Failed to save encounter. Please try again. Error: \(error.localizedDescription)"
         }
     }
 }

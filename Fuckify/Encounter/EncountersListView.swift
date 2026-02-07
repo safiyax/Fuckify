@@ -102,8 +102,8 @@ struct EncounterRowView: View {
     
     @Dependency(\.encounterService) var encounterService
     @State private var loadedPartners: [SQLPartner] = []
-    @State private var loadedActivities: [SQLActivityType] = []
-    @State private var loadedProtectionMethods: [SQLProtectionMethod] = []
+    @State private var loadedActivityEntities: [SQLActivityTypeEntity] = []           // NEW
+    @State private var loadedProtectionEntities: [SQLProtectionMethodEntity] = []    // NEW
     
     // Convenience initializer for batch-loaded data (preferred)
     init(encounterData: EncounterWithRelationships) {
@@ -121,12 +121,12 @@ struct EncounterRowView: View {
         encounterData?.partners ?? loadedPartners
     }
     
-    private var activities: [SQLActivityType] {
-        encounterData?.activities ?? loadedActivities
+    private var activityEntities: [SQLActivityTypeEntity] {
+        encounterData?.activityEntities ?? loadedActivityEntities
     }
     
-    private var protectionMethods: [SQLProtectionMethod] {
-        encounterData?.protectionMethods ?? loadedProtectionMethods
+    private var protectionEntities: [SQLProtectionMethodEntity] {
+        encounterData?.protectionEntities ?? loadedProtectionEntities
     }
 
     var body: some View {
@@ -164,16 +164,16 @@ struct EncounterRowView: View {
 
             // Activities and Protection
             HStack(spacing: 12) {
-                if !activities.isEmpty {
+                if !activityEntities.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(activities.prefix(3), id: \.self) { activity in
+                        ForEach(activityEntities.prefix(3)) { activity in
                             Image(systemName: activity.icon)
                                 .foregroundColor(.purple)
                                 .font(.caption)
-                                .accessibilityLabel(activity.displayName)
+                                .accessibilityLabel(activity.name)
                         }
-                        if activities.count > 3 {
-                            Text("+\(activities.count - 3)")
+                        if activityEntities.count > 3 {
+                            Text("+\(activityEntities.count - 3)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -181,13 +181,13 @@ struct EncounterRowView: View {
                     .accessibilityElement(children: .combine)
                 }
 
-                if !protectionMethods.isEmpty {
+                if !protectionEntities.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(protectionMethods.prefix(2), id: \.self) { protection in
+                        ForEach(protectionEntities.prefix(2)) { protection in
                             Image(systemName: protection.icon)
                                 .foregroundColor(.green)
                                 .font(.caption)
-                                .accessibilityLabel(protection.displayName)
+                                .accessibilityLabel(protection.name)
                         }
                     }
                     .accessibilityElement(children: .combine)
@@ -207,8 +207,8 @@ struct EncounterRowView: View {
     private func loadRelationships() async {
         do {
             loadedPartners = try encounterService.fetchPartners(for: encounter.id)
-            loadedActivities = try encounterService.fetchActivities(for: encounter.id)
-            loadedProtectionMethods = try encounterService.fetchProtectionMethods(for: encounter.id)
+            loadedActivityEntities = try encounterService.fetchActivityEntities(for: encounter.id)              // NEW
+            loadedProtectionEntities = try encounterService.fetchProtectionMethodEntities(for: encounter.id)   // NEW
         } catch {
             // Silent fail - relationships will be empty
         }

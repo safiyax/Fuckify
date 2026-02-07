@@ -110,6 +110,10 @@ func appDatabase() throws -> any DatabaseWriter {
         try AddCustomizationTables.migrate(db)
     }
     
+    migrator.registerMigration("Fix junction table schema") { db in
+        try FixJunctionTableSchema.migrate(db)
+    }
+    
     // Note: SwiftData migration has been removed since all data has been migrated
     // If you need to re-migrate data, restore from git history:
     // - Fuckify/Database/Migrations/SwiftDataTransfer.swift

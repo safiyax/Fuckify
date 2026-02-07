@@ -495,13 +495,13 @@ struct ImportView: View {
             let date = encounter.date != nil ? dateFormatter.string(from: encounter.date!) : ""
             let duration = String(Int(encounter.duration / 60)) // Convert to minutes
             
-            // Load activities and protection methods for this encounter
-            let activities = (try? encounterService.fetchActivities(for: encounter.id)) ?? []
-            let protectionMethods = (try? encounterService.fetchProtectionMethods(for: encounter.id)) ?? []
+            // Load activities and protection methods for this encounter (NEW: entity-based)
+            let activityEntities = (try? encounterService.fetchActivityEntities(for: encounter.id)) ?? []
+            let protectionEntities = (try? encounterService.fetchProtectionMethodEntities(for: encounter.id)) ?? []
             let partners = (try? encounterService.fetchPartners(for: encounter.id)) ?? []
             
-            let activitiesStr = escapeCSVField(activities.map { $0.rawValue }.joined(separator: ", "))
-            let protectionMethodsStr = escapeCSVField(protectionMethods.map { $0.rawValue }.joined(separator: ", "))
+            let activitiesStr = escapeCSVField(activityEntities.map { $0.name }.joined(separator: ", "))
+            let protectionMethodsStr = escapeCSVField(protectionEntities.map { $0.name }.joined(separator: ", "))
             let location = escapeCSVField(encounter.location)
             let notes = escapeCSVField(encounter.notes)
             let rating = String(encounter.rating)

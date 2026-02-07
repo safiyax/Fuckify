@@ -28,7 +28,7 @@ struct ContentView: View {
         Group {
             if #available(iOS 26.1, *) {
                 NativeTabView()
-                    .tabBarMinimizeBehavior(.onScrollDown)
+                    .tabBarMinimizeBehavior(liveActivityManager.isActive ? .onScrollDown : .never)
                     .tabViewBottomAccessory(isEnabled: liveActivityManager.isActive) {
                         if liveActivityManager.isActive {
                             MiniPlayerView()
@@ -45,7 +45,7 @@ struct ContentView: View {
                 NativeTabView()
                     .if(liveActivityManager.isActive) { view in
                         view
-                            .tabBarMinimizeBehavior(.onScrollDown)
+                            .tabBarMinimizeBehavior(liveActivityManager.isActive ? .onScrollDown : .never)
                             .tabViewBottomAccessory {
                                 MiniPlayerView()
                                     .matchedTransitionSource(id: "MINIPLAYER", in: animation)

@@ -606,8 +606,8 @@ struct CalendarEncounterRow: View {
     
     @Dependency(\.encounterService) var encounterService
     @State private var partners: [SQLPartner] = []
-    @State private var activities: [SQLActivityType] = []
-    @State private var protectionMethods: [SQLProtectionMethod] = []
+    @State private var activityEntities: [SQLActivityTypeEntity] = []        // NEW
+    @State private var protectionEntities: [SQLProtectionMethodEntity] = []  // NEW
     
     var body: some View {
         HStack(spacing: 12) {
@@ -644,24 +644,24 @@ struct CalendarEncounterRow: View {
                 
                 // Activities and Duration
                 HStack(spacing: 8) {
-                    if !activities.isEmpty {
+                    if !activityEntities.isEmpty {
                         HStack(spacing: 4) {
-                            ForEach(activities.prefix(4), id: \.self) { activity in
+                            ForEach(activityEntities.prefix(4)) { activity in
                                 Image(systemName: activity.icon)
                                     .font(.subheadline)
                                     .foregroundColor(.purple)
                             }
-                            if activities.count > 4 {
-                                Text("+\(activities.count - 4)")
+                            if activityEntities.count > 4 {
+                                Text("+\(activityEntities.count - 4)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
                         }
                     }
                     Spacer()
-                    if !protectionMethods.isEmpty {
+                    if !protectionEntities.isEmpty {
                         HStack(spacing: 4) {
-                            ForEach(protectionMethods, id: \.self) { protectionMethod in
+                            ForEach(protectionEntities) { protectionMethod in
                                 Image(systemName: protectionMethod.icon)
                                     .font(.subheadline)
                                     .foregroundColor(.green)
@@ -715,12 +715,12 @@ struct CalendarEncounterRow: View {
     private func loadData() async {
         do {
             partners = try encounterService.fetchPartners(for: encounter.id)
-            activities = try encounterService
-                .fetchActivities(for: encounter.id)
-                .sorted { $0.displayName < $1.displayName }
-            protectionMethods = try encounterService
-                .fetchProtectionMethods(for: encounter.id)
-                .sorted { $0.displayName < $1.displayName }
+            activityEntities = try encounterService
+                .fetchActivityEntities(for: encounter.id)
+                .sorted { $0.name < $1.name }
+            protectionEntities = try encounterService
+                .fetchProtectionMethodEntities(for: encounter.id)
+                .sorted { $0.name < $1.name }
         } catch {
             // Silent fail
         }
