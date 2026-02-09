@@ -164,7 +164,8 @@ struct PINSetupView: View {
                 // Header
                 VStack(spacing: 16) {
                     Image(systemName: "lock.circle.fill")
-                        .font(.system(size: 80))
+                        .font(.system(.largeTitle))
+                        .imageScale(.large)
                         .foregroundColor(.blue)
                     
                     Text(step == .enter ? "Create PIN" : "Confirm PIN")
@@ -308,7 +309,8 @@ struct PINRemovalView: View {
                 // Header
                 VStack(spacing: 16) {
                     Image(systemName: "lock.slash.fill")
-                        .font(.system(size: 80))
+                        .font(.system(.largeTitle))
+                        .imageScale(.large)
                         .foregroundColor(.red)
                     
                     Text("Remove PIN")

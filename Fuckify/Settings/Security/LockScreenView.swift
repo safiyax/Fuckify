@@ -35,7 +35,8 @@ struct LockScreenView: View {
                 // App Icon/Logo
                 VStack(spacing: 16) {
                     Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 80))
+                        .font(.system(.largeTitle))
+                        .imageScale(.large)
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [.pink, .purple],

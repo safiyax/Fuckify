@@ -118,6 +118,16 @@ struct CalendarView: View {
                             }
                         }
                 )
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment:
+                        nextMonth()
+                    case .decrement:
+                        previousMonth()
+                    @unknown default:
+                        break
+                    }
+                }
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .move(edge: .top).combined(with: .opacity)
@@ -180,7 +190,7 @@ struct CalendarView: View {
         HStack(spacing: 0) {
             ForEach(calendar.shortWeekdaySymbols, id: \.self) { day in
                 Text(day.prefix(1))
-                    .font(.system(size: 10))
+                    .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundColor(weekdayHeaderTextColor(day))
                     .frame(maxWidth: .infinity)

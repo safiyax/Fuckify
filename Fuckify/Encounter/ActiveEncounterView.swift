@@ -36,7 +36,8 @@ struct ActiveEncounterView: View {
                         
                         // Icon
                         Image(systemName: "bolt.heart.fill")
-                            .font(.system(size: 80))
+                            .font(.system(.largeTitle, design: .default))
+                            .imageScale(.large)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.pink, .purple],
@@ -50,7 +51,8 @@ struct ActiveEncounterView: View {
                         VStack(spacing: 8) {
                             TimelineView(.periodic(from: Date(), by: 1.0)) { context in
                                 Text(formatDuration(state.elapsedActiveTime(currentTime: context.date)))
-                                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                     .monospacedDigit()
                                     .foregroundColor(.primary)
                             }

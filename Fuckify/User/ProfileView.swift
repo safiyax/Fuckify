@@ -40,7 +40,8 @@ struct ProfileView: View {
                                     .frame(width: 100, height: 100)
 
                                 Text(isEditing ? editName.initials : profile.initials)
-                                    .font(.system(size: 40, weight: .bold))
+                                    .font(.system(.largeTitle, weight: .bold))
+                                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                     .foregroundColor(.white)
                             }
 
