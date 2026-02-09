@@ -84,9 +84,14 @@ extension View {
 struct FuckifyApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var isUnlocked: Bool
-    @State private var securitySettings = SecuritySettings.shared
+    
+    // Dependency-injected instances (no more singletons!)
+    @State private var securitySettings = SecuritySettings()
+    @State private var userProfile = UserProfile()
+    @State private var userSettings = UserSettings()
+    @State private var liveActivityManager = LiveActivityManager()
+    
     @StateObject private var iapState = IAPStateManager.shared
-    @State private var liveActivityManager = LiveActivityManager.shared
     @State private var wasInactive = false
     @Environment(\.scenePhase) private var scenePhase
     
@@ -98,7 +103,9 @@ struct FuckifyApp: App {
         
         // Initialize lock state based on security settings
         // Start locked if security is enabled
-        _isUnlocked = State(initialValue: !SecuritySettings.shared.isSecurityEnabled)
+        let tempSecuritySettings = SecuritySettings()
+        _isUnlocked = State(initialValue: !tempSecuritySettings.isSecurityEnabled)
+        _securitySettings = State(initialValue: tempSecuritySettings)
         
         // Request notification permissions for 8-hour warnings
         Task {
@@ -111,10 +118,15 @@ struct FuckifyApp: App {
             if !hasCompletedOnboarding {
                 // Show onboarding for first-time users
                 OnboardingView()
+                    .environment(userProfile)
             } else {
                 ZStack {
                     // Always render main app in background
                     ContentView()
+                    .environment(securitySettings)
+                    .environment(userProfile)
+                    .environment(userSettings)
+                    .environment(liveActivityManager)
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
@@ -127,6 +139,7 @@ struct FuckifyApp: App {
                 // Show lock screen on top if security is enabled and not unlocked
                 if securitySettings.isSecurityEnabled && !isUnlocked {
                     LockScreenView(isUnlocked: $isUnlocked)
+                        .environment(securitySettings)
                         .transition(.identity) // No transition animation
                         .zIndex(999) // Ensure it's above everything
                 }

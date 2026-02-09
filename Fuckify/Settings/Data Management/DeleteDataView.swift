@@ -11,6 +11,7 @@ struct DeleteDataView: View {
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
     @Environment(\.dismiss) private var dismiss
+    @Environment(UserProfile.self) private var userProfile
     
     @State private var allPartners: [SQLPartner] = []
     @State private var allEncounters: [SQLEncounter] = []
@@ -64,7 +65,7 @@ struct DeleteDataView: View {
                                 .foregroundColor(.primary)
                         }
                     }
-                    .disabled(!UserProfile.shared.hasProfile)
+                    .disabled(!userProfile.hasProfile)
                 }
 
                 Section("Delete Everything") {
@@ -77,7 +78,7 @@ struct DeleteDataView: View {
                                 .fontWeight(.semibold)
                         }
                     }
-                    .disabled(allPartners.isEmpty && allEncounters.isEmpty && !UserProfile.shared.hasProfile)
+                    .disabled(allPartners.isEmpty && allEncounters.isEmpty && !userProfile.hasProfile)
                 }
             }
             .navigationTitle("Delete Data")
@@ -151,7 +152,7 @@ struct DeleteDataView: View {
     }
 
     private func deleteProfileData() {
-        UserProfile.shared.clearProfile()
+        userProfile.clearProfile()
     }
 
     private func deleteAllData() {

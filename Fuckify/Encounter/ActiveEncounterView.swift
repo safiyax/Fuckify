@@ -10,7 +10,7 @@ import Combine
 
 struct ActiveEncounterView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var liveActivityManager = LiveActivityManager.shared
+    @Environment(LiveActivityManager.self) private var liveActivityManager
     @State private var currentTime = Date()
     @State private var showingCancelAlert = false
     

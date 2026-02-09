@@ -10,7 +10,7 @@ import LocalAuthentication
 
 struct LockScreenView: View {
     @Binding var isUnlocked: Bool
-    @State private var settings = SecuritySettings.shared
+    @Environment(SecuritySettings.self) private var settings
     @State private var pin = ""
     @State private var showError = false
     @State private var attempts = 0

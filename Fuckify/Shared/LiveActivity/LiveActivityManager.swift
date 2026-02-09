@@ -17,7 +17,7 @@ private let logger = Logger(subsystem: "com.fuckify", category: "LiveActivity")
 @MainActor
 @Observable
 class LiveActivityManager {
-    static let shared = LiveActivityManager()
+    // Removed singleton - inject via environment instead
     
     // MARK: - Properties
     
@@ -50,7 +50,7 @@ class LiveActivityManager {
     private let maxDuration: TimeInterval = 8 * 60 * 60 // 8 hours
     private let warningThreshold: TimeInterval = 7 * 60 * 60 + 55 * 60 // 7h 55m
     
-    private init() {
+    init() {
         // Monitor for existing activities on app launch
         Task {
             await checkForExistingActivity()

@@ -12,9 +12,9 @@ struct ContentView: View {
     @SceneStorage("selectedTab") var selectedTab = 0
     @State private var partnersManager = PartnersManager()
     @State private var encountersManager = EncountersManager()
-    @State private var profile = UserProfile.shared
+    @Environment(UserProfile.self) private var profile
     @State private var showingActiveEncounter = false
-    @State private var liveActivityManager = LiveActivityManager.shared
+    @Environment(LiveActivityManager.self) private var liveActivityManager
     
     // Namespace for matched transition
     @Namespace private var animation
@@ -114,14 +114,14 @@ struct ContentView: View {
             // Pause/Resume button
             Button {
                 Task {
-                    if LiveActivityManager.shared.currentState()?.isPaused == true {
-                        await LiveActivityManager.shared.resumeEncounter()
+                    if liveActivityManager.currentState()?.isPaused == true {
+                        await liveActivityManager.resumeEncounter()
                     } else {
-                        await LiveActivityManager.shared.pauseEncounter()
+                        await liveActivityManager.pauseEncounter()
                     }
                 }
             } label: {
-                Image(systemName: LiveActivityManager.shared.currentState()?.isPaused == true ? "play.fill" : "pause.fill")
+                Image(systemName: liveActivityManager.currentState()?.isPaused == true ? "play.fill" : "pause.fill")
                     .contentShape(.rect)
             }
             .padding(.trailing, 10)
@@ -129,7 +129,7 @@ struct ContentView: View {
             // Finish button
             Button {
                 Task {
-                    if let data = await LiveActivityManager.shared.finishEncounter() {
+                    if let data = await liveActivityManager.finishEncounter() {
                         NotificationCenter.default.post(
                             name: Notification.Name("finishEncounter"),
                             object: nil,

@@ -7,8 +7,7 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var profile = UserProfile.shared
-    @State private var hasProfile = UserProfile.shared.hasProfile
+    @Environment(UserProfile.self) private var profile
     @State private var showingSettings = false
 //    @Environment(\.editMode) private var editMode
 

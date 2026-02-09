@@ -9,7 +9,8 @@ import SwiftUI
 import LocalAuthentication
 
 struct SecurityView: View {
-    @State private var settings = SecuritySettings.shared
+    @Environment(SecuritySettings.self) private var settings
+    @State private var isBiometricEnabled = false
     @State private var showingPINSetup = false
     @State private var showingPINRemoval = false
     @State private var showingBiometricError = false
@@ -72,28 +73,32 @@ struct SecurityView: View {
                 
                 if settings.biometricType != .none {
                     Section(settings.biometricDisplayName) {
-                        Toggle(isOn: $settings.isBiometricEnabled) {
+                        Toggle(isOn: $isBiometricEnabled) {
                             HStack {
                                 Image(systemName: settings.biometricType == .faceID ? "faceid" : "touchid")
                                     .foregroundColor(.blue)
                                 Text("Enable \(settings.biometricDisplayName)")
                             }
                         }
-                        .onChange(of: settings.isBiometricEnabled) { _, newValue in
+                        .onChange(of: isBiometricEnabled) { _, newValue in
                             if newValue {
                                 // Test biometric authentication when enabled
                                 Task {
                                     let success = await settings.authenticateWithBiometrics()
                                     if !success {
-                                        settings.isBiometricEnabled = false
+                                        isBiometricEnabled = false
                                         biometricErrorMessage = "Failed to authenticate with \(settings.biometricDisplayName)"
                                         showingBiometricError = true
+                                    } else {
+                                        settings.isBiometricEnabled = true
                                     }
                                 }
+                            } else {
+                                settings.isBiometricEnabled = false
                             }
                         }
                         
-                        if settings.isBiometricEnabled {
+                        if isBiometricEnabled {
                             Text("You'll be prompted to use \(settings.biometricDisplayName) when opening the app.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -116,6 +121,9 @@ struct SecurityView: View {
             }
             .navigationTitle("Security")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                isBiometricEnabled = settings.isBiometricEnabled
+            }
             .sheet(isPresented: $showingPINSetup) {
                 PINSetupView()
             }
@@ -148,6 +156,7 @@ struct SecurityView: View {
 
 struct PINSetupView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(SecuritySettings.self) private var securitySettings
     @State private var pin = ""
     @State private var confirmPin = ""
     @State private var step: SetupStep = .enter
@@ -268,7 +277,7 @@ struct PINSetupView: View {
             if confirmPin.count == 4 {
                 // Verify PINs match
                 if pin == confirmPin {
-                    SecuritySettings.shared.setPIN(pin)
+                    securitySettings.setPIN(pin)
                     dismiss()
                 } else {
                     errorMessage = "PINs don't match. Please try again."
@@ -299,6 +308,7 @@ struct PINSetupView: View {
 
 struct PINRemovalView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(SecuritySettings.self) private var securitySettings
     @State private var pin = ""
     @State private var errorMessage = ""
     @State private var showError = false
@@ -394,8 +404,8 @@ struct PINRemovalView: View {
         
         if pin.count == 4 {
             // Verify PIN
-            if SecuritySettings.shared.verifyPIN(pin) {
-                SecuritySettings.shared.removePIN()
+            if securitySettings.verifyPIN(pin) {
+                securitySettings.removePIN()
                 dismiss()
             } else {
                 errorMessage = "Incorrect PIN. Please try again."

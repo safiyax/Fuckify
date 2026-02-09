@@ -11,14 +11,14 @@ import Dependencies
 @MainActor
 @Observable
 class UserSettings {
-    static let shared = UserSettings()
+    // Removed singleton - inject via environment instead
     
     @ObservationIgnored
     @Dependency(\.defaultDatabase) private var database
     
     private let customizationService = CustomizationService()
 
-    private init() {}
+    init() {}
 
     // MARK: - Database-backed Activity Preferences (NEW)
     

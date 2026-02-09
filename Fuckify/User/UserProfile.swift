@@ -10,8 +10,8 @@ import SwiftUI
 @MainActor
 @Observable
 class UserProfile {
-    static let shared = UserProfile()
-
+    // Removed singleton - inject via environment instead
+    
     var name: String {
         get {
             UserDefaults.standard.string(forKey: "userName") ?? ""
@@ -57,7 +57,7 @@ class UserProfile {
         }
     }
 
-    private init() {}
+    init() {}
 
     // Computed properties
     var age: Int? {

@@ -172,7 +172,7 @@ struct SettingsView: View {
 // MARK: - Activities Settings View
 
 struct ActivitiesSettingsView: View {
-    @State private var settings = UserSettings.shared
+    @Environment(UserSettings.self) private var settings
     @State private var activities: [SQLActivityTypeEntity] = []
     @State private var showingAddActivity = false
     @State private var activityToEdit: SQLActivityTypeEntity?
@@ -257,7 +257,7 @@ struct ActivitiesSettingsView: View {
 // MARK: - Protection Methods Settings View
 
 struct ProtectionMethodsSettingsView: View {
-    @State private var settings = UserSettings.shared
+    @Environment(UserSettings.self) private var settings
     @State private var protectionMethods: [SQLProtectionMethodEntity] = []
     @State private var showingAddMethod = false
     @State private var methodToEdit: SQLProtectionMethodEntity?

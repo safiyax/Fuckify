@@ -20,7 +20,7 @@ struct EncountersListView: View {
     @State private var showingAddEncounter = false
     @State private var showingSettings = false
     @State private var showProfile = false
-    @State private var profile = UserProfile.shared
+    @Environment(UserProfile.self) private var profile
     @State private var selectedDate: Date? = nil
     
     var body: some View {

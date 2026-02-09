@@ -12,7 +12,7 @@ import CryptoKit
 @MainActor
 @Observable
 class SecuritySettings {
-    static let shared = SecuritySettings()
+    // Removed singleton - inject via environment instead
     
     // MARK: - Stored Properties
     
@@ -80,7 +80,7 @@ class SecuritySettings {
     
     // MARK: - Initialization
     
-    private init() {}
+    init() {}
     
     // MARK: - PIN Management
     

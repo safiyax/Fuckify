@@ -31,7 +31,7 @@ struct EncounterFormView: View {
     @State private var notes: String = ""
     @State private var rating: Int = 0
     @State private var reachedOrgasm: Bool = false
-    @State private var settings = UserSettings.shared
+    @Environment(UserSettings.self) private var settings
     @State private var errorMessage: String?
     @State private var showingPartnerPicker = false
     @State private var partnerSearchText = ""

@@ -18,7 +18,7 @@ struct LiveActivityPartnerSelector: View {
     @State private var showingPartnerPicker = false
     @State private var showingNewPartnerForm = false
     @State private var partnerSearchText = ""
-    @State private var liveActivityManager = LiveActivityManager.shared
+    @Environment(LiveActivityManager.self) private var liveActivityManager
     
     var selectedPartners: [SQLPartner] {
         allPartners.filter { selectedPartnerIDs.contains($0.id) }
