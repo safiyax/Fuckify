@@ -8,6 +8,7 @@ import Foundation
 import SwiftUI
 import Dependencies
 
+@MainActor
 @Observable
 class UserSettings {
     static let shared = UserSettings()

@@ -9,6 +9,7 @@ import Foundation
 import LocalAuthentication
 import CryptoKit
 
+@MainActor
 @Observable
 class SecuritySettings {
     static let shared = SecuritySettings()

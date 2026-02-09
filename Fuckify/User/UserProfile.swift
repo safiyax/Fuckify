@@ -7,6 +7,7 @@
 import Foundation
 import SwiftUI
 
+@MainActor
 @Observable
 class UserProfile {
     static let shared = UserProfile()
