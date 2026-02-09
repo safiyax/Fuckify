@@ -14,6 +14,10 @@ func appDatabase() throws -> any DatabaseWriter {
     @Dependency(\.context) var context
     var configuration = Configuration()
     
+    // Enable foreign key enforcement for data integrity
+    // This ensures ON DELETE CASCADE constraints are enforced
+    configuration.foreignKeysEnabled = true
+    
     // Log to file for debugging
     let logFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("import_log.txt")
     func log(_ message: String) {
@@ -112,6 +116,14 @@ func appDatabase() throws -> any DatabaseWriter {
     
     migrator.registerMigration("Fix junction table schema") { db in
         try FixJunctionTableSchema.migrate(db)
+    }
+    
+    migrator.registerMigration("Add foreign key indexes") { db in
+        try AddForeignKeyIndexes.migrate(db)
+    }
+    
+    migrator.registerMigration("Add unique constraints") { db in
+        try AddUniqueConstraints.migrate(db)
     }
     
     // Note: SwiftData migration has been removed since all data has been migrated
