@@ -310,11 +310,8 @@ struct EncounterImportView: View {
     }
 
     private func parseDate(_ dateString: String) -> Date? {
-        // Use DateFormatter with local timezone to avoid date shifting
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        return formatter.date(from: dateString)
+        // Use cached formatter with local timezone to avoid date shifting
+        return Formatters.csvDateParser.date(from: dateString)
     }
 
     private func importEncounters() {

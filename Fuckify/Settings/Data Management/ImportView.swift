@@ -453,9 +453,6 @@ struct ImportView: View {
 
     private func exportPartners() {
         var csvString = "name,phoneNumber,notes,isOnPrep,relationshipType,dateMet\n"
-
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
         
         let created = Date()
         
@@ -465,7 +462,7 @@ struct ImportView: View {
             let notes = escapeCSVField(partner.notes)
             let isOnPrep = partner.isOnPrep ? "true" : "false"
             let relationshipType = partner.relationshipType.rawValue
-            let dateMet = partner.dateMet != nil ? dateFormatter.string(from: partner.dateMet!) : ""
+            let dateMet = partner.dateMet != nil ? Formatters.iso8601DateOnly.string(from: partner.dateMet!) : ""
 
             csvString += "\(name),\(phoneNumber),\(notes),\(isOnPrep),\(relationshipType),\(dateMet)\n"
         }
@@ -488,11 +485,8 @@ struct ImportView: View {
     private func exportEncounters() {
         var csvString = "date,duration,activities,protectionMethods,location,notes,rating,reachedOrgasm,partnerNames\n"
 
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-
         for encounter in allEncounters {
-            let date = encounter.date != nil ? dateFormatter.string(from: encounter.date!) : ""
+            let date = encounter.date != nil ? Formatters.iso8601DateOnly.string(from: encounter.date!) : ""
             let duration = String(Int(encounter.duration / 60)) // Convert to minutes
             
             // Load activities and protection methods for this encounter (NEW: entity-based)
@@ -555,7 +549,7 @@ struct ImportView: View {
             
             // Create a copy in the temp directory for sharing
             let tempDir = FileManager.default.temporaryDirectory
-            let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let timestamp = Formatters.iso8601Full.string(from: Date()).replacingOccurrences(of: ":", with: "-")
             let fileURL = tempDir.appendingPathComponent("CoitalComrade_\(timestamp).db")
             
             // Remove existing temp file if present
