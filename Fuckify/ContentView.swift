@@ -10,8 +10,8 @@ import SQLiteData
 
 struct ContentView: View {
     @SceneStorage("selectedTab") var selectedTab = 0
-    @State private var partnersManager = PartnersManager()
-    @State private var encountersManager = EncountersManager()
+    @State private var partnersViewModel = PartnersViewModel()
+    @State private var encountersViewModel = EncountersViewModel()
     @Environment(UserProfile.self) private var profile
     @State private var showingActiveEncounter = false
     @Environment(LiveActivityManager.self) private var liveActivityManager
@@ -79,17 +79,17 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab("Activity", systemImage: "bed.double", value: 0) {
                 CalendarView()
-                    .environment(encountersManager)
+                    .environment(encountersViewModel)
             }
             
             Tab("Summary", systemImage: "chart.pie.fill", value: 2) {
                 StatisticsView()
-                    .environment(encountersManager)
+                    .environment(encountersViewModel)
             }
 
             Tab("Partners", systemImage: "bolt.heart", value: 1) {
                 PartnersListView()
-                    .environment(partnersManager)
+                    .environment(partnersViewModel)
             }
 
             Tab("Profile", systemImage: "person.crop.circle", value: 3) {
@@ -98,7 +98,7 @@ struct ContentView: View {
 
             Tab("Search", systemImage: "magnifyingglass", value: 5, role: .search) {
                 PartnersListView()
-                    .environment(partnersManager)
+                    .environment(partnersViewModel)
             }
         }
         .tabViewStyle(.sidebarAdaptable)

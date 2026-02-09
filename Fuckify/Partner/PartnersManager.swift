@@ -2,28 +2,38 @@
 //  PartnersManager.swift
 //  Fuckify
 //
-//  Manager for partner operations using SQLite services
+//  ViewModel for partners list and operations
+//  Manages presentation state, filtering (pinned/unpinned), and partner CRUD operations
 //
 
 import Foundation
-import Dependencies
 import OSLog
 
-private let logger = Logger(subsystem: "com.fuckify", category: "PartnersManager")
+private let logger = Logger(subsystem: "com.fuckify", category: "PartnersViewModel")
 
+/// ViewModel for managing partners list UI state and operations
+/// Provides presentation logic, search filtering, pinning, and error handling for partner-related views
+/// Uses optimistic updates for better UX (updates UI immediately, rolls back on error)
 @MainActor
 @Observable
-class PartnersManager {
-    @ObservationIgnored
-    @Dependency(\.partnerService) private var partnerService
+final class PartnersViewModel {
+    // MARK: - Dependencies
+    
+    private let partnerService: PartnerService
+    
+    // MARK: - Published State
 
     var partners: [SQLPartner] = []
     var searchText: String = ""
     var errorMessage: String?
     var isLoading = false
 
-    init() {
-        // Don't fetch in init - let views trigger it
+    // MARK: - Initialization
+    
+    /// Initialize with dependency injection for testability
+    /// - Parameter partnerService: Service for partner database operations (defaults to live implementation)
+    init(partnerService: PartnerService = PartnerService()) {
+        self.partnerService = partnerService
     }
 
     // MARK: - Data Operations
@@ -148,15 +158,8 @@ class PartnersManager {
     }
 }
 
-// MARK: - Dependency Key
+// MARK: - Type Alias for Backward Compatibility
 
-extension PartnerService: DependencyKey {
-    static var liveValue: PartnerService { PartnerService() }
-}
-
-extension DependencyValues {
-    var partnerService: PartnerService {
-        get { self[PartnerService.self] }
-        set { self[PartnerService.self] = newValue }
-    }
-}
+/// Backward compatibility alias - prefer using PartnersViewModel
+@available(*, deprecated, renamed: "PartnersViewModel", message: "Use PartnersViewModel instead")
+typealias PartnersManager = PartnersViewModel

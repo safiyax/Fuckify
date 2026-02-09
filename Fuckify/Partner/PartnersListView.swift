@@ -8,7 +8,7 @@ import SwiftUI
 
 struct PartnersListView: View {
     @Environment(\.editMode) private var editMode
-    @Environment(PartnersManager.self) var manager
+    @Environment(PartnersViewModel.self) var manager
     @SceneStorage("selectedTab") var selectedTab = 1
     @State private var partnerForEncounter: SQLPartner?
     @State private var selectedPartner: SQLPartner?
@@ -153,7 +153,7 @@ struct PinnedPartnerView: View {
     let partner: SQLPartner
     let onAddEncounter: () -> Void
     let onTap: () -> Void
-    @Environment(PartnersManager.self) var manager
+    @Environment(PartnersViewModel.self) var manager
 
     var body: some View {
         VStack(spacing: 6) {

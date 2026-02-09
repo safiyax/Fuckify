@@ -489,3 +489,18 @@ struct EncounterService {
         }
     }
 }
+
+// MARK: - Dependency Key
+
+import Dependencies
+
+extension EncounterService: DependencyKey {
+    static var liveValue: EncounterService { EncounterService() }
+}
+
+extension DependencyValues {
+    var encounterService: EncounterService {
+        get { self[EncounterService.self] }
+        set { self[EncounterService.self] = newValue }
+    }
+}

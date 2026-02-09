@@ -14,7 +14,7 @@ import OSLog
 private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncountersListView")
 
 struct EncountersListView: View {
-    @Environment(EncountersManager.self) var manager
+    @Environment(EncountersViewModel.self) var manager
     @Dependency(\.encounterService) var encounterService
     
     @State private var showingAddEncounter = false

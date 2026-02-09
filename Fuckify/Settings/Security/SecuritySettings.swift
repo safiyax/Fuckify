@@ -3,43 +3,45 @@
 //  Fuckify
 //
 //  Manages app security settings (PIN and biometric authentication)
+//  Uses stored properties with didSet observers for proper SwiftUI observation
 //
 
 import Foundation
 import LocalAuthentication
 import CryptoKit
 
+/// Security settings for app lock functionality
+/// 
+/// Supports both PIN and biometric authentication (Face ID/Touch ID).
+/// Uses stored properties instead of computed properties to ensure
+/// SwiftUI's @Observable system properly tracks changes.
 @MainActor
 @Observable
-class SecuritySettings {
-    // Removed singleton - inject via environment instead
-    
+final class SecuritySettings {
     // MARK: - Stored Properties
     
+    /// Whether PIN authentication is enabled
     var isPINEnabled: Bool {
-        get {
-            UserDefaults.standard.bool(forKey: "security_isPINEnabled")
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "security_isPINEnabled")
+        didSet {
+            UserDefaults.standard.set(isPINEnabled, forKey: "security_isPINEnabled")
         }
     }
     
+    /// Whether biometric authentication (Face ID/Touch ID) is enabled
     var isBiometricEnabled: Bool {
-        get {
-            UserDefaults.standard.bool(forKey: "security_isBiometricEnabled")
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "security_isBiometricEnabled")
+        didSet {
+            UserDefaults.standard.set(isBiometricEnabled, forKey: "security_isBiometricEnabled")
         }
     }
     
+    /// Hashed PIN for verification (SHA256)
     private var storedPINHash: String? {
-        get {
-            UserDefaults.standard.string(forKey: "security_pinHash")
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "security_pinHash")
+        didSet {
+            if let hash = storedPINHash {
+                UserDefaults.standard.set(hash, forKey: "security_pinHash")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "security_pinHash")
+            }
         }
     }
     
@@ -80,7 +82,13 @@ class SecuritySettings {
     
     // MARK: - Initialization
     
-    init() {}
+    /// Initialize security settings, loading values from UserDefaults
+    init() {
+        // Load values from UserDefaults
+        self.isPINEnabled = UserDefaults.standard.bool(forKey: "security_isPINEnabled")
+        self.isBiometricEnabled = UserDefaults.standard.bool(forKey: "security_isBiometricEnabled")
+        self.storedPINHash = UserDefaults.standard.string(forKey: "security_pinHash")
+    }
     
     // MARK: - PIN Management
     

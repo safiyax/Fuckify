@@ -177,3 +177,18 @@ struct PartnerService {
         }
     }
 }
+
+// MARK: - Dependency Key
+
+import Dependencies
+
+extension PartnerService: DependencyKey {
+    static var liveValue: PartnerService { PartnerService() }
+}
+
+extension DependencyValues {
+    var partnerService: PartnerService {
+        get { self[PartnerService.self] }
+        set { self[PartnerService.self] = newValue }
+    }
+}

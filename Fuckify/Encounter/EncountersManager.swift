@@ -2,36 +2,51 @@
 //  EncountersManager.swift
 //  Fuckify
 //
-//  Manager for encounter operations using SQLite services
+//  ViewModel for encounters list and operations
+//  Manages presentation state, filtering, and coordinates encounter/partner services
 //
 
 import Foundation
-import Dependencies
 import OSLog
 
-private let logger = Logger(subsystem: "com.fuckify", category: "EncountersManager")
+private let logger = Logger(subsystem: "com.fuckify", category: "EncountersViewModel")
 
+/// ViewModel for managing encounters list UI state and operations
+/// Provides presentation logic, search filtering, and error handling for encounter-related views
 @MainActor
 @Observable
-class EncountersManager {
-    @ObservationIgnored
-    @Dependency(\.encounterService) private var encounterService
+final class EncountersViewModel {
+    // MARK: - Dependencies
     
-    @ObservationIgnored
-    @Dependency(\.partnerService) private var partnerService
-
+    private let encounterService: EncounterService
+    private let partnerService: PartnerService
+    
+    // MARK: - Published State
+    
     var encountersWithRelationships: [EncounterWithRelationships] = []
     var searchText: String = ""
     var errorMessage: String?
     var isLoading = false
     
-    // Convenience accessor for just encounters
+    // MARK: - Computed Properties
+    
+    /// Convenience accessor for just encounters (without relationships)
     var encounters: [SQLEncounter] {
         encountersWithRelationships.map(\.encounter)
     }
 
-    init() {
-        // Don't fetch in init - let views trigger it
+    // MARK: - Initialization
+    
+    /// Initialize with dependency injection for testability
+    /// - Parameters:
+    ///   - encounterService: Service for encounter database operations (defaults to live implementation)
+    ///   - partnerService: Service for partner database operations (defaults to live implementation)
+    init(
+        encounterService: EncounterService = EncounterService(),
+        partnerService: PartnerService = PartnerService()
+    ) {
+        self.encounterService = encounterService
+        self.partnerService = partnerService
     }
 
     // MARK: - Data Operations
@@ -209,15 +224,8 @@ class EncountersManager {
     }
 }
 
-// MARK: - Dependency Key
+// MARK: - Type Alias for Backward Compatibility
 
-extension EncounterService: DependencyKey {
-    static var liveValue: EncounterService { EncounterService() }
-}
-
-extension DependencyValues {
-    var encounterService: EncounterService {
-        get { self[EncounterService.self] }
-        set { self[EncounterService.self] = newValue }
-    }
-}
+/// Backward compatibility alias - prefer using EncountersViewModel
+@available(*, deprecated, renamed: "EncountersViewModel", message: "Use EncountersViewModel instead")
+typealias EncountersManager = EncountersViewModel
