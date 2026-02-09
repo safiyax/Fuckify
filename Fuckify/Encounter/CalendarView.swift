@@ -13,6 +13,19 @@ import OSLog
 
 private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "CalendarView")
 
+/// Sheet presentation mode for encounter form
+enum EncounterFormMode: Identifiable {
+    case add(preselectedDate: Date)
+    case edit(encounter: SQLEncounter)
+    
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .edit(let encounter): return "edit-\(encounter.id)"
+        }
+    }
+}
+
 struct CalendarView: View {
     @FetchAll private var encounters: [SQLEncounter]
     @FetchAll private var partners: [SQLPartner]
@@ -23,8 +36,7 @@ struct CalendarView: View {
     @State private var displayedMonth: Date = Date()
     @State private var encountersByDate: [Date: [SQLEncounter]] = [:]
     @State private var partnerColorsByDate: [Date: [Color]] = [:]
-    @State private var showingAddEncounter = false
-    @State private var encounterToEdit: SQLEncounter?
+    @State private var encounterFormMode: EncounterFormMode?
     @State private var encounterToDelete: SQLEncounter?
     @State private var showingDeleteAlert = false
     @State private var refreshTrigger = false
@@ -46,17 +58,19 @@ struct CalendarView: View {
             .toolbar {
                 toolbarContent
             }
-            .sheet(isPresented: $showingAddEncounter) {
-                EncounterFormView(preselectedDate: selectedDate)
-            }
-            .sheet(item: $encounterToEdit) { encounter in
-                EncounterFormView(encounter: encounter)
-                    .onDisappear {
-                        // Sheet was dismissed, trigger refresh with animation
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            refreshTrigger.toggle()
+            .sheet(item: $encounterFormMode) { mode in
+                switch mode {
+                case .add(let preselectedDate):
+                    EncounterFormView(preselectedDate: preselectedDate)
+                case .edit(let encounter):
+                    EncounterFormView(encounter: encounter)
+                        .onDisappear {
+                            // Sheet was dismissed, trigger refresh with animation
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                refreshTrigger.toggle()
+                            }
                         }
-                    }
+                }
             }
             .sheet(isPresented: $showingLiveActivityStart) {
                 LiveActivityPartnerSelector()
@@ -88,8 +102,8 @@ struct CalendarView: View {
                 logger.info("Received editEncounter notification")
                 if let encounter = notification.userInfo?["encounter"] as? SQLEncounter {
                     logger.info("Got encounter from notification: \(encounter.id)")
-                    encounterToEdit = encounter
-                    logger.info("Set encounterToEdit, sheet should open now")
+                    encounterFormMode = .edit(encounter: encounter)
+                    logger.info("Set encounterFormMode to edit, sheet should open now")
                 } else {
                     logger.error("Failed to extract SQLEncounter from notification")
                 }
@@ -274,7 +288,7 @@ struct CalendarView: View {
                         .buttonStyle(.plain)
                         .contextMenu {
                             Button {
-                                encounterToEdit = encounter
+                                encounterFormMode = .edit(encounter: encounter)
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
@@ -307,7 +321,7 @@ struct CalendarView: View {
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button {
-                    showingAddEncounter = true
+                    encounterFormMode = .add(preselectedDate: selectedDate)
                 } label: {
                     Label("Create Encounter", systemImage: "square.and.pencil")
                 }

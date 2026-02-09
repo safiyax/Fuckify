@@ -171,11 +171,23 @@ struct SettingsView: View {
 
 // MARK: - Activities Settings View
 
+/// Sheet presentation mode for activity form
+enum ActivityFormMode: Identifiable {
+    case add
+    case edit(activity: SQLActivityTypeEntity)
+    
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .edit(let activity): return "edit-\(activity.id)"
+        }
+    }
+}
+
 struct ActivitiesSettingsView: View {
     @Environment(UserSettings.self) private var settings
     @State private var activities: [SQLActivityTypeEntity] = []
-    @State private var showingAddActivity = false
-    @State private var activityToEdit: SQLActivityTypeEntity?
+    @State private var activityFormMode: ActivityFormMode?
 
     var body: some View {
         Form {
@@ -213,7 +225,7 @@ struct ActivitiesSettingsView: View {
                         // Only allow editing custom activities
                         if !activity.isBuiltIn {
                             Button {
-                                activityToEdit = activity
+                                activityFormMode = .edit(activity: activity)
                             } label: {
                                 Image(systemName: "pencil.circle.fill")
                                     .foregroundColor(.blue)
@@ -226,7 +238,7 @@ struct ActivitiesSettingsView: View {
 
             Section {
                 Button {
-                    showingAddActivity = true
+                    activityFormMode = .add
                 } label: {
                     Label("Add Custom Activity", systemImage: "plus.circle.fill")
                 }
@@ -237,15 +249,17 @@ struct ActivitiesSettingsView: View {
         .onAppear {
             loadActivities()
         }
-        .sheet(isPresented: $showingAddActivity) {
-            AddActivityView(onSave: {
-                loadActivities()
-            })
-        }
-        .sheet(item: $activityToEdit) { activity in
-            EditActivityView(activity: activity, onSave: {
-                loadActivities()
-            })
+        .sheet(item: $activityFormMode) { mode in
+            switch mode {
+            case .add:
+                AddActivityView(onSave: {
+                    loadActivities()
+                })
+            case .edit(let activity):
+                EditActivityView(activity: activity, onSave: {
+                    loadActivities()
+                })
+            }
         }
     }
     
@@ -256,11 +270,23 @@ struct ActivitiesSettingsView: View {
 
 // MARK: - Protection Methods Settings View
 
+/// Sheet presentation mode for protection method form
+enum ProtectionMethodFormMode: Identifiable {
+    case add
+    case edit(method: SQLProtectionMethodEntity)
+    
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .edit(let method): return "edit-\(method.id)"
+        }
+    }
+}
+
 struct ProtectionMethodsSettingsView: View {
     @Environment(UserSettings.self) private var settings
     @State private var protectionMethods: [SQLProtectionMethodEntity] = []
-    @State private var showingAddMethod = false
-    @State private var methodToEdit: SQLProtectionMethodEntity?
+    @State private var methodFormMode: ProtectionMethodFormMode?
 
     var body: some View {
         Form {
@@ -298,7 +324,7 @@ struct ProtectionMethodsSettingsView: View {
                         // Only allow editing custom methods
                         if !method.isBuiltIn {
                             Button {
-                                methodToEdit = method
+                                methodFormMode = .edit(method: method)
                             } label: {
                                 Image(systemName: "pencil.circle.fill")
                                     .foregroundColor(.blue)
@@ -311,7 +337,7 @@ struct ProtectionMethodsSettingsView: View {
 
             Section {
                 Button {
-                    showingAddMethod = true
+                    methodFormMode = .add
                 } label: {
                     Label("Add Custom Protection Method", systemImage: "plus.circle.fill")
                 }
@@ -322,15 +348,17 @@ struct ProtectionMethodsSettingsView: View {
         .onAppear {
             loadProtectionMethods()
         }
-        .sheet(isPresented: $showingAddMethod) {
-            AddProtectionMethodView(onSave: {
-                loadProtectionMethods()
-            })
-        }
-        .sheet(item: $methodToEdit) { method in
-            EditProtectionMethodView(method: method, onSave: {
-                loadProtectionMethods()
-            })
+        .sheet(item: $methodFormMode) { mode in
+            switch mode {
+            case .add:
+                AddProtectionMethodView(onSave: {
+                    loadProtectionMethods()
+                })
+            case .edit(let method):
+                EditProtectionMethodView(method: method, onSave: {
+                    loadProtectionMethods()
+                })
+            }
         }
     }
     

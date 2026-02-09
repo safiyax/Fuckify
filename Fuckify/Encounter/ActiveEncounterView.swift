@@ -185,6 +185,7 @@ struct ActiveEncounterView: View {
         }
     }
     
+    /// Format duration as HH:MM:SS or MM:SS using modern Swift formatting
     private func formatDuration(_ duration: TimeInterval) -> String {
         let totalSeconds = Int(duration)
         let hours = totalSeconds / 3600
@@ -192,9 +193,11 @@ struct ActiveEncounterView: View {
         let seconds = totalSeconds % 60
         
         if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+            // Format: H:MM:SS (e.g., "1:23:45")
+            return "\(hours):\(minutes.formatted(.number.precision(.integerLength(2)))):\(seconds.formatted(.number.precision(.integerLength(2))))"
         } else {
-            return String(format: "%02d:%02d", minutes, seconds)
+            // Format: MM:SS (e.g., "23:45")
+            return "\(minutes.formatted(.number.precision(.integerLength(2)))):\(seconds.formatted(.number.precision(.integerLength(2))))"
         }
     }
 }
