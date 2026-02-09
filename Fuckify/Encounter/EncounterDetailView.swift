@@ -7,6 +7,9 @@
 import SwiftUI
 import SQLiteData
 import Dependencies
+import OSLog
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncounterDetailView")
 
 struct EncounterDetailView: View {
     let encounter: SQLEncounter
@@ -202,7 +205,7 @@ struct EncounterDetailView: View {
             activityEntities = try service.fetchActivityEntities(for: encounterId)              // NEW
             protectionEntities = try service.fetchProtectionMethodEntities(for: encounterId)   // NEW
         } catch {
-            // Silent error handling - keep empty arrays
+            logger.error("Failed to load encounter details for \(encounterId): \(error.localizedDescription)")
         }
         
         isLoading = false
@@ -225,7 +228,7 @@ struct EncounterDetailView: View {
             activityEntities = try service.fetchActivityEntities(for: encounterId)              // NEW
             protectionEntities = try service.fetchProtectionMethodEntities(for: encounterId)   // NEW
         } catch {
-            // Silent error handling
+            logger.error("Failed to refresh encounter \(encounterId): \(error.localizedDescription)")
         }
     }
 }

@@ -9,6 +9,9 @@ import SwiftUI
 import SQLiteData
 import Dependencies
 import MijickCalendarView
+import OSLog
+
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncountersListView")
 
 struct EncountersListView: View {
     @Environment(EncountersManager.self) var manager
@@ -210,7 +213,7 @@ struct EncounterRowView: View {
             loadedActivityEntities = try encounterService.fetchActivityEntities(for: encounter.id)              // NEW
             loadedProtectionEntities = try encounterService.fetchProtectionMethodEntities(for: encounter.id)   // NEW
         } catch {
-            // Silent fail - relationships will be empty
+            logger.error("Failed to load relationships for encounter \(encounter.id): \(error.localizedDescription)")
         }
     }
     

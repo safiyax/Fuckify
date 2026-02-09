@@ -476,12 +476,12 @@ struct CalendarView: View {
                         // Only add each unique partner once (by ID), but we still show pill if multiple encounters
                         if !seenPartnerIDs.contains(partner.id) {
                             seenPartnerIDs.insert(partner.id)
-                            allPartnerColors.append(Color.fromPartnerColorName(partner.avatarColor))
-                        }
+                        allPartnerColors.append(Color.fromPartnerColorName(partner.avatarColor))
                     }
-                } catch {
-                    // Silent fail
                 }
+            } catch {
+                logger.error("Failed to fetch partners for encounter \(encounter.id): \(error.localizedDescription)")
+            }
             }
             
             colorsByDate[date] = allPartnerColors
