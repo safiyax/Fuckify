@@ -43,7 +43,7 @@ struct PartnerImportView: View {
                             Text("CSV Format:")
                                 .font(.headline)
 
-                            Text("name,phoneNumber,notes,isOnPrep,relationshipType,dateMet")
+                            Text("name,phoneNumber,notes,relationshipType,dateMet")
                                 .font(.system(.caption, design: .monospaced))
                                 .padding(8)
                                 .background(Color(.systemGray6))
@@ -53,13 +53,13 @@ struct PartnerImportView: View {
                                 .font(.headline)
                                 .padding(.top, 8)
 
-                            Text("John Doe,555-0123,Met at gym,true,Regular,2024-01-15")
+                            Text("John Doe,555-0123,Met at gym,Regular,2024-01-15")
                                 .font(.system(.caption, design: .monospaced))
                                 .padding(8)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
 
-                            Text("• Name is required\n• Other fields are optional\n• isOnPrep: true or false\n• relationshipType: Casual, Regular, Committed, One-Time, Other\n• dateMet: YYYY-MM-DD format")
+                            Text("• Name is required\n• Other fields are optional\n• relationshipType: Casual, Regular, Committed, One-Time, Other\n• dateMet: YYYY-MM-DD format")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.top, 4)
@@ -100,17 +100,9 @@ struct PartnerImportView: View {
                                         .foregroundColor(.secondary)
                                 }
 
-                                HStack {
-                                    Text(partner.relationshipType.displayName)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-
-                                    if partner.isOnPrep {
-                                        Text("• PrEP")
-                                            .font(.caption)
-                                            .foregroundColor(.blue)
-                                    }
-                                }
+                                Text(partner.relationshipType.displayName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 4)
                         }
@@ -198,25 +190,23 @@ struct PartnerImportView: View {
                 let name = components[0]
                 let phoneNumber = components.count > 1 ? components[1] : ""
                 let notes = components.count > 2 ? components[2] : ""
-                let isOnPrep = components.count > 3 ? (components[3].lowercased() == "true") : false
 
                 let relationshipType: SQLRelationshipType
-                if components.count > 4 {
-                    relationshipType = SQLRelationshipType(rawValue: components[4]) ?? .casual
+                if components.count > 3 {
+                    relationshipType = SQLRelationshipType(rawValue: components[3]) ?? .casual
                 } else {
                     relationshipType = .casual
                 }
 
                 var dateMet: Date? = nil
-                if components.count > 5, !components[5].isEmpty {
-                    dateMet = parseDate(components[5])
+                if components.count > 4, !components[4].isEmpty {
+                    dateMet = parseDate(components[4])
                 }
 
                 partners.append(PartnerImportData(
                     name: name,
                     phoneNumber: phoneNumber,
                     notes: notes,
-                    isOnPrep: isOnPrep,
                     relationshipType: relationshipType,
                     dateMet: dateMet
                 ))
@@ -245,10 +235,10 @@ struct PartnerImportView: View {
 
         for partnerData in importedPartners {
             let partnerDraft = SQLPartner.Draft(
+                id: UUID(),
                 name: partnerData.name,
                 notes: partnerData.notes,
                 phoneNumber: partnerData.phoneNumber,
-                isOnPrep: partnerData.isOnPrep,
                 relationshipType: partnerData.relationshipType,
                 dateMet: partnerData.dateMet,
                 avatarColor: SQLPartner.randomColorName(),
@@ -275,7 +265,6 @@ struct PartnerImportData {
     let name: String
     let phoneNumber: String
     let notes: String
-    let isOnPrep: Bool
     let relationshipType: SQLRelationshipType
     let dateMet: Date?
 }

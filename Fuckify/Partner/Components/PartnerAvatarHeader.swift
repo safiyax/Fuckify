@@ -64,7 +64,6 @@ struct PartnerAvatarHeader: View {
         name: "John Doe",
         notes: "",
         phoneNumber: "",
-        isOnPrep: false,
         relationshipType: .regular,
         dateMet: nil,
         avatarColor: "blue",
@@ -73,7 +72,7 @@ struct PartnerAvatarHeader: View {
         isPinned: false
     )
     
-    return List {
+    List {
         PartnerAvatarHeader(
             partner: partner,
             isEditing: false,

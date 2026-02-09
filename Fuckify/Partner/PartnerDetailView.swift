@@ -18,17 +18,21 @@ struct PartnerDetailView: View {
     
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
+    @Dependency(\.partnerAttributeService) private var attributeService
 
     // Editable fields
     @State private var editName: String = ""
     @State private var editNotes: String = ""
     @State private var editPhoneNumber: String = ""
-    @State private var editIsOnPrep: Bool = false
     @State private var editRelationshipType: SQLRelationshipType = .casual
     @State private var editDateMet: Date?
     @State private var editShowDateMetPicker: Bool = false
     @State private var editAvatarColor: String = ""
     @State private var editIsPinned: Bool = false
+    
+    // Custom attributes
+    @State private var attributesWithValues: [PartnerAttributeWithValue] = []
+    @State private var editAttributeValues: [UUID: String] = [:]
     
     init(partner: SQLPartner) {
         self.partner = partner
@@ -128,21 +132,14 @@ struct PartnerDetailView: View {
                 }
             }
 
-            // Health Information
-            Section("Health") {
-                if isEditing {
-                    Toggle("On PrEP", isOn: $editIsOnPrep)
-                        .accessibilityHint("Indicates whether this partner is on pre-exposure prophylaxis")
-                } else {
-                    HStack {
-                        Text("PrEP Status")
-                        Spacer()
-                        if currentPartner.isOnPrep {
-                            Label("On PrEP", systemImage: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+            // Custom Attributes
+            if !attributesWithValues.isEmpty {
+                Section("Additional Information") {
+                    ForEach(attributesWithValues, id: \.type.id) { attrWithValue in
+                        if isEditing {
+                            customAttributeEditField(for: attrWithValue)
                         } else {
-                            Text("Not on PrEP")
-                                .foregroundColor(.secondary)
+                            customAttributeDisplayField(for: attrWithValue)
                         }
                     }
                 }
@@ -207,16 +204,19 @@ struct PartnerDetailView: View {
         .task {
             loadEditableFields()
             await loadEncounters()
+            await loadCustomAttributes()
         }
         .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if oldValue?.isEditing == true && newValue?.isEditing == false {
                 // Save changes when exiting edit mode
                 Task {
                     await saveChanges()
+                    await saveCustomAttributes()
                 }
             } else if oldValue?.isEditing == false && newValue?.isEditing == true {
                 // Reload fields when entering edit mode
                 loadEditableFields()
+                loadEditableAttributeValues()
             }
         }
     }
@@ -227,12 +227,20 @@ struct PartnerDetailView: View {
         editName = currentPartner.name
         editNotes = currentPartner.notes
         editPhoneNumber = currentPartner.phoneNumber
-        editIsOnPrep = currentPartner.isOnPrep
         editRelationshipType = currentPartner.relationshipType
         editDateMet = currentPartner.dateMet
         editShowDateMetPicker = currentPartner.dateMet != nil
         editAvatarColor = currentPartner.avatarColor
         editIsPinned = currentPartner.isPinned
+    }
+    
+    private func loadEditableAttributeValues() {
+        editAttributeValues.removeAll()
+        for attrWithValue in attributesWithValues {
+            if let attributeValue = attrWithValue.value {
+                editAttributeValues[attrWithValue.type.id] = attributeValue.value
+            }
+        }
     }
 
     private func saveChanges() async {
@@ -240,7 +248,6 @@ struct PartnerDetailView: View {
         updatedPartner.name = editName
         updatedPartner.notes = editNotes
         updatedPartner.phoneNumber = editPhoneNumber
-        updatedPartner.isOnPrep = editIsOnPrep
         updatedPartner.relationshipType = editRelationshipType
         updatedPartner.dateMet = editShowDateMetPicker ? editDateMet : nil
         updatedPartner.avatarColor = editAvatarColor
@@ -300,6 +307,154 @@ struct PartnerDetailView: View {
         isLoadingEncounters = false
     }
     
+    private func loadCustomAttributes() async {
+        let service = attributeService
+        
+        do {
+            let attrs = try await Task.detached {
+                try await service.fetchAttributesWithValues(forPartner: currentPartner.id)
+            }.value
+            
+            attributesWithValues = attrs
+            loadEditableAttributeValues()
+        } catch {
+            print("Failed to load custom attributes: \(error)")
+        }
+    }
+    
+    private func saveCustomAttributes() async {
+        let service = attributeService
+        
+        for (attributeTypeId, value) in editAttributeValues {
+            do {
+                try await Task.detached {
+                    try await service.setValue(
+                        forPartner: currentPartner.id,
+                        attributeTypeId: attributeTypeId,
+                        value: value
+                    )
+                }.value
+            } catch {
+                print("Failed to save custom attribute \(attributeTypeId): \(error)")
+            }
+        }
+        
+        // Reload attributes after saving
+        await loadCustomAttributes()
+    }
+    
+    @ViewBuilder
+    private func customAttributeDisplayField(for attrWithValue: PartnerAttributeWithValue) -> some View {
+        HStack {
+            Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
+            Spacer()
+            
+            if let attributeValue = attrWithValue.value {
+                let valueString = attributeValue.value
+                switch attrWithValue.type.parsedFieldType {
+                case PartnerAttributeFieldType.text:
+                    Text(valueString)
+                        .foregroundColor(.secondary)
+                case PartnerAttributeFieldType.boolean:
+                    if valueString == "true" {
+                        Text("Yes")
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("No")
+                            .foregroundColor(.secondary)
+                    }
+                case PartnerAttributeFieldType.date:
+                    if let date = ISO8601DateFormatter().date(from: valueString) {
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Not set")
+                            .foregroundColor(.secondary)
+                    }
+                case PartnerAttributeFieldType.enumType:
+                    Text(valueString)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Text("Not set")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func customAttributeEditField(for attrWithValue: PartnerAttributeWithValue) -> some View {
+        switch attrWithValue.type.parsedFieldType {
+        case PartnerAttributeFieldType.text:
+            HStack {
+                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
+                TextField("", text: Binding(
+                    get: { editAttributeValues[attrWithValue.type.id] ?? "" },
+                    set: { editAttributeValues[attrWithValue.type.id] = $0 }
+                ))
+                .multilineTextAlignment(.trailing)
+            }
+            
+        case PartnerAttributeFieldType.boolean:
+            Toggle(isOn: Binding(
+                get: { editAttributeValues[attrWithValue.type.id] == "true" },
+                set: { editAttributeValues[attrWithValue.type.id] = $0 ? "true" : "false" }
+            )) {
+                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
+            }
+            
+        case PartnerAttributeFieldType.date:
+            let hasDate = editAttributeValues[attrWithValue.type.id] != nil && !editAttributeValues[attrWithValue.type.id]!.isEmpty
+            
+            Toggle(isOn: Binding(
+                get: { hasDate },
+                set: { isOn in
+                    if isOn {
+                        editAttributeValues[attrWithValue.type.id] = ISO8601DateFormatter().string(from: Date())
+                    } else {
+                        editAttributeValues[attrWithValue.type.id] = nil
+                    }
+                }
+            )) {
+                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
+            }
+            
+            if hasDate {
+                DatePicker(
+                    "Date",
+                    selection: Binding(
+                        get: {
+                            if let dateString = editAttributeValues[attrWithValue.type.id],
+                               let date = ISO8601DateFormatter().date(from: dateString) {
+                                return date
+                            }
+                            return Date()
+                        },
+                        set: { date in
+                            editAttributeValues[attrWithValue.type.id] = ISO8601DateFormatter().string(from: date)
+                        }
+                    ),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.compact)
+            }
+            
+        case PartnerAttributeFieldType.enumType:
+            let choices = attrWithValue.type.parsedEnumChoices
+            Picker(selection: Binding(
+                get: { editAttributeValues[attrWithValue.type.id] ?? "" },
+                set: { editAttributeValues[attrWithValue.type.id] = $0 }
+            )) {
+                Text("Not set").tag("")
+                ForEach(choices, id: \.self) { choice in
+                    Text(choice).tag(choice)
+                }
+            } label: {
+                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
+            }
+        }
+    }
+    
 }
 
 
@@ -314,7 +469,6 @@ struct PartnerDetailView: View {
         name: "John Doe",
         notes: "Met at the gym, really nice person",
         phoneNumber: "555-0123",
-        isOnPrep: true,
         relationshipType: .regular,
         dateMet: Date().addingTimeInterval(-86400 * 30),
         avatarColor: "blue",

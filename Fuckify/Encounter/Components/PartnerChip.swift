@@ -52,7 +52,6 @@ struct PartnerChip: View {
         name: "John Doe",
         notes: "",
         phoneNumber: "",
-        isOnPrep: false,
         relationshipType: .casual,
         dateMet: nil,
         avatarColor: "blue",
@@ -61,6 +60,6 @@ struct PartnerChip: View {
         isPinned: false
     )
     
-    return PartnerChip(partner: partner, onRemove: {})
+    PartnerChip(partner: partner, onRemove: {})
         .padding()
 }

@@ -29,7 +29,6 @@ struct PartnerService {
                 name: partnerDraft.name,
                 notes: partnerDraft.notes,
                 phoneNumber: partnerDraft.phoneNumber,
-                isOnPrep: partnerDraft.isOnPrep,
                 relationshipType: partnerDraft.relationshipType,
                 dateMet: partnerDraft.dateMet,
                 avatarColor: partnerDraft.avatarColor,

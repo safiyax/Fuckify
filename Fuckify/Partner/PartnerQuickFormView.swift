@@ -83,7 +83,6 @@ struct PartnerQuickFormView: View {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             notes: "",
             phoneNumber: "",
-            isOnPrep: false,
             relationshipType: relationshipType,
             dateMet: nil,
             avatarColor: avatarColor,

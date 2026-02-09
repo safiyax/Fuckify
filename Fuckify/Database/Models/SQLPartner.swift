@@ -19,9 +19,6 @@ struct SQLPartner: Identifiable, Hashable {
     // Contact Details
     var phoneNumber = ""
 
-    // Health Status
-    var isOnPrep = false
-
     // Relationship Context
     var relationshipType: SQLRelationshipType = .casual
     var dateMet: Date?

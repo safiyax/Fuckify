@@ -72,7 +72,6 @@ struct PartnerPickerRow: View {
         name: "John Doe",
         notes: "Met at the gym",
         phoneNumber: "",
-        isOnPrep: false,
         relationshipType: .casual,
         dateMet: nil,
         avatarColor: "blue",
@@ -81,7 +80,7 @@ struct PartnerPickerRow: View {
         isPinned: true
     )
     
-    return List {
+    List {
         PartnerPickerRow(partner: partner, isSelected: true, onTap: {})
         PartnerPickerRow(partner: partner, isSelected: false, onTap: {})
     }

@@ -221,12 +221,6 @@ struct PartnerRowView: View {
                     Text(partner.relationshipType.displayName)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-
-                    if partner.isOnPrep {
-                        Text("• PrEP")
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
-                    }
                 }
 
                 if let lastEncounter = partner.lastEncounterDate {

@@ -330,7 +330,6 @@ struct EncounterImportView: View {
                         name: partnerName,
                         notes: "",
                         phoneNumber: "",
-                        isOnPrep: false,
                         relationshipType: .casual,
                         dateMet: nil,
                         avatarColor: SQLPartner.randomColorName(),

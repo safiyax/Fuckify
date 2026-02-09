@@ -21,6 +21,7 @@ struct ImportView: View {
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
     @Dependency(\.databaseService) private var databaseService
+    private let config = ImportExportConfig.shared
     
     @State private var allPartners: [SQLPartner] = []
     @State private var allEncounters: [SQLEncounter] = []
@@ -41,217 +42,221 @@ struct ImportView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     // Import Section
-                    VStack(spacing: 16) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-
-                            Text("Import")
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-
-                        VStack(spacing: 12) {
-                            Button(action: { showingPartnerImport = true }) {
-                                HStack {
-                                    Image(systemName: "person.2.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.blue)
-                                        .frame(width: 50)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Import Partners")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-
-                                        Text("Add partners from a CSV file")
-                                            .font(.caption)
+                    if config.showImportCSVSection {
+                        VStack(spacing: 16) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.title2)
+                                    .foregroundColor(.blue)
+                                
+                                Text("Import")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            
+                            VStack(spacing: 12) {
+                                Button(action: { showingPartnerImport = true }) {
+                                    HStack {
+                                        Image(systemName: "person.2.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.blue)
+                                            .frame(width: 50)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Import Partners")
+                                                .font(.headline)
+                                                .foregroundColor(.primary)
+                                            
+                                            Text("Add partners from a CSV file")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
                                             .foregroundColor(.secondary)
                                     }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
                                 }
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(12)
-                            }
-                            .buttonStyle(.plain)
-
-                            Button(action: { showingEncounterImport = true }) {
-                                HStack {
-                                    Image(systemName: "heart.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.pink)
-                                        .frame(width: 50)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Import Encounters")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-
-                                        Text("Add encounters from a CSV file")
-                                            .font(.caption)
+                                .buttonStyle(.plain)
+                                
+                                Button(action: { showingEncounterImport = true }) {
+                                    HStack {
+                                        Image(systemName: "heart.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.pink)
+                                            .frame(width: 50)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Import Encounters")
+                                                .font(.headline)
+                                                .foregroundColor(.primary)
+                                            
+                                            Text("Add encounters from a CSV file")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
                                             .foregroundColor(.secondary)
                                     }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
                                 }
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(12)
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
 
                     // Export Section
-                    VStack(spacing: 16) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.title2)
-                                .foregroundColor(.green)
-
-                            Text("Export")
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-
-                        VStack(spacing: 12) {
-                            if let url = partnerExportURL {
-                                ShareLink(item: url) {
-                                    HStack {
-                                        Image(systemName: "person.2.fill")
-                                            .font(.title2)
-                                            .foregroundColor(.blue)
-                                            .frame(width: 50)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Export Partners")
-                                                .font(.headline)
-                                                .foregroundColor(.primary)
-
-                                            Text("\(allPartners.count) partners")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                }
-                                .buttonStyle(.plain)
-                            } else {
-                                Button(action: { exportPartners() }) {
-                                    HStack {
-                                        Image(systemName: "person.2.fill")
-                                            .font(.title2)
-                                            .foregroundColor(.blue)
-                                            .frame(width: 50)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Export Partners")
-                                                .font(.headline)
-                                                .foregroundColor(.primary)
-
-                                            Text("\(allPartners.count) partners")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(allPartners.isEmpty)
-                                .opacity(allPartners.isEmpty ? 0.5 : 1.0)
+                    if config.showExportCSVSection {
+                        VStack(spacing: 16) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.title2)
+                                    .foregroundColor(.green)
+                                
+                                Text("Export")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                
+                                Spacer()
                             }
-
-                            if let url = encounterExportURL {
-                                ShareLink(item: url) {
-                                    HStack {
-                                        Image(systemName: "heart.fill")
-                                            .font(.title2)
-                                            .foregroundColor(.pink)
-                                            .frame(width: 50)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Export Encounters")
-                                                .font(.headline)
-                                                .foregroundColor(.primary)
-
-                                            Text("\(allEncounters.count) encounters")
-                                                .font(.caption)
+                            .padding(.horizontal)
+                            
+                            VStack(spacing: 12) {
+                                if let url = partnerExportURL {
+                                    ShareLink(item: url) {
+                                        HStack {
+                                            Image(systemName: "person.2.fill")
+                                                .font(.title2)
+                                                .foregroundColor(.blue)
+                                                .frame(width: 50)
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Export Partners")
+                                                    .font(.headline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                Text("\(allPartners.count) partners")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
                                                 .foregroundColor(.secondary)
                                         }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
                                     }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                }
-                                .buttonStyle(.plain)
-                            } else {
-                                Button(action: { exportEncounters() }) {
-                                    HStack {
-                                        Image(systemName: "heart.fill")
-                                            .font(.title2)
-                                            .foregroundColor(.pink)
-                                            .frame(width: 50)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Export Encounters")
-                                                .font(.headline)
-                                                .foregroundColor(.primary)
-
-                                            Text("\(allEncounters.count) encounters")
-                                                .font(.caption)
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Button(action: { exportPartners() }) {
+                                        HStack {
+                                            Image(systemName: "person.2.fill")
+                                                .font(.title2)
+                                                .foregroundColor(.blue)
+                                                .frame(width: 50)
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Export Partners")
+                                                    .font(.headline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                Text("\(allPartners.count) partners")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
                                                 .foregroundColor(.secondary)
                                         }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
                                     }
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
+                                    .buttonStyle(.plain)
+                                    .disabled(allPartners.isEmpty)
+                                    .opacity(allPartners.isEmpty ? 0.5 : 1.0)
                                 }
-                                .buttonStyle(.plain)
-                                .disabled(allEncounters.isEmpty)
-                                .opacity(allEncounters.isEmpty ? 0.5 : 1.0)
+                                
+                                if let url = encounterExportURL {
+                                    ShareLink(item: url) {
+                                        HStack {
+                                            Image(systemName: "heart.fill")
+                                                .font(.title2)
+                                                .foregroundColor(.pink)
+                                                .frame(width: 50)
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Export Encounters")
+                                                    .font(.headline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                Text("\(allEncounters.count) encounters")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Button(action: { exportEncounters() }) {
+                                        HStack {
+                                            Image(systemName: "heart.fill")
+                                                .font(.title2)
+                                                .foregroundColor(.pink)
+                                                .frame(width: 50)
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Export Encounters")
+                                                    .font(.headline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                Text("\(allEncounters.count) encounters")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(allEncounters.isEmpty)
+                                    .opacity(allEncounters.isEmpty ? 0.5 : 1.0)
+                                }
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
                     
                     // Advanced Section
@@ -452,7 +457,7 @@ struct ImportView: View {
     }
 
     private func exportPartners() {
-        var csvString = "name,phoneNumber,notes,isOnPrep,relationshipType,dateMet\n"
+        var csvString = "name,phoneNumber,notes,relationshipType,dateMet\n"
         
         let created = Date()
         
@@ -460,11 +465,10 @@ struct ImportView: View {
             let name = escapeCSVField(partner.name)
             let phoneNumber = escapeCSVField(partner.phoneNumber)
             let notes = escapeCSVField(partner.notes)
-            let isOnPrep = partner.isOnPrep ? "true" : "false"
             let relationshipType = partner.relationshipType.rawValue
             let dateMet = partner.dateMet != nil ? Formatters.iso8601DateOnly.string(from: partner.dateMet!) : ""
 
-            csvString += "\(name),\(phoneNumber),\(notes),\(isOnPrep),\(relationshipType),\(dateMet)\n"
+            csvString += "\(name),\(phoneNumber),\(notes),\(relationshipType),\(dateMet)\n"
         }
         
         print("csv generation time: \(Date().timeIntervalSince(created))")
