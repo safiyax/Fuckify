@@ -18,6 +18,8 @@ struct PartnerAttributesSettingsView: View {
     @State private var showingDeleteAlert = false
     @State private var attributeToEdit: SQLPartnerAttributeType?
     
+    private let accentColor = Color.accentColor
+    
     var builtInAttributes: [SQLPartnerAttributeType] {
         attributes.filter { $0.isBuiltIn }
     }
@@ -60,6 +62,7 @@ struct PartnerAttributesSettingsView: View {
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
+                        .tint(.red)
                         
                         Button {
                             attributeToEdit = attribute
@@ -93,6 +96,7 @@ struct PartnerAttributesSettingsView: View {
                 }
             }
         }
+        .tint(accentColor)
         .navigationTitle("Partner Attributes")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -108,11 +112,13 @@ struct PartnerAttributesSettingsView: View {
             PartnerAttributeFormView {
                 loadAttributes()
             }
+            .tint(accentColor)
         }
         .sheet(item: $attributeToEdit) { attribute in
             PartnerAttributeFormView(attribute: attribute) {
                 loadAttributes()
             }
+            .tint(accentColor)
         }
         .alert("Delete Attribute", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }

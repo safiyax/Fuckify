@@ -37,6 +37,7 @@ struct EncounterWithRelationships: Identifiable {
 /// Uses SQLiteData's query builder and GRDB database connection
 struct EncounterService {
     @Dependency(\.defaultDatabase) var database
+    @Dependency(\.partnerService) var partnerService
     
     // Synthesized memberwise init is nonisolated
     nonisolated init() {}
@@ -104,6 +105,13 @@ struct EncounterService {
                 }
             }
             .execute(db)
+            
+            // Update lastEncounterDate for all partners in this encounter
+            if let encounterDate = encounter.date {
+                for partnerID in partnerIDs {
+                    try partnerService.updateLastEncounterDate(partnerID, date: encounterDate)
+                }
+            }
             
             return encounterID
         }
@@ -250,6 +258,12 @@ struct EncounterService {
         protectionMethodIDs: [UUID]? = nil
     ) throws {
         try database.write { db in
+            // Get old partners before updating (to recalculate their lastEncounterDate)
+            let oldPartnerIDs = try SQLEncounterPartner
+                .where { $0.encounterId.eq(encounter.id) }
+                .fetchAll(db)
+                .map { $0.partnerId }
+            
             // Update encounter
             try SQLEncounter.update(encounter).execute(db)
             
@@ -272,6 +286,17 @@ struct EncounterService {
                     }
                 }
                 .execute(db)
+                
+                // Update lastEncounterDate for all affected partners
+                let allAffectedPartnerIDs = Set(oldPartnerIDs + newPartnerIDs)
+                for partnerID in allAffectedPartnerIDs {
+                    try recalculateLastEncounterDate(for: partnerID, db: db)
+                }
+            } else if let encounterDate = encounter.date {
+                // If partners weren't changed but date was, update existing partners
+                for partnerID in oldPartnerIDs {
+                    try partnerService.updateLastEncounterDate(partnerID, date: encounterDate)
+                }
             }
             
             // Update activities if provided (NEW: UUID-based)
@@ -319,6 +344,12 @@ struct EncounterService {
     /// Delete an encounter and all related data
     func delete(_ encounterID: UUID) throws {
         try database.write { db in
+            // Get partners before deleting (to recalculate their lastEncounterDate)
+            let partnerIDs = try SQLEncounterPartner
+                .where { $0.encounterId.eq(encounterID) }
+                .fetchAll(db)
+                .map { $0.partnerId }
+            
             // Delete junction table entries
             try SQLEncounterPartner
                 .where { $0.encounterId.eq(encounterID) }
@@ -342,6 +373,11 @@ struct EncounterService {
                 .where { $0.id.eq(encounterID) }
                 .delete()
                 .execute(db)
+            
+            // Recalculate lastEncounterDate for all affected partners
+            for partnerID in partnerIDs {
+                try recalculateLastEncounterDate(for: partnerID, db: db)
+            }
         }
     }
     
@@ -359,6 +395,35 @@ struct EncounterService {
             
             // Delete all encounters
             try SQLEncounter.delete().execute(db)
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Recalculate and update a partner's lastEncounterDate based on their encounters
+    /// Called after deleting an encounter or changing partner associations
+    private func recalculateLastEncounterDate(for partnerID: UUID, db: Database) throws {
+        // Find the most recent encounter date for this partner
+        let maxDate = try Date.fetchOne(
+            db,
+            sql: """
+                SELECT MAX(e."date")
+                FROM "encounter" e
+                INNER JOIN "encounterPartner" ep ON e."id" = ep."encounterId"
+                WHERE ep."partnerId" = ?
+            """,
+            arguments: [partnerID.uuidString]
+        )
+        
+        // Update the partner's lastEncounterDate
+        if let date = maxDate {
+            try partnerService.updateLastEncounterDate(partnerID, date: date)
+        } else {
+            // No encounters found, clear the date
+            try db.execute(
+                sql: "UPDATE \"partner\" SET \"lastEncounterDate\" = NULL WHERE \"id\" = ?",
+                arguments: [partnerID.uuidString]
+            )
         }
     }
     

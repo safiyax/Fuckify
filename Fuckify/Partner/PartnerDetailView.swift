@@ -132,14 +132,19 @@ struct PartnerDetailView: View {
                 }
             }
 
-            // Custom Attributes
+            // Custom Attributes - only show if at least one attribute has a value
             if !attributesWithValues.isEmpty {
-                Section("Additional Information") {
-                    ForEach(attributesWithValues, id: \.type.id) { attrWithValue in
-                        if isEditing {
-                            customAttributeEditField(for: attrWithValue)
-                        } else {
-                            customAttributeDisplayField(for: attrWithValue)
+                let attributesWithSetValues = attributesWithValues.filter { $0.value != nil }
+                
+                if isEditing || !attributesWithSetValues.isEmpty {
+                    Section("Additional Information") {
+                        ForEach(attributesWithValues, id: \.type.id) { attrWithValue in
+                            if isEditing {
+                                customAttributeEditField(for: attrWithValue)
+                            } else if attrWithValue.value != nil {
+                                // Only show in display mode if value is set
+                                customAttributeDisplayField(for: attrWithValue)
+                            }
                         }
                     }
                 }
@@ -328,11 +333,16 @@ struct PartnerDetailView: View {
         for (attributeTypeId, value) in editAttributeValues {
             do {
                 try await Task.detached {
-                    try await service.setValue(
-                        forPartner: currentPartner.id,
-                        attributeTypeId: attributeTypeId,
-                        value: value
-                    )
+                    // If value is empty, delete the record
+                    if value.isEmpty {
+                        try await service.deleteValue(forPartner: currentPartner.id, attributeTypeId: attributeTypeId)
+                    } else {
+                        try await service.setValue(
+                            forPartner: currentPartner.id,
+                            attributeTypeId: attributeTypeId,
+                            value: value
+                        )
+                    }
                 }.value
             } catch {
                 print("Failed to save custom attribute \(attributeTypeId): \(error)")
@@ -398,7 +408,14 @@ struct PartnerDetailView: View {
         case PartnerAttributeFieldType.boolean:
             Toggle(isOn: Binding(
                 get: { editAttributeValues[attrWithValue.type.id] == "true" },
-                set: { editAttributeValues[attrWithValue.type.id] = $0 ? "true" : "false" }
+                set: { isOn in
+                    if isOn {
+                        editAttributeValues[attrWithValue.type.id] = "true"
+                    } else {
+                        // When toggling off, remove the value (will delete from DB)
+                        editAttributeValues[attrWithValue.type.id] = nil
+                    }
+                }
             )) {
                 Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
             }

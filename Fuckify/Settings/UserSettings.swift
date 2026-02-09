@@ -45,6 +45,11 @@ class UserSettings {
         try? customizationService.toggleActivityType(id: activityID)
     }
     
+    /// Delete custom activity type
+    func deleteActivity(_ activityID: UUID) {
+        try? customizationService.deleteActivityType(id: activityID)
+    }
+    
     // MARK: - Database-backed Protection Method Preferences (NEW)
     
     /// Fetch all protection method entities from database
@@ -68,6 +73,11 @@ class UserSettings {
     /// Toggle protection method enabled status
     func toggleProtectionMethod(_ methodID: UUID) {
         try? customizationService.toggleProtectionMethod(id: methodID)
+    }
+    
+    /// Delete custom protection method
+    func deleteProtectionMethod(_ methodID: UUID) {
+        try? customizationService.deleteProtectionMethod(id: methodID)
     }
     
     // MARK: - Legacy Enum-based Methods (DEPRECATED - for backwards compatibility)

@@ -15,7 +15,7 @@ struct PartnerAttributeFormView: View {
     @State private var name: String
     @State private var selectedFieldType: PartnerAttributeFieldType
     @State private var selectedIcon: String
-    @State private var enumChoicesText: String
+    @State private var enumChoices: [String]
     @State private var showingIconPicker = false
     @State private var errorMessage: String?
     
@@ -31,12 +31,12 @@ struct PartnerAttributeFormView: View {
             _name = State(initialValue: attribute.name)
             _selectedFieldType = State(initialValue: attribute.parsedFieldType)
             _selectedIcon = State(initialValue: attribute.icon)
-            _enumChoicesText = State(initialValue: attribute.parsedEnumChoices.joined(separator: "\n"))
+            _enumChoices = State(initialValue: attribute.parsedEnumChoices)
         } else {
             _name = State(initialValue: "")
             _selectedFieldType = State(initialValue: .text)
             _selectedIcon = State(initialValue: "person.text.rectangle")
-            _enumChoicesText = State(initialValue: "")
+            _enumChoices = State(initialValue: [])
         }
     }
     
@@ -50,7 +50,7 @@ struct PartnerAttributeFormView: View {
     
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (selectedFieldType != .enumType || !enumChoicesText.isEmpty)
+        (selectedFieldType != .enumType || !enumChoices.isEmpty)
     }
     
     var body: some View {
@@ -71,13 +71,12 @@ struct PartnerAttributeFormView: View {
                     }
                 }
                 
-                Section("Field Type") {
-                    Picker("Type", selection: $selectedFieldType) {
+                Section {
+                    Picker("Field Type", selection: $selectedFieldType) {
                         ForEach(PartnerAttributeFieldType.allCases, id: \.self) { type in
                             Text(type.displayName).tag(type)
                         }
                     }
-                    .pickerStyle(.segmented)
                     .disabled(isEditing) // Can't change field type when editing
                     
                     // Help text for each type
@@ -99,7 +98,7 @@ struct PartnerAttributeFormView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    
+                } footer: {
                     if isEditing {
                         Text("Field type cannot be changed after creation")
                             .font(.caption)
@@ -110,15 +109,42 @@ struct PartnerAttributeFormView: View {
                 // Enum choices (only shown for enum type)
                 if selectedFieldType == .enumType {
                     Section {
-                        TextEditor(text: $enumChoicesText)
-                            .frame(minHeight: 80)
-                            .autocapitalization(.words)
-                            .disabled(isBuiltIn)
+                        if isBuiltIn {
+                            // Built-in: show choices as read-only
+                            ForEach(enumChoices.indices, id: \.self) { index in
+                                TextField("Choice", text: $enumChoices[index])
+                                    .autocapitalization(.words)
+                                    .disabled(true)
+                            }
+                        } else {
+                            // Custom: allow editing
+                            ForEach(enumChoices.indices, id: \.self) { index in
+                                HStack {
+                                    TextField("Choice", text: $enumChoices[index])
+                                        .autocapitalization(.words)
+                                    
+                                    Button {
+                                        removeChoice(at: index)
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundColor(.red)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .onMove(perform: moveChoices)
+                            .onDelete(perform: deleteChoices)
+                            
+                            Button(action: addChoice) {
+                                Label("Add Choice", systemImage: "plus.circle.fill")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
                     } header: {
-                        Text("Choices (one per line)")
+                        Text("Choices")
                     } footer: {
                         if !isBuiltIn {
-                            Text("Enter each choice on a separate line. Example:\nNegative\nPositive\nUnknown")
+                            Text("Tap + to add, swipe to delete, or drag to reorder.")
                                 .font(.caption)
                         } else {
                             Text("Built-in attribute choices cannot be modified")
@@ -135,9 +161,9 @@ struct PartnerAttributeFormView: View {
                         HStack {
                             Image(systemName: selectedIcon)
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                                 .frame(width: 40, height: 40)
-                                .background(Color.blue.opacity(0.1))
+                                .background(Color.accentColor.opacity(0.1))
                                 .cornerRadius(8)
                             
                             Text("Choose Icon")
@@ -170,13 +196,13 @@ struct PartnerAttributeFormView: View {
             .navigationTitle(isEditing ? "Edit Attribute" : "Add Custom Attribute")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItemGroup(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItemGroup(placement: .confirmationAction) {
                     Button("Save") {
                         saveAttribute()
                     }
@@ -184,9 +210,29 @@ struct PartnerAttributeFormView: View {
                 }
             }
             .sheet(isPresented: $showingIconPicker) {
-                PartnerAttributeIconPickerView(selectedIcon: $selectedIcon)
+                SFSymbolPickerView(selectedIcon: $selectedIcon)
             }
         }
+    }
+    
+    private func addChoice() {
+        withAnimation {
+            enumChoices.append("")
+        }
+    }
+    
+    private func removeChoice(at index: Int) {
+        _ = withAnimation {
+            enumChoices.remove(at: index)
+        }
+    }
+    
+    private func moveChoices(from source: IndexSet, to destination: Int) {
+        enumChoices.move(fromOffsets: source, toOffset: destination)
+    }
+    
+    private func deleteChoices(at offsets: IndexSet) {
+        enumChoices.remove(atOffsets: offsets)
     }
     
     private func saveAttribute() {
@@ -195,10 +241,9 @@ struct PartnerAttributeFormView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         
         // Parse enum choices if applicable
-        var enumChoices: [String]? = nil
+        var choicesForSave: [String]? = nil
         if selectedFieldType == .enumType {
-            let choices = enumChoicesText
-                .components(separatedBy: .newlines)
+            let choices = enumChoices
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
             
@@ -207,7 +252,7 @@ struct PartnerAttributeFormView: View {
                 return
             }
             
-            enumChoices = choices
+            choicesForSave = choices
         }
         
         do {
@@ -224,7 +269,7 @@ struct PartnerAttributeFormView: View {
                     // Custom: can update name, icon, enum choices
                     updated.name = trimmedName
                     updated.icon = selectedIcon
-                    updated.enumChoices = enumChoices?.toJSONString()
+                    updated.enumChoices = choicesForSave?.toJSONString()
                 }
                 
                 try attributeService.updateAttributeType(updated)
@@ -234,7 +279,7 @@ struct PartnerAttributeFormView: View {
                     name: trimmedName,
                     fieldType: selectedFieldType,
                     icon: selectedIcon,
-                    enumChoices: enumChoices,
+                    enumChoices: choicesForSave,
                     isEnabled: true
                 )
             }
@@ -243,80 +288,6 @@ struct PartnerAttributeFormView: View {
             dismiss()
         } catch {
             errorMessage = "Failed to save: \(error.localizedDescription)"
-        }
-    }
-}
-
-// MARK: - Icon Picker
-
-struct PartnerAttributeIconPickerView: View {
-    @Binding var selectedIcon: String
-    @Environment(\.dismiss) private var dismiss
-    
-    // Curated icons relevant to partner attributes
-    private let icons = [
-        // General
-        "person.text.rectangle", "person.crop.circle", "heart.text.square",
-        // Medical/Health
-        "cross.fill", "pills.fill", "calendar.badge.clock", "stethoscope",
-        "medical.thermometer", "syringe", "bandage.fill",
-        // Dates/Time
-        "calendar", "clock", "hourglass", "timer",
-        // Status/Info
-        "info.circle", "checkmark.circle", "xmark.circle", "exclamationmark.circle",
-        "star.fill", "flag.fill", "bookmark.fill",
-        // Communication
-        "phone.fill", "message.fill", "envelope.fill",
-        // Relationships
-        "heart.fill", "heart.circle", "sparkles", "hands.and.sparkles.fill",
-        // Other
-        "globe", "house.fill", "briefcase.fill", "graduationcap.fill",
-        "leaf.fill", "drop.fill", "flame.fill", "bolt.fill", "guidepoint.vertical.numbers"
-    ]
-    
-    let columns = [
-        GridItem(.adaptive(minimum: 60))
-    ]
-    
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(icons, id: \.self) { icon in
-                        Button {
-                            selectedIcon = icon
-                            dismiss()
-                        } label: {
-                            VStack {
-                                Image(systemName: icon)
-                                    .font(.largeTitle)
-                                    .foregroundColor(selectedIcon == icon ? .blue : .primary)
-                                    .frame(width: 60, height: 60)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(selectedIcon == icon ? Color.blue.opacity(0.1) : Color.clear)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(selectedIcon == icon ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                                    )
-                            }
-                        }
-                        .accessibilityLabel(icon.replacingOccurrences(of: ".", with: " "))
-                        .accessibilityAddTraits(selectedIcon == icon ? .isSelected : [])
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Choose Icon")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
         }
     }
 }

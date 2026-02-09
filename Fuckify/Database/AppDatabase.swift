@@ -138,6 +138,10 @@ func appDatabase() throws -> any DatabaseWriter {
         try AddPartnerAttributes.migrate(db)
     }
     
+    migrator.registerMigration("Update partner last encounter date") { db in
+        try UpdatePartnerLastEncounterDate.migrate(db)
+    }
+    
     // Note: SwiftData migration has been removed since all data has been migrated
     // If you need to re-migrate data, restore from git history:
     // - Fuckify/Database/Migrations/SwiftDataTransfer.swift
