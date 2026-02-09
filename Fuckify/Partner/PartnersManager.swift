@@ -33,16 +33,7 @@ class PartnersManager {
         errorMessage = nil
         
         do {
-            // Capture service before detached task to avoid actor isolation issues
-            let service = partnerService
-            
-            // Perform database I/O off main thread
-            let fetchedPartners = try await Task.detached {
-                try await service.fetchAll()
-            }.value
-            
-            // Update UI on main thread
-            partners = fetchedPartners
+            partners = try partnerService.fetchAll()
             logger.info("Fetched \(self.partners.count) partners")
         } catch {
             logger.error("Failed to fetch partners: \(error.localizedDescription)")
@@ -55,12 +46,7 @@ class PartnersManager {
 
     func addPartner(_ partner: SQLPartner.Draft) async {
         do {
-            // Capture service before detached task to avoid actor isolation issues
-            let service = partnerService
-            
-            let createdPartner = try await Task.detached {
-                try await service.create(partner)
-            }.value
+            let createdPartner = try partnerService.create(partner)
             logger.info("Created partner: \(partner.name)")
             
             // Optimistic update - add to list immediately
@@ -79,12 +65,7 @@ class PartnersManager {
             partners[index] = partner
             
             do {
-                // Capture service before detached task to avoid actor isolation issues
-                let service = partnerService
-                
-                try await Task.detached {
-                    try await service.update(partner)
-                }.value
+                try partnerService.update(partner)
                 logger.info("Updated partner: \(partner.name)")
             } catch {
                 // Rollback on error
@@ -101,12 +82,7 @@ class PartnersManager {
         let removedPartner = partners.remove(at: index)
         
         do {
-            // Capture service before detached task to avoid actor isolation issues
-            let service = partnerService
-            
-            try await Task.detached {
-                try await service.delete(partner.id)
-            }.value
+            try partnerService.delete(partner.id)
             logger.info("Deleted partner: \(partner.name)")
         } catch {
             // Rollback on error
@@ -160,12 +136,7 @@ class PartnersManager {
             partners[index] = updatedPartner
             
             do {
-                // Capture service before detached task to avoid actor isolation issues
-                let service = partnerService
-                
-                try await Task.detached {
-                    try await service.togglePin(for: partner.id)
-                }.value
+                try partnerService.togglePin(for: partner.id)
                 logger.info("Toggled pin for partner: \(partner.name)")
             } catch {
                 // Rollback on error
