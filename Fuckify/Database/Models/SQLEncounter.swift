@@ -57,7 +57,7 @@ struct SQLActivityTypeEntity: Identifiable {
     var sortOrder: Int         // for display ordering
     var dateAdded: Date
     
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         name: String,
         icon: String,
@@ -88,7 +88,7 @@ struct SQLProtectionMethodEntity: Identifiable {
     var sortOrder: Int         // for display ordering
     var dateAdded: Date
     
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         name: String,
         icon: String,
@@ -113,19 +113,16 @@ struct SQLProtectionMethodEntity: Identifiable {
 struct EncounterActivity: Identifiable {
     let id: UUID
     var encounterId: UUID
-    var activityTypeId: UUID?           // NEW: UUID reference
-    var activityType: SQLActivityType?  // OLD: Keep for migration safety
+    var activityTypeId: UUID  // UUID reference to activityType table
     
     init(
         id: UUID = UUID(),
         encounterId: UUID,
-        activityTypeId: UUID? = nil,
-        activityType: SQLActivityType? = nil
+        activityTypeId: UUID
     ) {
         self.id = id
         self.encounterId = encounterId
         self.activityTypeId = activityTypeId
-        self.activityType = activityType
     }
 }
 
@@ -133,19 +130,16 @@ struct EncounterActivity: Identifiable {
 struct EncounterProtectionMethod: Identifiable {
     let id: UUID
     var encounterId: UUID
-    var protectionMethodId: UUID?              // NEW: UUID reference
-    var protectionMethod: SQLProtectionMethod? // OLD: Keep for migration safety
+    var protectionMethodId: UUID  // UUID reference to protectionMethodType table
     
     init(
         id: UUID = UUID(),
         encounterId: UUID,
-        protectionMethodId: UUID? = nil,
-        protectionMethod: SQLProtectionMethod? = nil
+        protectionMethodId: UUID
     ) {
         self.id = id
         self.encounterId = encounterId
         self.protectionMethodId = protectionMethodId
-        self.protectionMethod = protectionMethod
     }
 }
 
@@ -159,11 +153,11 @@ enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
     case kissing = "Kissing"
     case other = "Other"
     
-    var displayName: String {
+    nonisolated var displayName: String {
         self.rawValue
     }
     
-    var icon: String {
+    nonisolated var icon: String {
         switch self {
         case .oral: return "mouth"
         case .vaginal: return "heart.fill"
@@ -175,7 +169,7 @@ enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
     }
     
     // Predefined UUIDs for built-in activities (stable across installations)
-    var predefinedUUID: UUID {
+    nonisolated var predefinedUUID: UUID {
         switch self {
         case .oral:    return UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
         case .vaginal: return UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
@@ -187,7 +181,7 @@ enum SQLActivityType: String, Codable, CaseIterable, QueryBindable {
     }
     
     // Convert to entity representation
-    func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLActivityTypeEntity {
+    nonisolated func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLActivityTypeEntity {
         SQLActivityTypeEntity(
             id: predefinedUUID,
             name: displayName,
@@ -207,11 +201,11 @@ enum SQLProtectionMethod: String, Codable, CaseIterable, QueryBindable {
     case none = "None"
     case other = "Other"
     
-    var displayName: String {
+    nonisolated var displayName: String {
         self.rawValue
     }
     
-    var icon: String {
+    nonisolated var icon: String {
         switch self {
         case .condom: return "shield.fill"
         case .prep: return "pills.fill"
@@ -222,7 +216,7 @@ enum SQLProtectionMethod: String, Codable, CaseIterable, QueryBindable {
     }
     
     // Predefined UUIDs for built-in protection methods (stable across installations)
-    var predefinedUUID: UUID {
+    nonisolated var predefinedUUID: UUID {
         switch self {
         case .condom:  return UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
         case .prep:    return UUID(uuidString: "00000000-0000-0000-0000-000000000102")!
@@ -233,7 +227,7 @@ enum SQLProtectionMethod: String, Codable, CaseIterable, QueryBindable {
     }
     
     // Convert to entity representation
-    func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLProtectionMethodEntity {
+    nonisolated func toEntity(sortOrder: Int, isEnabled: Bool = true) -> SQLProtectionMethodEntity {
         SQLProtectionMethodEntity(
             id: predefinedUUID,
             name: displayName,

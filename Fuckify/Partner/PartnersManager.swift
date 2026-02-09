@@ -32,7 +32,7 @@ final class PartnersViewModel {
     
     /// Initialize with dependency injection for testability
     /// - Parameter partnerService: Service for partner database operations (defaults to live implementation)
-    init(partnerService: PartnerService = PartnerService()) {
+    nonisolated init(partnerService: PartnerService = PartnerService()) {
         self.partnerService = partnerService
     }
 

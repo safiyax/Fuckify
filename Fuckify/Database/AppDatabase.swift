@@ -5,10 +5,8 @@
 //  Created by Safiya Hooda on 2026-01-05.
 //
 
-import OSLog
+import Foundation
 import SQLiteData
-
-private  let logger = Logger(subsystem: "Fuckify", category: "Database")
 
 func appDatabase() throws -> any DatabaseWriter {
     @Dependency(\.context) var context
@@ -87,11 +85,17 @@ func appDatabase() throws -> any DatabaseWriter {
     
 #if DEBUG
     configuration.prepareDatabase { db in
-        db.trace(options: .profile) {
+        db.trace(options: .profile) { event in
+            // Log all queries in preview mode
             if context == .preview {
-                print("\($0.expandedDescription)")
+                print("\(event.expandedDescription)")
             } else {
-                logger.debug("\($0.expandedDescription)")
+                // In normal DEBUG mode, only log slow queries (>100ms)
+                if case .profile(let statement, let duration) = event, duration > 0.1 {
+                    print("⚠️ Slow query (\(String(format: "%.2f", duration * 1000))ms): \(statement)")
+                }
+                // Still log all queries at debug level for detailed debugging
+                print("DEBUG: \(event.expandedDescription)")
             }
         }
     }
@@ -124,6 +128,10 @@ func appDatabase() throws -> any DatabaseWriter {
     
     migrator.registerMigration("Add unique constraints") { db in
         try AddUniqueConstraints.migrate(db)
+    }
+    
+    migrator.registerMigration("Remove deprecated enum columns") { db in
+        try RemoveDeprecatedEnumColumns.migrate(db)
     }
     
     // Note: SwiftData migration has been removed since all data has been migrated

@@ -181,8 +181,8 @@ struct StatisticsView: View {
             // Convert to lookup dictionary for fast access
             encounterRelationships = Dictionary(uniqueKeysWithValues: 
                 encountersWithRels.map { ($0.encounter.id, EncounterRelationships(
-                    activityEntities: $0.activityEntities ?? [],
-                    protectionEntities: $0.protectionEntities ?? [],
+                    activityEntities: $0.activityEntities,
+                    protectionEntities: $0.protectionEntities,
                     partnerIDs: $0.partners.map(\.id)
                 ))
             })

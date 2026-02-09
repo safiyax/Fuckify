@@ -15,6 +15,9 @@ import GRDB
 struct PartnerService {
     @Dependency(\.defaultDatabase) var database
     
+    // Synthesized memberwise init is nonisolated
+    nonisolated init() {}
+    
     // MARK: - Create
     
     /// Insert a new partner and return it
@@ -183,7 +186,7 @@ struct PartnerService {
 import Dependencies
 
 extension PartnerService: DependencyKey {
-    static var liveValue: PartnerService { PartnerService() }
+    nonisolated static var liveValue: PartnerService { PartnerService() }
 }
 
 extension DependencyValues {

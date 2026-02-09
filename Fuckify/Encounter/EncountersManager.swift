@@ -41,7 +41,7 @@ final class EncountersViewModel {
     /// - Parameters:
     ///   - encounterService: Service for encounter database operations (defaults to live implementation)
     ///   - partnerService: Service for partner database operations (defaults to live implementation)
-    init(
+    nonisolated init(
         encounterService: EncounterService = EncounterService(),
         partnerService: PartnerService = PartnerService()
     ) {
@@ -201,27 +201,6 @@ final class EncountersViewModel {
         }
     }
     
-    /// Get activities for a specific encounter (DEPRECATED: enum-based)
-    @available(*, deprecated, message: "Use activityEntities(for:) instead")
-    func activities(for encounter: SQLEncounter) async -> [SQLActivityType] {
-        do {
-            return try encounterService.fetchActivities(for: encounter.id)
-        } catch {
-            logger.error("Failed to fetch activities for encounter: \(error.localizedDescription)")
-            return []
-        }
-    }
-    
-    /// Get protection methods for a specific encounter (DEPRECATED: enum-based)
-    @available(*, deprecated, message: "Use protectionMethodEntities(for:) instead")
-    func protectionMethods(for encounter: SQLEncounter) async -> [SQLProtectionMethod] {
-        do {
-            return try encounterService.fetchProtectionMethods(for: encounter.id)
-        } catch {
-            logger.error("Failed to fetch protection methods for encounter: \(error.localizedDescription)")
-            return []
-        }
-    }
 }
 
 // MARK: - Type Alias for Backward Compatibility

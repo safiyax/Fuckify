@@ -42,36 +42,12 @@ struct PartnerDetailView: View {
     var body: some View {
         List {
             // Avatar Section
-            Section {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(isEditing ? Color.fromPartnerColorName(editAvatarColor) : currentPartner.color)
-                                .frame(width: 100, height: 100)
-
-                            Text(isEditing ? editName.initials : currentPartner.initials)
-                                .font(.system(.largeTitle, weight: .bold))
-                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                                .foregroundColor(.white)
-                        }
-
-                        if !isEditing {
-                            Text(currentPartner.name)
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            Text(currentPartner.relationshipType.displayName)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-            }
-            .listRowBackground(Color.clear)
+            PartnerAvatarHeader(
+                partner: currentPartner,
+                isEditing: isEditing,
+                editName: editName,
+                editAvatarColor: editAvatarColor
+            )
 
             // Basic Information
             if isEditing {
@@ -84,30 +60,7 @@ struct PartnerDetailView: View {
                         .keyboardType(.phonePad)
                 }
 
-                Section("Avatar Color") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 50))], spacing: 12) {
-                        ForEach(PartnerColors.allColorNames, id: \.self) { colorName in
-                            Button(action: { editAvatarColor = colorName }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.fromPartnerColorName(colorName))
-                                        .frame(width: 50, height: 50)
-
-                                    if editAvatarColor == colorName {
-                                        Image(systemName: "checkmark")
-                                            .font(.title3)
-                                            .foregroundColor(.white)
-                                            .fontWeight(.bold)
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(colorName.capitalized)
-                            .accessibilityAddTraits(editAvatarColor == colorName ? .isSelected : [])
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
+                AvatarColorPickerGrid(selectedColor: $editAvatarColor)
             } else {
                 // Contact Information
                 Section("Contact") {
@@ -219,40 +172,7 @@ struct PartnerDetailView: View {
 
             // Encounters (only shown when not editing)
             if !isEditing {
-                Section {
-//                    // TODO: Update this section to use SQLEncounter
-//                    HStack {
-//                        Image(systemName: "heart.slash")
-//                            .foregroundColor(.secondary)
-//                        Text("Encounters list temporarily disabled during migration")
-//                            .foregroundColor(.secondary)
-//                            .font(.caption)
-//                    }
-                    if !sortedEncounters.isEmpty {
-                        ForEach(sortedEncounters) { encounter in
-                            NavigationLink {
-                                EncounterDetailView(encounter: encounter)
-                            } label: {
-                                EncounterRowView(encounter: encounter)
-                            }
-                        }
-                    } else {
-                        HStack {
-                            Image(systemName: "heart.slash")
-                                .foregroundStyle(.secondary)
-                            Text("No encounters yet")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                } header: {
-                    HStack {
-                        Text("Encounters")
-                        if !sortedEncounters.isEmpty {
-                            Text("(\(sortedEncounters.count))")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
+                PartnerEncountersList(encounters: encounters)
             }
         }
 //        .navigationTitle("Partner Details")
@@ -299,15 +219,6 @@ struct PartnerDetailView: View {
                 loadEditableFields()
             }
         }
-    }
-
-    // MARK: - Computed Properties
-
-    private var sortedEncounters: [SQLEncounter] {
-        encounters.sorted(by: { 
-            guard let date1 = $0.date, let date2 = $1.date else { return false }
-            return date1 > date2 
-        })
     }
 
     // MARK: - Functions
@@ -389,23 +300,6 @@ struct PartnerDetailView: View {
         isLoadingEncounters = false
     }
     
-    private func deleteEncounters(offsets: IndexSet) async {
-        // Capture service before detached task to avoid actor isolation issues
-        let service = encounterService
-        
-        for index in offsets {
-            let encounter = sortedEncounters[index]
-            do {
-                // Perform database I/O off main thread
-                try await Task.detached {
-                    try await service.delete(encounter.id)
-                }.value
-                encounters.removeAll { $0.id == encounter.id }
-            } catch {
-                print("Failed to delete encounter: \(error)")
-            }
-        }
-    }
 }
 
 

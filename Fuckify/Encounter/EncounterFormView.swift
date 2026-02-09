@@ -62,7 +62,7 @@ struct EncounterFormView: View {
                 Section("When") {
                     DatePicker("Date", selection: $date, displayedComponents: .date)
                         .datePickerStyle(.compact)
-
+                    
                     HStack {
                         Text("Duration")
                         Spacer()
@@ -72,6 +72,8 @@ struct EncounterFormView: View {
                             }
                         }
                         .pickerStyle(.menu)
+                        .accessibilityLabel("Hours")
+                        .accessibilityValue("\(durationHours) hours")
 
                         Picker(selection: $durationMinutes, label: EmptyView()) {
                             ForEach([0, 15, 30, 45], id: \.self) { minute in
@@ -79,6 +81,8 @@ struct EncounterFormView: View {
                             }
                         }
                         .pickerStyle(.menu)
+                        .accessibilityLabel("Minutes")
+                        .accessibilityValue("\(durationMinutes) minutes")
                     }
                 }
 
@@ -108,77 +112,25 @@ struct EncounterFormView: View {
                             .background(Color.blue.opacity(0.15))
                             .cornerRadius(16)
                         }
+                        .accessibilityLabel("Add partner")
+                        .accessibilityHint("Opens partner picker to add partners to this encounter")
                     }
                 }
 
-                // Activities (NEW: database-backed)
-                Section("Activities") {
-                    ForEach(availableActivities.filter { $0.isEnabled }) { activity in
-                        Button(action: { toggleActivity(activity.id) }) {
-                            HStack {
-                                Image(systemName: activity.icon)
-                                    .foregroundColor(.purple)
-                                    .accessibilityHidden(true)
-                                Text(activity.name)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if selectedActivityIDs.contains(activity.id) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                        .accessibilityHidden(true)
-                                }
-                            }
-                        }
-                        .accessibilityAddTraits(selectedActivityIDs.contains(activity.id) ? .isSelected : [])
-                    }
-                }
+                // Activities
+                ActivitiesSelectionSection(
+                    availableActivities: availableActivities,
+                    selectedActivityIDs: $selectedActivityIDs
+                )
 
-                // Protection (NEW: database-backed)
-                Section("Protection") {
-                    ForEach(availableProtectionMethods.filter { $0.isEnabled }) { protection in
-                        Button(action: { toggleProtection(protection.id) }) {
-                            HStack {
-                                Image(systemName: protection.icon)
-                                    .foregroundColor(.green)
-                                    .accessibilityHidden(true)
-                                Text(protection.name)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if selectedProtectionIDs.contains(protection.id) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                        .accessibilityHidden(true)
-                                }
-                            }
-                        }
-                        .accessibilityAddTraits(selectedProtectionIDs.contains(protection.id) ? .isSelected : [])
-                    }
-                }
+                // Protection
+                ProtectionMethodsSelectionSection(
+                    availableProtectionMethods: availableProtectionMethods,
+                    selectedProtectionIDs: $selectedProtectionIDs
+                )
 
                 // Experience
-                Section("Experience") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Rating")
-                            .font(.subheadline)
-                        HStack(spacing: 8) {
-                            ForEach(1...5, id: \.self) { star in
-                                Button(action: { rating = star }) {
-                                    Image(systemName: star <= rating ? "star.fill" : "star")
-                                        .foregroundColor(star <= rating ? .yellow : .gray)
-                                        .font(.title2)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("\(star) star\(star > 1 ? "s" : "")")
-                                .accessibilityAddTraits(rating == star ? [.isSelected] : [])
-                                .accessibilityHint("Double tap to rate this encounter")
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-
-                    Toggle("Reached Orgasm", isOn: $reachedOrgasm)
-                        .accessibilityHint("Track whether you reached orgasm during this encounter")
-                }
+                RatingSection(rating: $rating, reachedOrgasm: $reachedOrgasm)
 
                 // Location
                 Section("Location") {
@@ -258,22 +210,6 @@ struct EncounterFormView: View {
             selectedPartnerIDs.remove(partnerID)
         } else {
             selectedPartnerIDs.insert(partnerID)
-        }
-    }
-
-    private func toggleActivity(_ activityID: UUID) {
-        if selectedActivityIDs.contains(activityID) {
-            selectedActivityIDs.remove(activityID)
-        } else {
-            selectedActivityIDs.insert(activityID)
-        }
-    }
-
-    private func toggleProtection(_ protectionID: UUID) {
-        if selectedProtectionIDs.contains(protectionID) {
-            selectedProtectionIDs.remove(protectionID)
-        } else {
-            selectedProtectionIDs.insert(protectionID)
         }
     }
 
@@ -377,202 +313,6 @@ struct EncounterFormView: View {
         } catch {
             print("❌ Save failed: \(error)")
             errorMessage = "Failed to save encounter. Please try again. Error: \(error.localizedDescription)"
-        }
-    }
-}
-
-// MARK: - Partner Chip Component
-
-struct PartnerChip: View {
-    let partner: SQLPartner
-    let onRemove: () -> Void
-    
-    var partnerColor: Color {
-        Color.fromPartnerColorName(partner.avatarColor)
-    }
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(partner.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .foregroundColor(partnerColor)
-            
-            Button {
-                onRemove()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(partnerColor)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            partnerColor
-                .opacity(0.15)
-        )
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Chip Container
-
-struct ChipContainer<Content: View>: View {
-    @ViewBuilder let content: Content
-    
-    var body: some View {
-        FlowLayout(spacing: 8) {
-            content
-        }
-        .padding(4)
-    }
-}
-
-// MARK: - Partner Picker Sheet
-
-struct PartnerPickerSheet: View {
-    let allPartners: [SQLPartner]
-    @Binding var selectedPartnerIDs: Set<UUID>
-    @Binding var searchText: String
-    @Environment(\.dismiss) private var dismiss
-    
-    var filteredPartners: [SQLPartner] {
-        let partners: [SQLPartner]
-        if searchText.isEmpty {
-            partners = allPartners
-        } else {
-            partners = allPartners.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-        }
-        
-        // Sort: pinned first, then by name
-        return partners.sorted { lhs, rhs in
-            if lhs.isPinned != rhs.isPinned {
-                return lhs.isPinned // Pinned partners come first
-            }
-            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
-    }
-    
-    var pinnedPartners: [SQLPartner] {
-        filteredPartners.filter { $0.isPinned }
-    }
-    
-    var unpinnedPartners: [SQLPartner] {
-        filteredPartners.filter { !$0.isPinned }
-    }
-    
-    var body: some View {
-        NavigationStack {
-            List {
-                if allPartners.isEmpty {
-                    ContentUnavailableView(
-                        "No Partners",
-                        systemImage: "person.2.slash",
-                        description: Text("Add partners first to log encounters with them")
-                    )
-                } else {
-                    // Pinned Partners Section
-                    if !pinnedPartners.isEmpty {
-                        Section("Pinned") {
-                            ForEach(pinnedPartners) { partner in
-                                PartnerPickerRow(
-                                    partner: partner,
-                                    isSelected: selectedPartnerIDs.contains(partner.id),
-                                    onTap: { togglePartner(partner.id) }
-                                )
-                            }
-                        }
-                    }
-                    
-                    // All Partners Section
-                    if !unpinnedPartners.isEmpty {
-                        Section(pinnedPartners.isEmpty ? "" : "All Partners") {
-                            ForEach(unpinnedPartners) { partner in
-                                PartnerPickerRow(
-                                    partner: partner,
-                                    isSelected: selectedPartnerIDs.contains(partner.id),
-                                    onTap: { togglePartner(partner.id) }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            .searchable(text: $searchText, prompt: "Search partners")
-            .navigationTitle("Select Partners")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func togglePartner(_ partnerID: UUID) {
-        if selectedPartnerIDs.contains(partnerID) {
-            selectedPartnerIDs.remove(partnerID)
-        } else {
-            selectedPartnerIDs.insert(partnerID)
-        }
-    }
-}
-
-// MARK: - Partner Picker Row
-
-struct PartnerPickerRow: View {
-    let partner: SQLPartner
-    let isSelected: Bool
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Color avatar
-                Circle()
-                    .fill(Color.fromPartnerColorName(partner.avatarColor))
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(partner.name.prefix(1).uppercased())
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(partner.name)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                        
-                        if partner.isPinned {
-                            Image(systemName: "pin.fill")
-                                .font(.caption2)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                    
-                    if !partner.notes.isEmpty {
-                        Text(partner.notes)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                
-                Spacer()
-                
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.blue)
-                        .font(.title3)
-                }
-            }
-            .padding(.vertical, 4)
         }
     }
 }

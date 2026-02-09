@@ -12,7 +12,6 @@
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
 		89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C228592F2996EB00B9A0DF /* StoreKit.framework */; };
-		89C2285C2F2997DA00B9A0DF /* CoitalComrade.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */; };
 		89C229CA2F2FE4C000B9A0DF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */; };
 		89C229CC2F2FE4C000B9A0DF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */; };
 		89C229DD2F2FE4C200B9A0DF /* EncounterActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -45,7 +44,6 @@
 /* Begin PBXFileReference section */
 		893C5D2E2EBF711200981CDC /* Fuckify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuckify.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C228592F2996EB00B9A0DF /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
-		89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = CoitalComrade.storekit; path = Fuckify/CoitalComrade.storekit; sourceTree = "<group>"; };
 		89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EncounterActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -140,7 +138,6 @@
 			isa = PBXGroup;
 			children = (
 				89C22C982F34EC9600B9A0DF /* EncounterActivityWidgetExtension.entitlements */,
-				89C2285B2F2997DA00B9A0DF /* CoitalComrade.storekit */,
 				893C5D302EBF711200981CDC /* Fuckify */,
 				89C229CD2F2FE4C000B9A0DF /* EncounterActivityWidget */,
 				89C228582F2996EB00B9A0DF /* Frameworks */,
@@ -269,7 +266,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				89C2285C2F2997DA00B9A0DF /* CoitalComrade.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -526,7 +522,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;
@@ -560,7 +556,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;
