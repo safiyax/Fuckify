@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SQLiteData
-import Combine
 
 struct ContentView: View {
     @SceneStorage("selectedTab") var selectedTab = 0
@@ -20,10 +19,6 @@ struct ContentView: View {
     // Namespace for matched transition
     @Namespace private var animation
     
-    // Timer to force UI updates for live timer
-    @State private var currentTime = Date()
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    
     var body: some View {
         Group {
             if #available(iOS 26.1, *) {
@@ -35,9 +30,6 @@ struct ContentView: View {
                                 .matchedTransitionSource(id: "MINIPLAYER", in: animation)
                                 .onTapGesture {
                                     showingActiveEncounter.toggle()
-                                }
-                                .onReceive(timer) { time in
-                                    currentTime = time
                                 }
                         }
                     }
@@ -79,10 +71,6 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("showActiveEncounter"))) { _ in
             showingActiveEncounter = true
-        }
-        .onReceive(timer) { time in
-            // Update currentTime every second to trigger view refresh for live timer
-            currentTime = time
         }
     }
     
@@ -131,8 +119,6 @@ struct ContentView: View {
                     } else {
                         await LiveActivityManager.shared.pauseEncounter()
                     }
-                    // Force a UI update by updating currentTime
-                    currentTime = Date()
                 }
             } label: {
                 Image(systemName: LiveActivityManager.shared.currentState()?.isPaused == true ? "play.fill" : "pause.fill")
@@ -190,12 +176,17 @@ struct ContentView: View {
                         .font(.callout)
                 }
                 
-                if let state = liveActivityManager.currentState() {
-                    // Use currentTime to force live updates every second
-                    Text(formatDuration(state.elapsedActiveTime(currentTime: currentTime)))
-                        .font(.caption2)
-                        .foregroundStyle(.gray)
-                        .monospacedDigit()
+                if liveActivityManager.currentState() != nil {
+                    // TimelineView updates only this text every second
+                    // This avoids re-rendering the entire ContentView body
+                    TimelineView(.periodic(from: Date(), by: 1.0)) { context in
+                        if let state = liveActivityManager.currentState() {
+                            Text(formatDuration(state.elapsedActiveTime(currentTime: context.date)))
+                                .font(.caption2)
+                                .foregroundStyle(.gray)
+                                .monospacedDigit()
+                        }
+                    }
                 }
             }
             .lineLimit(1)
