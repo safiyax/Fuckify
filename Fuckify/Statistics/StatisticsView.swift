@@ -172,20 +172,24 @@ struct StatisticsView: View {
     // MARK: - Data Loading
     
     private func loadEncounterRelationships() async {
-        for encounter in encounters {
-            do {
-                let activityEntities = try encounterService.fetchActivityEntities(for: encounter.id)
-                let protectionEntities = try encounterService.fetchProtectionMethodEntities(for: encounter.id)
-                let partners = try encounterService.fetchPartners(for: encounter.id)
-                
-                encounterRelationships[encounter.id] = EncounterRelationships(
-                    activityEntities: activityEntities,
-                    protectionEntities: protectionEntities,
-                    partnerIDs: partners.map(\.id)
-                )
-            } catch {
-                // Silent fail
-            }
+        do {
+            // Use batch loading to avoid N+1 query pattern
+            // This loads all encounters with relationships in just 4 queries
+            // instead of 3N+1 queries (where N = number of encounters)
+            let encountersWithRels = try encounterService.fetchAllWithRelationships()
+            
+            // Convert to lookup dictionary for fast access
+            encounterRelationships = Dictionary(uniqueKeysWithValues: 
+                encountersWithRels.map { ($0.encounter.id, EncounterRelationships(
+                    activityEntities: $0.activityEntities ?? [],
+                    protectionEntities: $0.protectionEntities ?? [],
+                    partnerIDs: $0.partners.map(\.id)
+                ))
+            })
+        } catch {
+            // Log error instead of silent fail
+            print("⚠️ Failed to load encounter relationships: \(error)")
+            encounterRelationships = [:]
         }
     }
 
