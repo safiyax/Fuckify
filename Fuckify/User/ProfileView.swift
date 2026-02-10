@@ -22,6 +22,54 @@ struct ProfileView: View {
 
 
     @State private var isEditing = false
+    
+    // MARK: - Computed Properties
+    
+    private var hasHealthInfo: Bool {
+        profile.isOnPrep || profile.lastSTITestDate != nil
+    }
+    
+    private var stiTestStatus: (text: String, color: Color, icon: String) {
+        guard let lastTest = profile.lastSTITestDate else {
+            return ("Never tested", .red, "exclamationmark.triangle.fill")
+        }
+        
+        let days = Calendar.current.dateComponents([.day], from: lastTest, to: Date()).day ?? 0
+        
+        // Use 90-day threshold (CDC recommendation for regular testing)
+        if days < 90 {
+            return ("\(days) days ago", .green, "checkmark.circle.fill")
+        } else if days < 180 {
+            return ("\(days) days ago", .orange, "exclamationmark.circle.fill")
+        } else {
+            return ("\(days) days ago", .red, "exclamationmark.triangle.fill")
+        }
+    }
+    
+    private var hasProfileData: Bool {
+        !profile.name.isEmpty || profile.dateOfBirth != nil || hasHealthInfo || !profile.notes.isEmpty
+    }
+    
+    private func calculateNextTestDate() -> Date? {
+        guard let lastTest = profile.lastSTITestDate else { return nil }
+        
+        // Recommend testing every 3 months (90 days) - CDC recommendation
+        let interval = 90
+        
+        let nextDate = Calendar.current.date(byAdding: .day, value: interval, to: lastTest)
+        
+        // Only return if the date is in the future
+        if let next = nextDate, next > Date() {
+            return next
+        }
+        
+        return nil
+    }
+    
+    private var daysUntilNextTest: Int? {
+        guard let nextTest = calculateNextTestDate() else { return nil }
+        return Calendar.current.dateComponents([.day], from: Date(), to: nextTest).day
+    }
 
     var body: some View {
         NavigationStack {
@@ -61,7 +109,7 @@ struct ProfileView: View {
                     .padding(.vertical, 8)
                 }
                 .listRowBackground(Color.clear)
-
+                
                 // Basic Information
                 if isEditing {
                     Section("Basic Information") {
@@ -84,14 +132,15 @@ struct ProfileView: View {
                         }
                     }
                 }
-
-                // Health Section
-                Section("Health") {
+                
+                // Health Check-In Section
+                Section(isEditing ? "Health" : "Health Check-In") {
                     if isEditing {
+                        // Edit mode - toggles and date pickers
                         Toggle("On PrEP", isOn: $editIsOnPrep)
-
+                        
                         Toggle("Last STI Test", isOn: $editShowLastSTITestDate)
-
+                        
                         if editShowLastSTITestDate {
                             DatePicker(
                                 "Date",
@@ -103,28 +152,91 @@ struct ProfileView: View {
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
-//                            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
                         }
                     } else {
-                        HStack {
-                            Text("PrEP Status")
-                            Spacer()
-                            if profile.isOnPrep {
-                                Label("On PrEP", systemImage: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                            } else {
-                                Text("Not on PrEP")
-                                    .foregroundColor(.secondary)
+                        // View mode
+                        if hasHealthInfo {
+                            VStack(spacing: 12) {
+                                // Last STI Test
+                                HStack {
+                                    Label("Last STI Test", systemImage: "calendar.badge.clock")
+                                    Spacer()
+                                    HStack(spacing: 4) {
+                                        Image(systemName: stiTestStatus.icon)
+                                        Text(stiTestStatus.text)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(stiTestStatus.color)
+                                }
+                                
+                                // Next Test Due (if applicable)
+                                if let nextTestDate = calculateNextTestDate(), let daysUntil = daysUntilNextTest {
+                                    Divider()
+                                    
+                                    HStack {
+                                        Label("Next Test Due", systemImage: "bell.badge")
+                                        Spacer()
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text(nextTestDate.formatted(date: .abbreviated, time: .omitted))
+                                                .fontWeight(.medium)
+                                            Text("in \(daysUntil) days")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .foregroundColor(.orange)
+                                    }
+                                }
+                                
+                                Divider()
+                                
+                                // PrEP Status
+                                HStack {
+                                    Label("PrEP Status", systemImage: "pills.fill")
+                                    Spacer()
+                                    if profile.isOnPrep {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                            Text("Active")
+                                                .fontWeight(.medium)
+                                        }
+                                        .foregroundColor(.blue)
+                                    } else {
+                                        Text("Not Active")
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
                             }
-                        }
-
-                        if let lastTest = profile.lastSTITestDate {
-                            HStack {
-                                Text("Last STI Test")
-                                Spacer()
-                                Text(lastTest.formatted(date: .abbreviated, time: .omitted))
+                            .padding(.vertical, 8)
+                        } else {
+                            // Empty state
+                            VStack(spacing: 12) {
+                                Image(systemName: "pills.circle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.blue.opacity(0.5))
+                                
+                                Text("Track Your Sexual Wellness")
+                                    .font(.headline)
+                                
+                                Text("Add your PrEP status and STI testing dates to stay on top of your sexual health")
+                                    .font(.subheadline)
                                     .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                Button(action: {
+                                    withAnimation {
+                                        isEditing = true
+                                    }
+                                }) {
+                                    Label("Add Health Info", systemImage: "plus.circle.fill")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .padding(.top, 4)
                             }
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -141,6 +253,23 @@ struct ProfileView: View {
                         Text("No notes")
                             .foregroundColor(.secondary)
                     }
+                }
+                
+                // Last Updated Section
+                if !isEditing && hasProfileData {
+                    Section {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "clock")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                            Text("Last updated: \(profile.lastModified.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                    }
+                    .listRowBackground(Color.clear)
                 }
             }
                 .navigationBarTitleDisplayMode(.inline)

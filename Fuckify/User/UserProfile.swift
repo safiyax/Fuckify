@@ -22,6 +22,7 @@ final class UserProfile {
     var name: String {
         didSet {
             UserDefaults.standard.set(name, forKey: "userName")
+            lastModified = Date()
         }
     }
     
@@ -33,6 +34,7 @@ final class UserProfile {
             } else {
                 UserDefaults.standard.removeObject(forKey: "userDateOfBirth")
             }
+            lastModified = Date()
         }
     }
     
@@ -40,6 +42,7 @@ final class UserProfile {
     var isOnPrep: Bool {
         didSet {
             UserDefaults.standard.set(isOnPrep, forKey: "userIsOnPrep")
+            lastModified = Date()
         }
     }
     
@@ -51,6 +54,7 @@ final class UserProfile {
             } else {
                 UserDefaults.standard.removeObject(forKey: "userLastSTITestDate")
             }
+            lastModified = Date()
         }
     }
     
@@ -58,6 +62,14 @@ final class UserProfile {
     var notes: String {
         didSet {
             UserDefaults.standard.set(notes, forKey: "userNotes")
+            lastModified = Date()
+        }
+    }
+    
+    /// Date when profile was last modified
+    var lastModified: Date {
+        didSet {
+            UserDefaults.standard.set(lastModified, forKey: "userLastModified")
         }
     }
     
@@ -71,6 +83,7 @@ final class UserProfile {
         self.isOnPrep = UserDefaults.standard.bool(forKey: "userIsOnPrep")
         self.lastSTITestDate = UserDefaults.standard.object(forKey: "userLastSTITestDate") as? Date
         self.notes = UserDefaults.standard.string(forKey: "userNotes") ?? ""
+        self.lastModified = UserDefaults.standard.object(forKey: "userLastModified") as? Date ?? Date()
     }
 
     // Computed properties
