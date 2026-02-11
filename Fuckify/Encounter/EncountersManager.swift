@@ -85,12 +85,7 @@ final class EncountersViewModel {
             )
             logger.info("Created encounter: \(encounterID)")
             
-            // Update last encounter date for all partners
-            if let date = encounterDraft.date {
-                for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
-                }
-            }
+            // Note: lastEncounterDate is automatically updated inside encounterService.create()
             
             // Refresh the list
             await fetchEncounters()
@@ -115,12 +110,7 @@ final class EncountersViewModel {
             )
             logger.info("Updated encounter: \(encounter.id)")
             
-            // Update last encounter date for partners if date changed
-            if let date = encounter.date, let partnerIDs = partnerIDs {
-                for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
-                }
-            }
+            // Note: lastEncounterDate is automatically updated inside encounterService.update()
             
             // Refresh the list
             await fetchEncounters()

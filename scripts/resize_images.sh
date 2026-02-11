@@ -34,8 +34,8 @@ if [ ! -d "$INPUT_DIR" ]; then
 fi
 
 # Target dimensions
-TARGET_WIDTH=1242
-TARGET_HEIGHT=2688
+TARGET_WIDTH=1284
+TARGET_HEIGHT=2778
 
 # Counter for processed files
 count=0

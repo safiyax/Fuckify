@@ -109,7 +109,16 @@ struct EncounterService {
             // Update lastEncounterDate for all partners in this encounter
             if let encounterDate = encounter.date {
                 for partnerID in partnerIDs {
-                    try partnerService.updateLastEncounterDate(partnerID, date: encounterDate)
+                    // Update directly in this transaction to avoid re-entrant error
+                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else {
+                        continue
+                    }
+                    
+                    // Only update if this date is newer
+                    if partner.lastEncounterDate == nil || partner.lastEncounterDate! < encounterDate {
+                        partner.lastEncounterDate = encounterDate
+                        try SQLPartner.update(partner).execute(db)
+                    }
                 }
             }
             
@@ -293,9 +302,17 @@ struct EncounterService {
                     try recalculateLastEncounterDate(for: partnerID, db: db)
                 }
             } else if let encounterDate = encounter.date {
-                // If partners weren't changed but date was, update existing partners
+                // If partners weren't changed but date was, update existing partners directly
                 for partnerID in oldPartnerIDs {
-                    try partnerService.updateLastEncounterDate(partnerID, date: encounterDate)
+                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else {
+                        continue
+                    }
+                    
+                    // Only update if this date is newer
+                    if partner.lastEncounterDate == nil || partner.lastEncounterDate! < encounterDate {
+                        partner.lastEncounterDate = encounterDate
+                        try SQLPartner.update(partner).execute(db)
+                    }
                 }
             }
             
@@ -415,9 +432,13 @@ struct EncounterService {
             arguments: [partnerID.uuidString]
         )
         
-        // Update the partner's lastEncounterDate
+        // Update the partner's lastEncounterDate directly in this transaction
         if let date = maxDate {
-            try partnerService.updateLastEncounterDate(partnerID, date: date)
+            guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else {
+                return
+            }
+            partner.lastEncounterDate = date
+            try SQLPartner.update(partner).execute(db)
         } else {
             // No encounters found, clear the date
             try db.execute(
