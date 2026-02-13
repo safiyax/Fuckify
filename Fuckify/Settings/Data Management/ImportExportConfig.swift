@@ -1,36 +1,88 @@
 //
-//  SettingsConfig.swift
+//  ImportExportConfig.swift
 //  Fuckify
 //
-//  Configuration file to control which settings options are visible
+//  Configuration file to control which import/export options are visible
+//  Uses FeatureFlagsManager to fetch configuration from PostHog with fallback to defaults
 //
 
 import Foundation
 
-struct ImportExportConfig {
+@MainActor
+@Observable
+class ImportExportConfig {
     static let shared = ImportExportConfig()
     
-    // MARK: - CSV
+    // MARK: - Published Properties
     
-    /// Show/hide import partners
-    let showImportPartners = false
+    // CSV Section
+    var showImportPartners: Bool
+    var showImportEncounters: Bool
+    var showExportPartners: Bool
+    var showExportEncounters: Bool
     
-    /// Show/hide import encounters
-    let showImportEncounters = false
+    // Database Section
+    var showImportDatabase: Bool
+    var showExportDatabase: Bool
     
-    /// Show/hide export partners
-    let showExportPartners = false
+    // MARK: - Private Properties
     
-    /// Show/hide export encounters
-    let showExportEncounters = false
+    private let flagsManager = FeatureFlagsManager.shared
     
-    // MARK: - Database
+    // Hardcoded fallback defaults
+    private let defaults = ImportExportFlagsPayload(
+        csv: .init(
+            showImportPartners: false,
+            showImportEncounters: false,
+            showExportPartners: false,
+            showExportEncounters: false
+        ),
+        database: .init(
+            showImportDatabase: true,
+            showExportDatabase: true
+        )
+    )
     
-    /// Show/hide import database
-    let showImportDatabase = true
+    // MARK: - Initialization
     
-    /// Show/hide export database
-    let showExportDatabase = true
+    private init() {
+        // Initialize with defaults first
+        self.showImportPartners = defaults.csv.showImportPartners
+        self.showImportEncounters = defaults.csv.showImportEncounters
+        self.showExportPartners = defaults.csv.showExportPartners
+        self.showExportEncounters = defaults.csv.showExportEncounters
+        
+        self.showImportDatabase = defaults.database.showImportDatabase
+        self.showExportDatabase = defaults.database.showExportDatabase
+        
+        // Apply flags from manager if already loaded
+        if let payload = flagsManager.importExportFlags {
+            applyPayload(payload)
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    /// Refresh settings from feature flags manager
+    func refreshFromFlags() {
+        if let payload = flagsManager.importExportFlags {
+            applyPayload(payload)
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func applyPayload(_ payload: ImportExportFlagsPayload) {
+        // CSV
+        showImportPartners = payload.csv.showImportPartners
+        showImportEncounters = payload.csv.showImportEncounters
+        showExportPartners = payload.csv.showExportPartners
+        showExportEncounters = payload.csv.showExportEncounters
+        
+        // Database
+        showImportDatabase = payload.database.showImportDatabase
+        showExportDatabase = payload.database.showExportDatabase
+    }
     
     // MARK: - Section Visibility Helpers
     

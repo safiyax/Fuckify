@@ -121,15 +121,18 @@ struct FuckifyApp: App {
         config.sessionReplay = false
         config.surveys = false
         config.enableSwizzling = false
+//        config.optOut = false
         
         PostHogSDK.shared.setup(config)
-//        PostHogSDK.shared.setPersonProperties(userPropertiesToSet:
-//            ["appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown",
-//             "appBuild": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"]
-//        )
-//        PostHogSDK.shared.setPersonPropertiesForFlags([
-//            "$app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-//        ], reloadFeatureFlags: true)
+
+        var properties: [String : Any] = [
+            "$app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown",
+            "$app_build": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown",
+        ]
+        #if DEBUG
+        properties["is_internal_user"] = true
+        PostHogSDK.shared.setPersonPropertiesForFlags(properties, reloadFeatureFlags: true)
+        #endif
     }
 
     var body: some Scene {

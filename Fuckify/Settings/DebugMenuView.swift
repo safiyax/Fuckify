@@ -11,6 +11,7 @@ import PostHog
 struct DebugMenuView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var config = SettingsConfig.shared
+    @State private var flagsManager = FeatureFlagsManager.shared
     @State private var isRefreshing = false
     
     var body: some View {
@@ -32,7 +33,8 @@ struct DebugMenuView: View {
                     Button {
                         Task {
                             isRefreshing = true
-                            await config.forceReloadFlags()
+                            await flagsManager.forceReloadFlags()
+                            config.refreshFromFlags()
                             isRefreshing = false
                         }
                     } label: {
@@ -48,37 +50,59 @@ struct DebugMenuView: View {
                     .disabled(isRefreshing)
                 }
                 
-                Section("Current Flag Values") {
-                    Group {
-                        DebugFlagRow(label: "App Icon Picker", value: $config.showAppIconPicker)
-                        DebugFlagRow(label: "Activities", value: $config.showActivities)
-                        DebugFlagRow(label: "Protection Methods", value: $config.showProtectionMethods)
-                        DebugFlagRow(label: "Security", value: $config.showSecurity)
+                Section("Feature Flags") {
+                    NavigationLink {
+                        SettingsFlagsDetailView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "gearshape.fill")
+                                .foregroundColor(.blue)
+                            Text("CCSettingsFlags")
+                            Spacer()
+                            Text("\(getSettingsFlagsCount()) flags")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     
-                    Group {
-                        DebugFlagRow(label: "Import & Export", value: $config.showImportExport)
-                        DebugFlagRow(label: "Delete Data", value: $config.showDeleteData)
+                    NavigationLink {
+                        ImportExportFlagsDetailView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.up.arrow.down.circle.fill")
+                                .foregroundColor(.green)
+                            Text("CCImportExportFlags")
+                            Spacer()
+                            Text("\(getImportExportFlagsCount()) flags")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     
-                    Group {
-                        DebugFlagRow(label: "About", value: $config.showAbout)
-                        DebugFlagRow(label: "Support", value: $config.showSupport)
-                        DebugFlagRow(label: "Experiments", value: $config.showExperiments)
+                    NavigationLink {
+                        DebugMenuFlagDetailView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "ladybug.fill")
+                                .foregroundColor(.red)
+                            Text("CCDebugMenu")
+                            Spacer()
+                            Text("1 flag")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    
-                    DebugFlagRow(label: "Debug Menu", value: $config.showDebugMenu)
                 }
                 
                 Section("App Info") {
                     LabeledContent("Version", value: getCurrentAppVersion())
                     LabeledContent("PostHog Distinct ID", value: PostHogSDK.shared.getDistinctId() ?? "Unknown")
-                    LabeledContent("Last Flags Version", value: UserDefaults.standard.string(forKey: "last_flags_version") ?? "Never loaded")
+                    LabeledContent("Last Flags Version", value: flagsManager.getLastFlagsVersion() ?? "Never loaded")
                 }
                 
                 Section("Actions") {
                     Button {
-                        UserDefaults.standard.removeObject(forKey: "last_flags_version")
+                        flagsManager.clearVersionCache()
                     } label: {
                         HStack {
                             Image(systemName: "trash")
@@ -102,8 +126,8 @@ struct DebugMenuView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Label("Close", systemImage: "xmark")
                     }
                 }
             }
@@ -115,25 +139,13 @@ struct DebugMenuView: View {
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
     }
-}
-
-struct DebugFlagRow: View {
-    let label: String
-    @Binding var value: Bool
     
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: value ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundColor(value ? .green : .red)
-                .font(.body)
-            
-            Text(label)
-            
-            Spacer()
-            
-            Toggle("", isOn: $value)
-                .labelsHidden()
-        }
+    private func getSettingsFlagsCount() -> Int {
+        return 9 // showAppIconPicker, showActivities, showProtectionMethods, showSecurity, showImportExport, showDeleteData, showAbout, showSupport, showExperiments
+    }
+    
+    private func getImportExportFlagsCount() -> Int {
+        return 6 // showImportPartners, showImportEncounters, showExportPartners, showExportEncounters, showImportDatabase, showExportDatabase
     }
 }
 
