@@ -99,8 +99,17 @@ class FeatureFlagsManager {
     // MARK: - Published State
     
     var isDebugMenuEnabled: Bool = false
-    var settingsFlags: SettingsFlagsPayload?
-    var importExportFlags: ImportExportFlagsPayload?
+    var settingsFlags: SettingsFlagsPayload? {
+        didSet {
+            notifyConfigsOfUpdate()
+        }
+    }
+    var importExportFlags: ImportExportFlagsPayload? {
+        didSet {
+            notifyConfigsOfUpdate()
+        }
+    }
+    var didLoadFlags: Bool = false
     
     // MARK: - Initialization
     
@@ -137,6 +146,9 @@ class FeatureFlagsManager {
         
         // Save current version (only matters in production mode)
         UserDefaults.standard.set(currentVersion, forKey: versionKey)
+        
+        // Mark as loaded
+        didLoadFlags = true
     }
     
     /// Force reload all flags (for debug menu)
@@ -195,6 +207,14 @@ class FeatureFlagsManager {
     private func getCurrentAppVersion() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "\(version) (\(build))"
+        return "\(version).\(build)"
+    }
+    
+    private func notifyConfigsOfUpdate() {
+        // Notify configs to refresh from flags
+        Task { @MainActor in
+            SettingsConfig.shared.refreshFromFlags()
+            ImportExportConfig.shared.refreshFromFlags()
+        }
     }
 }

@@ -131,8 +131,8 @@ struct FuckifyApp: App {
         ]
         #if DEBUG
         properties["is_internal_user"] = true
-        PostHogSDK.shared.setPersonPropertiesForFlags(properties, reloadFeatureFlags: true)
         #endif
+        PostHogSDK.shared.setPersonPropertiesForFlags(properties, reloadFeatureFlags: true)
     }
 
     var body: some Scene {

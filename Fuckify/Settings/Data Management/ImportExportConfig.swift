@@ -55,10 +55,8 @@ class ImportExportConfig {
         self.showImportDatabase = defaults.database.showImportDatabase
         self.showExportDatabase = defaults.database.showExportDatabase
         
-        // Apply flags from manager if already loaded
-        if let payload = flagsManager.importExportFlags {
-            applyPayload(payload)
-        }
+        // Apply flags if already loaded (e.g., on subsequent initializations)
+        refreshFromFlags()
     }
     
     // MARK: - Public Methods

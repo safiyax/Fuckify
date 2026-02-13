@@ -9,21 +9,16 @@ import SwiftUI
 
 struct AppIconSettingsView: View {
     var body: some View {
-        Form {
-            Section {
-                Text("Choose your app icon to personalize your experience.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-
-            Section("Available Icons") {
-                AppIconPicker()
-            }
-
-            Section {
-                Text("The app icon will change immediately after selection.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+        ZStack {
+            Color(UIColor.systemGroupedBackground)
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    AppIconPicker()
+                        .padding(.horizontal)
+                        .padding(.top, 20)
+                }
             }
         }
         .navigationTitle("App Icon")
@@ -34,37 +29,63 @@ struct AppIconSettingsView: View {
 struct AppIconPicker: View {
     @State private var selectedIcon: String?
     
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
+    private var allIcons: [(name: String?, displayName: String)] {
+        var icons: [(String?, String)] = [(nil, "Default")]
+        icons.append(contentsOf: AppIconManager.availableIcons.map { ($0, $0.capitalized) })
+        return icons
+    }
+    
     var body: some View {
-        List {
-            // Primary icon
-            AppIconRow(
-                iconName: nil,
-                displayName: "Default",
-                isSelected: selectedIcon == nil
-            ) {
-                AppIconManager.setIcon(named: nil) { error in
-                    if error == nil {
-                        selectedIcon = nil
-                    }
-                }
-            }
-            
-            // Alternate icons
-            ForEach(AppIconManager.availableIcons, id: \.self) { iconName in
-                AppIconRow(
-                    iconName: iconName,
-                    displayName: iconName.capitalized,
-                    isSelected: selectedIcon == iconName
-                ) {
-                    AppIconManager.setIcon(named: iconName) { error in
-                        if error == nil {
-                            selectedIcon = iconName
-                        } else {
-                            print(error.debugDescription)
+        VStack(spacing: 20) {
+            // Icon Grid
+            VStack(spacing: 0) {
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(allIcons, id: \.name) { icon in
+                        AppIconGridItem(
+                            iconName: icon.name,
+                            isSelected: selectedIcon == icon.name
+                        ) {
+                            AppIconManager.setIcon(named: icon.name) { error in
+                                if error == nil {
+                                    selectedIcon = icon.name
+                                } else {
+                                    print(error.debugDescription)
+                                }
+                            }
                         }
                     }
                 }
+                .padding(20)
             }
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .cornerRadius(16)
+            
+            // Footer text
+            VStack(alignment: .leading, spacing: 8) {
+                Text("The app name \"Fuckify\" will be visible on the Home Screen, in notifications and in the App Library.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Button(action: {
+                    // Open help link
+                    if let url = URL(string: "https://support.apple.com/guide/iphone/change-the-app-icon-iph9c286cc31/ios") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    Text("Learn More")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 4)
         }
         .onAppear {
             selectedIcon = AppIconManager.currentIconName
@@ -72,39 +93,42 @@ struct AppIconPicker: View {
     }
 }
 
-struct AppIconRow: View {
+struct AppIconGridItem: View {
     let iconName: String?
-    let displayName: String
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            ZStack(alignment: .topTrailing) {
                 if let iconNameImage = iconName {
                     Image("\(iconNameImage)-Image")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 70, height: 70)
+                        .cornerRadius(16)
                 } else {
                     Image("\(AppIconManager.primaryIconName)-Image")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 70, height: 70)
+                        .cornerRadius(16)
                 }
-                
-                Text(displayName)
-                    .foregroundColor(.primary)
-                
-                Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
                         .foregroundColor(.blue)
+                        .background(
+                            Circle()
+                                .fill(Color(UIColor.systemBackground))
+                                .frame(width: 20, height: 20)
+                        )
+                        .offset(x: 6, y: -6)
                 }
             }
-            .padding(.vertical, 4)
         }
+        .buttonStyle(.plain)
     }
 }
 

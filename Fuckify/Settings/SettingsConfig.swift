@@ -74,10 +74,8 @@ class SettingsConfig {
         self.showSupport = defaults.more.showSupport
         self.showExperiments = defaults.more.showExperiments
         
-        // Apply flags from manager if already loaded
-        if let payload = flagsManager.settingsFlags {
-            applyPayload(payload)
-        }
+        // Apply flags if already loaded (e.g., on subsequent initializations)
+        refreshFromFlags()
     }
     
     // MARK: - Public Methods
