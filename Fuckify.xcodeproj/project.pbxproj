@@ -15,6 +15,7 @@
 		89C229CA2F2FE4C000B9A0DF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */; };
 		89C229CC2F2FE4C000B9A0DF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */; };
 		89C229DD2F2FE4C200B9A0DF /* EncounterActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		89EB92D92F3D1BA40040C86C /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 89EB92D82F3D1BA40040C86C /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +118,7 @@
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
 				89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */,
+				89EB92D92F3D1BA40040C86C /* PostHog in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
 			);
@@ -190,6 +192,7 @@
 				890C97532F1ED08200FC58E8 /* LiquidGlassKit */,
 				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
 				890C97632F205DBB00FC58E8 /* AcknowList */,
+				89EB92D82F3D1BA40040C86C /* PostHog */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -249,6 +252,7 @@
 				890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */,
 				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
 				890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */,
+				89EB92D72F3D1BA40040C86C /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -313,7 +317,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -359,7 +363,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -524,7 +528,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;
@@ -558,7 +562,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;
@@ -650,6 +654,14 @@
 				minimumVersion = 1.4.2;
 			};
 		};
+		89EB92D72F3D1BA40040C86C /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.41.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -672,6 +684,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */;
 			productName = SQLiteData;
+		};
+		89EB92D82F3D1BA40040C86C /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 89EB92D72F3D1BA40040C86C /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

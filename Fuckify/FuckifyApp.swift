@@ -10,6 +10,7 @@ import SQLiteData
 import UIKit
 import UserNotifications
 import OSLog
+import PostHog
 
 private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "App")
 
@@ -111,6 +112,24 @@ struct FuckifyApp: App {
         Task {
             try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
         }
+        
+        let POSTHOG_API_KEY = "phc_3B4gzM4mmgBj8lOIT6cKjQIqdFF3Dwnsca2ekWF0FYV"
+        let POSTHOG_HOST = "https://us.i.posthog.com"
+        let config = PostHogConfig(apiKey: POSTHOG_API_KEY, host: POSTHOG_HOST)
+        config.captureScreenViews = false
+        config.captureElementInteractions = false
+        config.sessionReplay = false
+        config.surveys = false
+        config.enableSwizzling = false
+        
+        PostHogSDK.shared.setup(config)
+//        PostHogSDK.shared.setPersonProperties(userPropertiesToSet:
+//            ["appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown",
+//             "appBuild": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"]
+//        )
+//        PostHogSDK.shared.setPersonPropertiesForFlags([
+//            "$app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+//        ], reloadFeatureFlags: true)
     }
 
     var body: some Scene {

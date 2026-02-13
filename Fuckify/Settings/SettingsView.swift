@@ -9,7 +9,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = true
-    private let config = SettingsConfig.shared
+    @State private var config = SettingsConfig.shared
+    @State private var showingDebugMenu = false
 
     var body: some View {
         NavigationStack {
@@ -164,6 +165,22 @@ struct SettingsView: View {
                         }
                     }
                 }
+                
+                // Debug Menu (only visible when CCDebugMenu flag is enabled)
+                if config.showDebugMenu {
+                    Section("Developer") {
+                        Button {
+                            showingDebugMenu = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "ladybug.fill")
+                                    .foregroundColor(.red)
+                                Text("Debug Menu")
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("Settings")
             .toolbar {
@@ -175,6 +192,9 @@ struct SettingsView: View {
                 }
             }
             .dismissOnAppLock()
+            .sheet(isPresented: $showingDebugMenu) {
+                DebugMenuView()
+            }
         }
     }
 }
