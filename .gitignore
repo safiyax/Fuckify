@@ -1,2 +1,8 @@
 CLAUDE.md
 CODE_AUDIT_REPORT.md
+.build
+xtool
+xtool.yml
+.Package.swift.swo
+.Package.swift.swp
+Package.resolved
