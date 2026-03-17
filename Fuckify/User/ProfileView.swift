@@ -227,7 +227,8 @@ struct ProfileView: View {
         profile.notes = editNotes
     }
 }
-
+/*
 #Preview {
     ProfileView()
 }
+*/

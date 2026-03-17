@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable
 class UserSettings {
-    static let shared = UserSettings()
+    @MainActor static let shared = UserSettings()
 
     // Activity preferences
     var enabledActivities: Set<SQLActivityType> {

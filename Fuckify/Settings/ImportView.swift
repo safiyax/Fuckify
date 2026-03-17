@@ -21,7 +21,9 @@ struct ImportView: View {
     @State private var encounterExportURL: URL?
     @State private var databaseExportURL: URL?
 
-    var body: some View {
+    
+
+    var body: some View { /*
         NavigationStack {
             ScrollView {
                 VStack(spacing: 32) {
@@ -216,8 +218,8 @@ struct ImportView: View {
                                             Text("Export Encounters")
                                                 .font(.headline)
                                                 .foregroundColor(.primary)
-
-                                            Text("\(allEncounters.count) encounters")
+                                                .Text("\(allEncounters.count) encounters")
+                             //from sc                Text("\(allEncounters.count) encounters")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
                                         }
@@ -334,7 +336,8 @@ struct ImportView: View {
             .onChange(of: showingPartnerImport) { _, isShowing in
                 if !isShowing {
                     // Sheet was dismissed, reload data
-                    Task {
+                    //Task {
+                    Task { @MainActor in
                         await loadData()
                     }
                 }
@@ -342,7 +345,8 @@ struct ImportView: View {
             .onChange(of: showingEncounterImport) { _, isShowing in
                 if !isShowing {
                     // Sheet was dismissed, reload data
-                    Task {
+                    //Task {
+                    Task { @MainActor in
                         await loadData()
                     }
                 }
@@ -360,8 +364,10 @@ struct ImportView: View {
                 }
             }
         }
+    */
     }
     
+
     private func loadData() async {
         if let partners = try? partnerService.fetchAll() {
             allPartners = partners
@@ -493,7 +499,8 @@ struct ImportView: View {
         }
     }
 }
-
+/*
 #Preview {
     ImportView()
 }
+*/

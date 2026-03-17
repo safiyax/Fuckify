@@ -160,7 +160,8 @@ struct DeleteDataView: View {
         deleteProfileData()
     }
 }
-
+/*
 #Preview {
     DeleteDataView()
 }
+*/

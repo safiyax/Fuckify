@@ -243,7 +243,7 @@ struct EncounterRowView: View {
 //
 //    }
 //}
-
+/*
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -251,3 +251,4 @@ struct EncounterRowView: View {
     
     return EncountersListView()
 }
+*/

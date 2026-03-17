@@ -167,6 +167,7 @@ struct PartnerFormView: View {
     }
 }
 
+/*
 #Preview("Add Partner") {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -174,3 +175,4 @@ struct PartnerFormView: View {
     
     return PartnerFormView()
 }
+*/

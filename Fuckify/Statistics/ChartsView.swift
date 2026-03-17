@@ -80,7 +80,7 @@ struct ChartsView: View {
         }
     }
 }
-
+/*
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -88,3 +88,4 @@ struct ChartsView: View {
     
     return ChartsView()
 }
+*/

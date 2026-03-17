@@ -262,6 +262,7 @@ extension View {
     }
 }
 
+/*
 #Preview {
     TabView {
         PartnersListView()
@@ -270,3 +271,4 @@ extension View {
             }
     }
 }
+*/

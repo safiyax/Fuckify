@@ -135,7 +135,8 @@ struct EncountersByMonthChartView: View {
                     month: monthName,
                     monthNumber: monthNum,
                     partnerName: "Others",
-                    partnerColor: .accent,
+                    //partnerColor: .accent,                    
+                    partnerColor: .accentColor,
                     count: othersCount
                 ))
             }
@@ -167,7 +168,8 @@ struct EncountersByMonthChartView: View {
                     month: monthName,
                     monthNumber: index + 1,
                     partnerName: "Others",
-                    partnerColor: .accent,
+                    //partnerColor: .accent,
+                    partnerColor: .accentColor,                    
                     count: othersCount
                 ))
             }

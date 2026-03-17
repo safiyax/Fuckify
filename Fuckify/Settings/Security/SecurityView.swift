@@ -82,8 +82,11 @@ struct SecurityView: View {
                         .onChange(of: settings.isBiometricEnabled) { _, newValue in
                             if newValue {
                                 // Test biometric authentication when enabled
-                                Task {
-                                    let success = await settings.authenticateWithBiometrics()
+                                //Task {
+                                //    let success = await settings.authenticateWithBiometrics()
+                                let s = settings                                
+                                Task { @MainActor in
+                                    let success = await s.authenticateWithBiometrics()
                                     if !success {
                                         settings.isBiometricEnabled = false
                                         biometricErrorMessage = "Failed to authenticate with \(settings.biometricDisplayName)"
@@ -427,7 +430,8 @@ struct NumberButton: View {
         }
     }
 }
-
+/*
 #Preview {
     SecurityView()
 }
+*/

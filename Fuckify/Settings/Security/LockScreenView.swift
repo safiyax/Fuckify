@@ -211,8 +211,11 @@ struct LockScreenView: View {
         guard !isAuthenticating else { return }
         
         isAuthenticating = true
-        Task {
-            let success = await settings.authenticateWithBiometrics()
+        //Task {
+        //    let success = await settings.authenticateWithBiometrics()
+        let s = settings            
+        Task { @MainActor in
+            let success = await s.authenticateWithBiometrics()
             await MainActor.run {
                 isAuthenticating = false
                 if success {
@@ -252,7 +255,8 @@ struct LockScreenNumberButton: View {
         }
     }
 }
-
+/*
 #Preview {
     LockScreenView(isUnlocked: .constant(false))
 }
+*/

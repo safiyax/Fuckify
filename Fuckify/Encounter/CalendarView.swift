@@ -710,7 +710,7 @@ struct AdjustableDivider: View {
 }
 
 // MARK: - Preview
-
+/*
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -718,3 +718,4 @@ struct AdjustableDivider: View {
     
     return CalendarView()
 }
+*/

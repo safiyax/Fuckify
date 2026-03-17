@@ -204,7 +204,8 @@ struct AppIconManager {
         return []
     }}
 
-
+/*
 #Preview {
     AppIconPicker()
 }
+*/
