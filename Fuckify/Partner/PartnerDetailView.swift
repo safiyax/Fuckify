@@ -278,8 +278,7 @@ struct PartnerDetailView: View {
         .onChange(of: showingAddEncounter) { _, isShowing in
             if !isShowing {
                 // Sheet was dismissed, reload encounters
-                //Task {
-                Task { @MainActor in
+                Task {
                     await loadEncounters()
                 }
             }
@@ -291,8 +290,7 @@ struct PartnerDetailView: View {
         .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if oldValue?.isEditing == true && newValue?.isEditing == false {
                 // Save changes when exiting edit mode
-                //Task {
-                Task { @MainActor in
+                Task {
                     await saveChanges()
                 }
             } else if oldValue?.isEditing == false && newValue?.isEditing == true {
@@ -341,7 +339,7 @@ struct PartnerDetailView: View {
             let service = partnerService
             
             // Perform database I/O off main thread
-            try await Task {
+            try await Task.detached {
                 try await service.update(updatedPartner)
             }.value
             
@@ -410,7 +408,7 @@ struct PartnerDetailView: View {
 }
 
 
-/*
+
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -434,4 +432,3 @@ struct PartnerDetailView: View {
         PartnerDetailView(partner: partner)
     }
 }
-*/

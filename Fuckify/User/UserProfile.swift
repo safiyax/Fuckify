@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable
 class UserProfile {
-    @MainActor static let shared = UserProfile()
+    static let shared = UserProfile()
 
     var name: String {
         get {

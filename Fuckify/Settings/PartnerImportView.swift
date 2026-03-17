@@ -282,8 +282,7 @@ struct PartnerImportData {
     let relationshipType: SQLRelationshipType
     let dateMet: Date?
 }
-/*
+
 #Preview {
     PartnerImportView()
 }
-*/

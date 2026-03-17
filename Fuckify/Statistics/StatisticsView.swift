@@ -536,7 +536,6 @@ struct StatCard: View {
     }
 }
 
-/*
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -544,4 +543,3 @@ struct StatCard: View {
     
     return StatisticsView()
 }
-*/

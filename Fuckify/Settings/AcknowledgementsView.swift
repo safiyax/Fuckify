@@ -56,10 +56,9 @@ struct AcknowledgementsView: View {
         return nil
     }
 }
-/*
+
 #Preview {
     NavigationStack {
         AcknowledgementsView()
     }
 }
-*/

@@ -11,7 +11,7 @@ import CryptoKit
 
 @Observable
 class SecuritySettings {
-    @MainActor static let shared = SecuritySettings()
+    static let shared = SecuritySettings()
     
     // MARK: - Stored Properties
     

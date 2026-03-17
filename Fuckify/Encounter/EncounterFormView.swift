@@ -605,7 +605,6 @@ struct PartnerPickerRow: View {
     }
 }
 
-/*
 #Preview("Add Encounter") {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -613,4 +612,3 @@ struct PartnerPickerRow: View {
 
     return EncounterFormView()
 }
-*/

@@ -233,8 +233,7 @@ struct ProtectionMethodsSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-/*
+
 #Preview {
     SettingsView()
 }
-*/

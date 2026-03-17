@@ -269,7 +269,7 @@ struct EncounterDetailChipContainer<Content: View>: View {
         .padding(4)
     }
 }
-/*
+
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -290,4 +290,3 @@ struct EncounterDetailChipContainer<Content: View>: View {
         EncounterDetailView(encounter: encounter)
     }
 }
-*/

@@ -374,8 +374,6 @@ final class SupportViewModel: ObservableObject {
     }
 }
 
-/*
 #Preview {
     SupportView()
 }
-*/

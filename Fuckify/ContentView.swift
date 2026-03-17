@@ -48,7 +48,6 @@ struct ContentView: View {
     }
 }
 
-/*
 #Preview {
     let _ = prepareDependencies {
         $0.defaultDatabase = try! appDatabase()
@@ -56,4 +55,3 @@ struct ContentView: View {
     
     return ContentView()
 }
-*/
