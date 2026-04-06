@@ -81,6 +81,7 @@ extension SQLSTITestResultType {
         switch id {
         case SQLSTITestResultType.negativeId: return .green
         case SQLSTITestResultType.positiveId: return .red
+        case SQLSTITestResultType.pendingId:  return .orange
         default: return .gray
         }
     }
@@ -93,7 +94,7 @@ struct SQLSTITest: Identifiable {
     let id: UUID
     var date: Date
     var resultTypeId: UUID  // FK → stiTestResultType.id
-    var notes: String
+    var notes: String = ""
     var dateAdded: Date
 
     nonisolated init(
