@@ -9,7 +9,7 @@ import SQLiteData
 // MARK: - STI Test Result Type (Catalog table — mirrors activityType pattern)
 
 @Table("stiTestResultType")
-struct SQLSTITestResultType: Identifiable {
+struct SQLSTITestResultType: Identifiable, Equatable {
     let id: UUID
     var name: String
     var icon: String        // SF Symbol name

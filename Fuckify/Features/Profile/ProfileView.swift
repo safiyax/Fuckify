@@ -2,79 +2,28 @@
 //  ProfileView.swift
 //  Fuckify
 //
-//
 
 import SwiftUI
 
 struct ProfileView: View {
     @Environment(UserProfile.self) private var profile
+    @Environment(STIManager.self) private var stiManager
     @State private var showingSettings = false
-//    @Environment(\.editMode) private var editMode
+    @State private var showingSTIForm = false
+    @State private var isEditing = false
 
     // Editable fields
     @State private var editName: String = ""
     @State private var editDateOfBirth: Date?
     @State private var editShowDateOfBirth: Bool = false
-    @State private var editIsOnPrep: Bool = false
-    @State private var editLastSTITestDate: Date?
-    @State private var editShowLastSTITestDate: Bool = false
     @State private var editNotes: String = ""
 
-
-    @State private var isEditing = false
-    
-    // MARK: - Computed Properties
-    
-    private var hasHealthInfo: Bool {
-        profile.isOnPrep || profile.lastSTITestDate != nil
-    }
-    
-    private var stiTestStatus: (text: String, color: Color, icon: String) {
-        guard let lastTest = profile.lastSTITestDate else {
-            return ("Never tested", .red, "exclamationmark.triangle.fill")
-        }
-        
-        let days = Calendar.current.dateComponents([.day], from: lastTest, to: Date()).day ?? 0
-        
-        // Use 90-day threshold (CDC recommendation for regular testing)
-        if days < 90 {
-            return ("\(days) days ago", .green, "checkmark.circle.fill")
-        } else if days < 180 {
-            return ("\(days) days ago", .orange, "exclamationmark.circle.fill")
-        } else {
-            return ("\(days) days ago", .red, "exclamationmark.triangle.fill")
-        }
-    }
-    
     private var hasProfileData: Bool {
-        !profile.name.isEmpty || profile.dateOfBirth != nil || hasHealthInfo || !profile.notes.isEmpty
-    }
-    
-    private func calculateNextTestDate() -> Date? {
-        guard let lastTest = profile.lastSTITestDate else { return nil }
-        
-        // Recommend testing every 3 months (90 days) - CDC recommendation
-        let interval = 90
-        
-        let nextDate = Calendar.current.date(byAdding: .day, value: interval, to: lastTest)
-        
-        // Only return if the date is in the future
-        if let next = nextDate, next > Date() {
-            return next
-        }
-        
-        return nil
-    }
-    
-    private var daysUntilNextTest: Int? {
-        guard let nextTest = calculateNextTestDate() else { return nil }
-        return Calendar.current.dateComponents([.day], from: Date(), to: nextTest).day
+        !profile.name.isEmpty || profile.dateOfBirth != nil || !profile.notes.isEmpty
     }
 
     var body: some View {
         NavigationStack {
-            
-                
             List {
                 // Avatar Section
                 Section {
@@ -85,18 +34,15 @@ struct ProfileView: View {
                                 Circle()
                                     .fill(Color("AccentColor"))
                                     .frame(width: 100, height: 100)
-
                                 Text(isEditing ? editName.initials : profile.initials)
                                     .font(.system(.largeTitle, weight: .bold))
                                     .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                     .foregroundColor(.white)
                             }
-
                             if !isEditing {
                                 Text(profile.name)
                                     .font(.title2)
                                     .fontWeight(.bold)
-
                                 if let age = profile.age {
                                     Text("\(age) years old")
                                         .font(.subheadline)
@@ -109,15 +55,13 @@ struct ProfileView: View {
                     .padding(.vertical, 8)
                 }
                 .listRowBackground(Color.clear)
-                
-                // Basic Information
+
+                // Basic Information (edit mode only)
                 if isEditing {
                     Section("Basic Information") {
                         TextField("Name", text: $editName)
                             .textContentType(.name)
-
                         Toggle("Date of Birth", isOn: $editShowDateOfBirth)
-
                         if editShowDateOfBirth {
                             DatePicker(
                                 "Date",
@@ -132,113 +76,10 @@ struct ProfileView: View {
                         }
                     }
                 }
-                
-                // Health Check-In Section
-                Section(isEditing ? "Health" : "Health Check-In") {
-                    if isEditing {
-                        // Edit mode - toggles and date pickers
-                        Toggle("On PrEP", isOn: $editIsOnPrep)
-                        
-                        Toggle("Last STI Test", isOn: $editShowLastSTITestDate)
-                        
-                        if editShowLastSTITestDate {
-                            DatePicker(
-                                "Date",
-                                selection: Binding(
-                                    get: { editLastSTITestDate ?? Date() },
-                                    set: { editLastSTITestDate = $0 }
-                                ),
-                                in: ...Date(),
-                                displayedComponents: .date
-                            )
-                            .datePickerStyle(.compact)
-                        }
-                    } else {
-                        // View mode
-                        if hasHealthInfo {
-                            VStack(spacing: 12) {
-                                // Last STI Test
-                                HStack {
-                                    Label("Last STI Test", systemImage: "calendar.badge.clock")
-                                    Spacer()
-                                    HStack(spacing: 4) {
-                                        Image(systemName: stiTestStatus.icon)
-                                        Text(stiTestStatus.text)
-                                            .fontWeight(.medium)
-                                    }
-                                    .foregroundColor(stiTestStatus.color)
-                                }
-                                
-                                // Next Test Due (if applicable)
-                                if let nextTestDate = calculateNextTestDate(), let daysUntil = daysUntilNextTest {
-                                    Divider()
-                                    
-                                    HStack {
-                                        Label("Next Test Due", systemImage: "bell.badge")
-                                        Spacer()
-                                        VStack(alignment: .trailing, spacing: 2) {
-                                            Text(nextTestDate.formatted(date: .abbreviated, time: .omitted))
-                                                .fontWeight(.medium)
-                                            Text("in \(daysUntil) days")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .foregroundColor(.orange)
-                                    }
-                                }
-                                
-                                Divider()
-                                
-                                // PrEP Status
-                                HStack {
-                                    Label("PrEP Status", systemImage: "pills.fill")
-                                    Spacer()
-                                    if profile.isOnPrep {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.blue)
-                                            Text("Active")
-                                                .fontWeight(.medium)
-                                        }
-                                        .foregroundColor(.blue)
-                                    } else {
-                                        Text("Not Active")
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                            .padding(.vertical, 8)
-                        } else {
-                            // Empty state
-                            VStack(spacing: 12) {
-                                Image(systemName: "pills.circle")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.blue.opacity(0.5))
-                                
-                                Text("Track Your Sexual Wellness")
-                                    .font(.headline)
-                                
-                                Text("Add your PrEP status and STI testing dates to stay on top of your sexual health")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                
-                                Button(action: {
-                                    withAnimation {
-                                        isEditing = true
-                                    }
-                                }) {
-                                    Label("Add Health Info", systemImage: "plus.circle.fill")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .padding(.top, 4)
-                            }
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
+
+                // STI Testing Card
+                Section("Sexual Health") {
+                    STITestingCard(showingAddForm: $showingSTIForm)
                 }
 
                 // Notes Section
@@ -254,8 +95,8 @@ struct ProfileView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
-                // Last Updated Section
+
+                // Last Updated
                 if !isEditing && hasProfileData {
                     Section {
                         HStack {
@@ -272,91 +113,151 @@ struct ProfileView: View {
                     .listRowBackground(Color.clear)
                 }
             }
-                .navigationBarTitleDisplayMode(.inline)
-                .animation(nil, value: isEditing)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        if !isEditing {
-                            Button(action: {
-                                withAnimation {
-                                    isEditing.toggle()
-                                }
-                            }) {
-                                Text("Edit")
+            .navigationBarTitleDisplayMode(.inline)
+            .animation(nil, value: isEditing)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !isEditing {
+                        Button {
+                            withAnimation { isEditing = true }
+                        } label: {
+                            Text("Edit")
+                        }
+                    } else {
+                        if #available(iOS 26.0, *) {
+                            Button {
+                                withAnimation { isEditing = false }
+                            } label: {
+                                Label("Save", systemImage: "checkmark")
                             }
-                            .disabled(isEditing && editName.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .buttonStyle(.glassProminent)
                         } else {
-                            if #available(iOS 26.0, *) {
-                                Button(action: {
-                                    withAnimation {
-                                        isEditing.toggle()
-                                    }
-                                }) {
-                                    Label("Save", systemImage: "checkmark")
-                                }
-                                .buttonStyle(.glassProminent)
-                            } else {
-                                Button(action: {
-                                    withAnimation {
-                                        isEditing.toggle()
-                                    }
-                                }) {
-                                    Text("Done")
-                                }
+                            Button {
+                                withAnimation { isEditing = false }
+                            } label: {
+                                Text("Done")
                             }
                         }
                     }
-
-                    ToolbarItem(placement: .topBarLeading) {
-                        if !isEditing {
-                            Button(action: { showingSettings = true }) {
-                                Label("Settings", systemImage: "gear")
-                            }
-                            .animation(nil, value: isEditing)
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    if !isEditing {
+                        Button { showingSettings = true } label: {
+                            Label("Settings", systemImage: "gear")
                         }
+                        .animation(nil, value: isEditing)
                     }
                 }
-                .sheet(isPresented: $showingSettings) {
-                    SettingsView()
-                        .dismissOnAppLock()
-                }
-                .onAppear {
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView().dismissOnAppLock()
+            }
+            .sheet(isPresented: $showingSTIForm) {
+                STITestFormView().dismissOnAppLock()
+            }
+            .onAppear { loadEditableFields() }
+            .onChange(of: isEditing) { oldValue, newValue in
+                if oldValue == true && newValue == false {
+                    saveChanges()
+                } else if oldValue == false && newValue == true {
                     loadEditableFields()
                 }
-                .onChange(of: isEditing) { oldValue, newValue in
-                    if oldValue == true && newValue == false {
-                        // Save changes when exiting edit mode
-                        saveChanges()
-                    } else if oldValue == false && newValue == true {
-                        // Reload fields when entering edit mode
-                        loadEditableFields()
-                    }
-                }
+            }
         }
     }
-
-
-    // MARK: - Functions
 
     private func loadEditableFields() {
         editName = profile.name
         editDateOfBirth = profile.dateOfBirth
         editShowDateOfBirth = profile.dateOfBirth != nil
-        editIsOnPrep = profile.isOnPrep
-        editLastSTITestDate = profile.lastSTITestDate
-        editShowLastSTITestDate = profile.lastSTITestDate != nil
         editNotes = profile.notes
     }
 
     private func saveChanges() {
         profile.name = editName
         profile.dateOfBirth = editShowDateOfBirth ? editDateOfBirth : nil
-        profile.isOnPrep = editIsOnPrep
-        profile.lastSTITestDate = editShowLastSTITestDate ? editLastSTITestDate : nil
         profile.notes = editNotes
+    }
+}
+
+// MARK: - STI Testing Card
+
+private struct STITestingCard: View {
+    @Environment(STIManager.self) private var stiManager
+    @Binding var showingAddForm: Bool
+
+    var body: some View {
+        if stiManager.tests.isEmpty {
+            // Empty state
+            VStack(spacing: 12) {
+                Image(systemName: "cross.case")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.blue.opacity(0.5))
+                Text("Track Your STI Tests")
+                    .font(.headline)
+                Text("Log your test dates and results to stay on top of your sexual health.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    showingAddForm = true
+                } label: {
+                    Label("Log First Test", systemImage: "plus.circle.fill")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 4)
+            }
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+        } else {
+            // Summary card with navigation link to history
+            NavigationLink(destination: STIHistoryView()) {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Last test row
+                    HStack {
+                        Label("Last STI Test", systemImage: stiManager.statusIcon)
+                        Spacer()
+                        if let days = stiManager.daysSinceLastTest,
+                           let latest = stiManager.latestTest {
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(latest.date.formatted(date: .abbreviated, time: .omitted))
+                                    .fontWeight(.medium)
+                                Text("\(days) days ago")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .foregroundStyle(stiManager.statusColor)
+
+                    // Next test due row
+                    if let nextDate = stiManager.nextTestDueDate,
+                       let daysUntil = stiManager.daysUntilNextTest {
+                        Divider()
+                        HStack {
+                            Label("Next Test Due", systemImage: "bell.badge")
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(nextDate.formatted(date: .abbreviated, time: .omitted))
+                                    .fontWeight(.medium)
+                                Text("in \(daysUntil) days")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .foregroundStyle(.orange)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+        }
     }
 }
 
 #Preview {
     ProfileView()
+        .environment(UserProfile())
+        .environment(STIManager())
 }
