@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "AppIconManager")
+
 struct AppIconSettingsView: View {
     var body: some View {
         ZStack {
@@ -56,7 +58,7 @@ struct AppIconPicker: View {
                                 if error == nil {
                                     selectedIcon = icon.name
                                 } else {
-                                    print(error.debugDescription)
+                                    logger.error("Failed to set app icon: \(error.debugDescription)")
                                 }
                             }
                         }
@@ -180,7 +182,7 @@ struct AppIconManager {
                let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
                let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
                let lastIcon = iconFiles.last {
-                print("Primary icon file name: \(lastIcon)")
+                logger.debug("Primary icon file name: \(lastIcon)")
                 return UIImage(named: lastIcon)
             }
             return nil
@@ -191,11 +193,11 @@ struct AppIconManager {
               let alternateIcons = icons["CFBundleAlternateIcons"] as? [String: Any],
               let iconDict = alternateIcons[iconName] as? [String: Any],
               let iconFiles = iconDict["CFBundleIconFiles"] as? [String] else {
-            print("Could not find icon data for: \(iconName)")
+            logger.warning("Could not find icon data for: \(iconName)")
             return UIImage(named: "\(iconName)-Image")
         }
         
-        print("Icon files for \(iconName): \(iconFiles)")
+        logger.debug("Icon files for \(iconName): \(iconFiles)")
         
         // Try each file name
         for fileName in iconFiles.reversed() {

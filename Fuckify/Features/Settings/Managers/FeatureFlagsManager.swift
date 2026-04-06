@@ -9,6 +9,8 @@
 import Foundation
 import PostHog
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "FeatureFlags")
+
 // MARK: - Models for JSON Payloads
 
 struct ImportExportFlagsPayload: Codable {
@@ -135,6 +137,7 @@ class FeatureFlagsManager {
         let shouldReload = isDebugMenuEnabled || lastVersion != currentVersion
         
         guard shouldReload else {
+            logger.debug("Skipping flag reload - version unchanged (\(currentVersion))")
             return
         }
         
@@ -149,10 +152,12 @@ class FeatureFlagsManager {
         
         // Mark as loaded
         didLoadFlags = true
+        logger.info("Feature flags loaded (version: \(currentVersion), debugMenu: \(isDebugMenuEnabled), settingsFlags: \(settingsFlags != nil), importExportFlags: \(importExportFlags != nil))")
     }
     
     /// Force reload all flags (for debug menu)
     func forceReloadFlags() async {
+        logger.info("Force reloading feature flags")
         PostHogSDK.shared.reloadFeatureFlags()
         
         // Small delay to let PostHog refresh
@@ -161,6 +166,7 @@ class FeatureFlagsManager {
         isDebugMenuEnabled = PostHogSDK.shared.isFeatureEnabled(debugMenuFlagName)
         settingsFlags = getSettingsFlagsPayload()
         importExportFlags = getImportExportFlagsPayload()
+        logger.info("Force reload complete (debugMenu: \(isDebugMenuEnabled))")
     }
     
     /// Check if a boolean feature flag is enabled
@@ -173,11 +179,13 @@ class FeatureFlagsManager {
         let result = PostHogSDK.shared.getFeatureFlagResult(flagName)
         
         guard let payloadJson = result?.payload else {
+            logger.warning("No payload for feature flag: \(flagName)")
             return nil
         }
         
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payloadJson),
               let payload = try? JSONDecoder().decode(T.self, from: jsonData) else {
+            logger.error("Failed to decode payload for feature flag: \(flagName)")
             return nil
         }
         

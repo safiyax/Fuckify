@@ -9,9 +9,8 @@ import SwiftUI
 import SQLiteData
 import Dependencies
 import MijickCalendarView
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncountersListView")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "EncountersListView")
 
 struct EncountersListView: View {
     @Environment(EncountersViewModel.self) var manager

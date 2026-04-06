@@ -10,6 +10,8 @@ import Foundation
 import LocalAuthentication
 import CryptoKit
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Security")
+
 /// Security settings for app lock functionality
 /// 
 /// Supports both PIN and biometric authentication (Face ID/Touch ID).
@@ -95,6 +97,7 @@ final class SecuritySettings {
     func setPIN(_ pin: String) {
         storedPINHash = hashPIN(pin)
         isPINEnabled = true
+        logger.info("PIN authentication enabled")
     }
     
     func verifyPIN(_ pin: String) -> Bool {
@@ -106,6 +109,7 @@ final class SecuritySettings {
     func removePIN() {
         storedPINHash = nil
         isPINEnabled = false
+        logger.info("PIN authentication removed")
     }
     
     private func hashPIN(_ pin: String) -> String {
@@ -128,8 +132,10 @@ final class SecuritySettings {
         do {
             let reason = "Unlock Coital Comrade"
             let success = try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
+            logger.info("Biometric authentication \(success ? "succeeded" : "failed")")
             return success
         } catch {
+            logger.error("Biometric authentication error: \(error.localizedDescription)")
             return false
         }
     }
@@ -140,6 +146,7 @@ final class SecuritySettings {
         isPINEnabled = false
         isBiometricEnabled = false
         storedPINHash = nil
+        logger.info("All security settings reset")
     }
 }
 

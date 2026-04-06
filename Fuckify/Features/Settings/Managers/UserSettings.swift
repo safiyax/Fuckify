@@ -8,6 +8,8 @@ import Foundation
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "UserSettings")
+
 @MainActor
 @Observable
 class UserSettings {
@@ -42,12 +44,20 @@ class UserSettings {
     
     /// Toggle activity type enabled status
     func toggleActivity(_ activityID: UUID) {
-        try? customizationService.toggleActivityType(id: activityID)
+        do {
+            try customizationService.toggleActivityType(id: activityID)
+        } catch {
+            logger.error("Failed to toggle activity \(activityID): \(error.localizedDescription)")
+        }
     }
     
     /// Delete custom activity type
     func deleteActivity(_ activityID: UUID) {
-        try? customizationService.deleteActivityType(id: activityID)
+        do {
+            try customizationService.deleteActivityType(id: activityID)
+        } catch {
+            logger.error("Failed to delete activity \(activityID): \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Database-backed Protection Method Preferences (NEW)
@@ -72,12 +82,20 @@ class UserSettings {
     
     /// Toggle protection method enabled status
     func toggleProtectionMethod(_ methodID: UUID) {
-        try? customizationService.toggleProtectionMethod(id: methodID)
+        do {
+            try customizationService.toggleProtectionMethod(id: methodID)
+        } catch {
+            logger.error("Failed to toggle protection method \(methodID): \(error.localizedDescription)")
+        }
     }
     
     /// Delete custom protection method
     func deleteProtectionMethod(_ methodID: UUID) {
-        try? customizationService.deleteProtectionMethod(id: methodID)
+        do {
+            try customizationService.deleteProtectionMethod(id: methodID)
+        } catch {
+            logger.error("Failed to delete protection method \(methodID): \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Legacy Enum-based Methods (DEPRECATED - for backwards compatibility)

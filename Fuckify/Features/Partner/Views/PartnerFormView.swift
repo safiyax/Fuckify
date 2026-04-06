@@ -9,6 +9,8 @@ import SwiftUI
 import SQLiteData
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerFormView")
+
 struct PartnerFormView: View {
     @Dependency(\.partnerService) var partnerService
     @Dependency(\.partnerAttributeService) var attributeService
@@ -155,7 +157,7 @@ struct PartnerFormView: View {
             
             enabledAttributes = attrs
         } catch {
-            print("Failed to load custom attributes: \(error)")
+            logger.error("Failed to load custom attributes: \(error)")
         }
     }
     
@@ -200,7 +202,7 @@ struct PartnerFormView: View {
                         )
                     }.value
                 } catch {
-                    print("Failed to save custom attribute \(attributeTypeId): \(error)")
+                    logger.error("Failed to save custom attribute \(attributeTypeId): \(error)")
                 }
             }
             

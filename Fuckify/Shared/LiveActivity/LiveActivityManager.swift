@@ -8,10 +8,9 @@
 import Foundation
 import ActivityKit
 import SwiftUI
-import OSLog
 import UserNotifications
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "LiveActivity")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "LiveActivity")
 
 /// Manages the encounter tracking Live Activity
 @MainActor

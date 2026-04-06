@@ -10,6 +10,8 @@ import Charts
 import SQLiteData
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Statistics")
+
 // MARK: - Encounters by Month Chart
 
 struct EncountersByMonthChartView: View {
@@ -60,14 +62,14 @@ struct EncountersByMonthChartView: View {
         // Filter encounters by selected year
         let filteredEncounters: [SQLEncounter]
         if let year = selectedYear {
-            print("📊 Filtering encounters for year: \(year)")
+            logger.debug("Filtering encounters for year: \(year)")
             filteredEncounters = encounters.compactMap { encounter in
                 guard let date = encounter.date else { return nil }
                 return calendar.component(.year, from: date) == year ? encounter : nil
             }
-            print("📊 Filtered to \(filteredEncounters.count) encounters for year \(year)")
+            logger.debug("Filtered to \(filteredEncounters.count) encounters for year \(year)")
         } else {
-            print("📊 Showing all years - \(encounters.filter { $0.date != nil }.count) total encounters")
+            logger.debug("Showing all years - \(encounters.filter { $0.date != nil }.count) total encounters")
             filteredEncounters = encounters.filter { $0.date != nil }
         }
 

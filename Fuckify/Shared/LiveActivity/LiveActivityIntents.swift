@@ -8,9 +8,8 @@
 
 import AppIntents
 import ActivityKit
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "LiveActivityIntents")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "LiveActivityIntents")
 
 // MARK: - Toggle Pause Intent
 

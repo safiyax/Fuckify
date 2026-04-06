@@ -8,6 +8,8 @@
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ActivityForm")
+
 struct ActivityFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Dependency(\.defaultDatabase) private var database
@@ -153,9 +155,11 @@ struct ActivityFormView: View {
                 _ = try customizationService.createActivityType(name: trimmedName, icon: selectedIcon)
             }
             
+            logger.info("\(isEditing ? "Updated" : "Created") activity type")
             onSave()
             dismiss()
         } catch {
+            logger.error("Failed to save activity type: \(error.localizedDescription)")
             errorMessage = "Failed to save: \(error.localizedDescription)"
         }
     }

@@ -9,9 +9,8 @@
 import SwiftUI
 import SQLiteData
 import Dependencies
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "CalendarView")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "CalendarView")
 
 /// Sheet presentation mode for encounter form
 enum EncounterFormMode: Identifiable {
@@ -438,7 +437,7 @@ struct CalendarView: View {
                 try encounterService.delete(encounter.id)
                 await loadEncounters()
             } catch {
-                print("Failed to delete encounter: \(error)")
+                logger.error("Failed to delete encounter: \(error)")
             }
         }
     }
@@ -491,11 +490,11 @@ struct CalendarView: View {
                         if !seenPartnerIDs.contains(partner.id) {
                             seenPartnerIDs.insert(partner.id)
                         allPartnerColors.append(Color.fromPartnerColorName(partner.avatarColor))
+                        }
                     }
+                } catch {
+                    logger.error("Failed to fetch partners for encounter \(encounter.id): \(error.localizedDescription)")
                 }
-            } catch {
-                logger.error("Failed to fetch partners for encounter \(encounter.id): \(error.localizedDescription)")
-            }
             }
             
             colorsByDate[date] = allPartnerColors

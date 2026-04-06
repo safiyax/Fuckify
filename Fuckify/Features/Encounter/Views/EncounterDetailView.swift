@@ -7,9 +7,8 @@
 import SwiftUI
 import SQLiteData
 import Dependencies
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncounterDetailView")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "EncounterDetailView")
 
 struct EncounterDetailView: View {
     let encounter: SQLEncounter

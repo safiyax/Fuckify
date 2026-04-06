@@ -6,10 +6,11 @@
 //
 
 import Foundation
-import OSLog
+//import OSLog
 import SQLiteData
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "Database")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Database")
+
 
 func appDatabase() throws -> any DatabaseWriter {
     @Dependency(\.context) var context
@@ -54,9 +55,11 @@ func appDatabase() throws -> any DatabaseWriter {
     configuration.prepareDatabase { db in
         db.trace(options: .profile) { event in
             if context == .preview {
-                logger.debug("\(event.expandedDescription)")
-            } else if case .profile(let statement, let duration) = event, duration > 0.1 {
-                logger.warning("Slow query (\(String(format: "%.2f", duration * 1000))ms): \(statement)")
+                // Use .description (statement text only, no bound values) to avoid logging PII
+                logger.debug("\(event.description)")
+            } else if case .profile(_, let duration) = event, duration > 0.1 {
+                // Log duration only — statement text may contain bound parameter values
+                logger.warning("Slow query: \(String(format: "%.2f", duration * 1000))ms")
             }
         }
     }

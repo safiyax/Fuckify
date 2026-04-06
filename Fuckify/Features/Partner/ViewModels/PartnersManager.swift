@@ -7,9 +7,8 @@
 //
 
 import Foundation
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "PartnersViewModel")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnersViewModel")
 
 /// ViewModel for managing partners list UI state and operations
 /// Provides presentation logic, search filtering, pinning, and error handling for partner-related views
@@ -57,7 +56,7 @@ final class PartnersViewModel {
     func addPartner(_ partner: SQLPartner.Draft) async {
         do {
             let createdPartner = try partnerService.create(partner)
-            logger.info("Created partner: \(partner.name)")
+            logger.info("Created partner: \(createdPartner.id)")
             
             // Optimistic update - add to list immediately
             partners.append(createdPartner)
@@ -76,7 +75,7 @@ final class PartnersViewModel {
             
             do {
                 try partnerService.update(partner)
-                logger.info("Updated partner: \(partner.name)")
+                logger.info("Updated partner: \(partner.id)")
             } catch {
                 // Rollback on error
                 partners[index] = oldPartner
@@ -93,7 +92,7 @@ final class PartnersViewModel {
         
         do {
             try partnerService.delete(partner.id)
-            logger.info("Deleted partner: \(partner.name)")
+            logger.info("Deleted partner: \(partner.id)")
         } catch {
             // Rollback on error
             partners.insert(removedPartner, at: index)
@@ -147,7 +146,7 @@ final class PartnersViewModel {
             
             do {
                 try partnerService.togglePin(for: partner.id)
-                logger.info("Toggled pin for partner: \(partner.name)")
+                logger.info("Toggled pin for partner: \(partner.id)")
             } catch {
                 // Rollback on error
                 partners[index].isPinned = oldValue

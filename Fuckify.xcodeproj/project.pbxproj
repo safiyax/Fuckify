@@ -10,6 +10,8 @@
 		890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97532F1ED08200FC58E8 /* LiquidGlassKit */; };
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
+		89B3DD4B2F838D8C0043AD7E /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 89B3DD4A2F838D8C0043AD7E /* Logging */; };
+		89B3DD4E2F8390240043AD7E /* LoggingOSLog in Frameworks */ = {isa = PBXBuildFile; productRef = 89B3DD4D2F8390240043AD7E /* LoggingOSLog */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
 		89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C228592F2996EB00B9A0DF /* StoreKit.framework */; };
 		89C229CA2F2FE4C000B9A0DF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */; };
@@ -70,9 +72,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"Core/Extensions/Color+Partner.swift",
-				Core/Theme/PartnerColors.swift,
 				"Core/Extensions/String+Initials.swift",
 				"Core/Extensions/View+If.swift",
+				Core/Theme/PartnerColors.swift,
+				Core/Utilities/AppLogger.swift,
 				Shared/LiveActivity/EncounterActivityAttributes.swift,
 				Shared/LiveActivity/LiveActivityIntents.swift,
 				Shared/LiveActivity/PartnerData.swift,
@@ -117,10 +120,12 @@
 			files = (
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
+				89B3DD4B2F838D8C0043AD7E /* Logging in Frameworks */,
 				89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */,
 				89EB92D92F3D1BA40040C86C /* PostHog in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
+				89B3DD4E2F8390240043AD7E /* LoggingOSLog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,6 +198,8 @@
 				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
 				890C97632F205DBB00FC58E8 /* AcknowList */,
 				89EB92D82F3D1BA40040C86C /* PostHog */,
+				89B3DD4A2F838D8C0043AD7E /* Logging */,
+				89B3DD4D2F8390240043AD7E /* LoggingOSLog */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -253,6 +260,8 @@
 				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
 				890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */,
 				89EB92D72F3D1BA40040C86C /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				89B3DD492F838D8C0043AD7E /* XCRemoteSwiftPackageReference "swift-log" */,
+				89B3DD4C2F838FCE0043AD7E /* XCRemoteSwiftPackageReference "swift-log-oslog" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -646,6 +655,22 @@
 				minimumVersion = 3.4.0;
 			};
 		};
+		89B3DD492F838D8C0043AD7E /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.11.0;
+			};
+		};
+		89B3DD4C2F838FCE0043AD7E /* XCRemoteSwiftPackageReference "swift-log-oslog" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/astzweig/swift-log-oslog";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 		89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
@@ -679,6 +704,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */;
 			productName = AcknowList;
+		};
+		89B3DD4A2F838D8C0043AD7E /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 89B3DD492F838D8C0043AD7E /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		89B3DD4D2F8390240043AD7E /* LoggingOSLog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 89B3DD4C2F838FCE0043AD7E /* XCRemoteSwiftPackageReference "swift-log-oslog" */;
+			productName = LoggingOSLog;
 		};
 		89BA72072F0C9BC10017A928 /* SQLiteData */ = {
 			isa = XCSwiftPackageProductDependency;

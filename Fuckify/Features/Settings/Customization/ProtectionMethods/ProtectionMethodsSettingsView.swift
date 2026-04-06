@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ProtectionMethodsSettings")
+
 struct ProtectionMethodsSettingsView: View {
     @Environment(UserSettings.self) private var settings
     @State private var protectionMethods: [SQLProtectionMethodEntity] = []
@@ -129,11 +131,13 @@ struct ProtectionMethodsSettingsView: View {
     }
     
     private func toggleMethod(_ method: SQLProtectionMethodEntity) {
+        logger.info("Toggling protection method: \(method.id)")
         settings.toggleProtectionMethod(method.id)
         loadProtectionMethods()
     }
     
     private func deleteMethod(_ method: SQLProtectionMethodEntity) {
+        logger.info("Deleting protection method: \(method.id)")
         settings.deleteProtectionMethod(method.id)
         loadProtectionMethods()
     }

@@ -9,6 +9,8 @@ import SwiftUI
 import SQLiteData
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "StatisticsView")
+
 struct StatisticsView: View {
     @FetchAll
     private var encounters: [SQLEncounter]
@@ -160,7 +162,7 @@ struct StatisticsView: View {
     
     /// Recalculates all statistics when data changes (not on every render)
     private func calculateStatistics() {
-        print("📊 [StatisticsView] Recalculating statistics (data changed)")
+        logger.debug("Recalculating statistics (data changed)")
         cachedAverageDuration = averageDuration
         cachedRecentEncountersCount = recentEncountersCount
         cachedTopActivities = topActivities
@@ -188,7 +190,7 @@ struct StatisticsView: View {
             })
         } catch {
             // Log error instead of silent fail
-            print("⚠️ Failed to load encounter relationships: \(error)")
+            logger.error("Failed to load encounter relationships: \(error)")
             encounterRelationships = [:]
         }
     }

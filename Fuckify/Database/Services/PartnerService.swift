@@ -10,6 +10,8 @@ import Dependencies
 import SQLiteData
 import GRDB
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerService")
+
 /// Service layer for Partner database operations
 /// Uses SQLiteData's query builder and GRDB database connection
 struct PartnerService {
@@ -40,6 +42,7 @@ struct PartnerService {
             try SQLPartner.insert { partner }
                 .execute(db)
             
+            logger.info("Created partner: \(partner.id)")
             return partner
         }
     }
@@ -96,6 +99,7 @@ struct PartnerService {
             try SQLPartner
                 .update(partner)
                 .execute(db)
+            logger.info("Updated partner: \(partner.id)")
         }
     }
     
@@ -141,6 +145,7 @@ struct PartnerService {
                 .where { $0.id.eq(partnerID) }
                 .delete()
                 .execute(db)
+            logger.info("Deleted partner: \(partnerID)")
         }
     }
     
@@ -156,6 +161,7 @@ struct PartnerService {
             try SQLPartner
                 .delete()
                 .execute(db)
+            logger.info("Deleted all partners")
         }
     }
     

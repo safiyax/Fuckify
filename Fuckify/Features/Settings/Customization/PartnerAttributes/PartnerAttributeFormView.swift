@@ -8,6 +8,8 @@
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerAttributeForm")
+
 struct PartnerAttributeFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Dependency(\.partnerAttributeService) private var attributeService
@@ -284,9 +286,11 @@ struct PartnerAttributeFormView: View {
                 )
             }
             
+            logger.info("\(isEditing ? "Updated" : "Created") partner attribute type")
             onSave()
             dismiss()
         } catch {
+            logger.error("Failed to save partner attribute type: \(error.localizedDescription)")
             errorMessage = "Failed to save: \(error.localizedDescription)"
         }
     }

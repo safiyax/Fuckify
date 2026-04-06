@@ -8,6 +8,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "EncounterImport")
+
 struct EncounterImportView: View {
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
@@ -235,7 +237,7 @@ struct EncounterImportView: View {
 
                 // Parse date (required)
                 guard let date = parseDate(components[0]) else {
-                    print("Skipping row \(index): invalid date format")
+                    logger.warning("Skipping row \(index): invalid date format")
                     continue
                 }
 
@@ -344,7 +346,7 @@ struct EncounterImportView: View {
                         // Add to local array for future matches in this import
                         allPartners.append(newPartner)
                     } catch {
-                        print("Failed to create partner \(partnerName): \(error)")
+                        logger.error("Failed to create partner during import: \(error)")
                     }
                 }
             }
@@ -371,7 +373,7 @@ struct EncounterImportView: View {
                     protectionMethodIDs: protectionMethodIDs
                 )
             } catch {
-                print("Failed to import encounter: \(error)")
+                logger.error("Failed to import encounter: \(error)")
             }
         }
 

@@ -8,6 +8,8 @@
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerAttributesSettings")
+
 struct PartnerAttributesSettingsView: View {
     @Dependency(\.partnerAttributeService) private var attributeService
     
@@ -148,15 +150,18 @@ struct PartnerAttributesSettingsView: View {
             try attributeService.toggleAttributeType(id: attribute.id)
             loadAttributes()
         } catch {
+            logger.error("Failed to toggle attribute \(attribute.id): \(error.localizedDescription)")
             errorMessage = "Failed to update attribute: \(error.localizedDescription)"
         }
     }
     
     private func deleteAttribute(_ attribute: SQLPartnerAttributeType) {
         do {
+            logger.info("Deleting partner attribute: \(attribute.id)")
             try attributeService.deleteAttributeType(id: attribute.id)
             loadAttributes()
         } catch {
+            logger.error("Failed to delete attribute \(attribute.id): \(error.localizedDescription)")
             errorMessage = "Failed to delete attribute: \(error.localizedDescription)"
         }
     }

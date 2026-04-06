@@ -9,6 +9,8 @@
 import Foundation
 import SwiftUI
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "UserProfile")
+
 /// User profile information stored in UserDefaults
 /// 
 /// Uses stored properties instead of computed properties to ensure
@@ -103,6 +105,7 @@ final class UserProfile {
     }
 
     func clearProfile() {
+        logger.info("Clearing user profile")
         name = ""
         dateOfBirth = nil
         isOnPrep = false

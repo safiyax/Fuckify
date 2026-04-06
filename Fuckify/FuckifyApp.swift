@@ -9,10 +9,9 @@ import SwiftUI
 import SQLiteData
 import UIKit
 import UserNotifications
-import OSLog
 import PostHog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "App")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "App")
 
 // MARK: - Shake Detection
 

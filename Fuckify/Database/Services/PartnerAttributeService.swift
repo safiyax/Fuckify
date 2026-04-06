@@ -10,6 +10,8 @@ import Dependencies
 import SQLiteData
 import GRDB
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerAttributeService")
+
 /// Service layer for partner attribute types and values
 struct PartnerAttributeService {
     @Dependency(\.defaultDatabase) var database
@@ -75,6 +77,7 @@ struct PartnerAttributeService {
             try SQLPartnerAttributeType.insert { entity }
                 .execute(db)
             
+            logger.info("Created partner attribute type: \(entity.id)")
             return entity.id
         }
     }
@@ -105,6 +108,7 @@ struct PartnerAttributeService {
             // Check if it's built-in
             if let entity = try SQLPartnerAttributeType.find(id).fetchOne(db),
                entity.isBuiltIn {
+                logger.warning("Attempted to delete built-in partner attribute type: \(id)")
                 throw PartnerAttributeError.cannotDeleteBuiltIn
             }
             
@@ -113,6 +117,7 @@ struct PartnerAttributeService {
                 .where { $0.id.eq(id) }
                 .delete()
                 .execute(db)
+            logger.info("Deleted partner attribute type: \(id)")
         }
     }
     
@@ -183,6 +188,7 @@ struct PartnerAttributeService {
                 var updated = existing
                 updated.value = value
                 try SQLPartnerAttributeValue.update(updated).execute(db)
+                logger.debug("Updated attribute value for partner: \(partnerId), type: \(attributeTypeId)")
             } else {
                 // Insert new
                 let newValue = SQLPartnerAttributeValue(
@@ -192,6 +198,7 @@ struct PartnerAttributeService {
                     value: value
                 )
                 try SQLPartnerAttributeValue.insert { newValue }.execute(db)
+                logger.debug("Inserted attribute value for partner: \(partnerId), type: \(attributeTypeId)")
             }
         }
     }

@@ -8,6 +8,8 @@
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ProtectionMethodForm")
+
 struct ProtectionMethodFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Dependency(\.defaultDatabase) private var database
@@ -153,9 +155,11 @@ struct ProtectionMethodFormView: View {
                 _ = try customizationService.createProtectionMethod(name: trimmedName, icon: selectedIcon)
             }
             
+            logger.info("\(isEditing ? "Updated" : "Created") protection method")
             onSave()
             dismiss()
         } catch {
+            logger.error("Failed to save protection method: \(error.localizedDescription)")
             errorMessage = "Failed to save: \(error.localizedDescription)"
         }
     }

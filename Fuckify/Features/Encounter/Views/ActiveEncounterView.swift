@@ -8,6 +8,8 @@
 import SwiftUI
 import Combine
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ActiveEncounter")
+
 struct ActiveEncounterView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(LiveActivityManager.self) private var liveActivityManager
@@ -119,6 +121,7 @@ struct ActiveEncounterView: View {
                             Button {
                                 Task {
                                     // Will be handled by notification observer in FuckifyApp
+                                    logger.info("Finish encounter triggered from ActiveEncounterView")
                                     NotificationCenter.default.post(name: Notification.Name("finishEncounter"), object: nil)
                                     dismiss()
                                 }
@@ -172,6 +175,7 @@ struct ActiveEncounterView: View {
                 Button("Keep Tracking", role: .cancel) { }
                 Button("Cancel", role: .destructive) {
                     Task {
+                        logger.info("Encounter cancelled by user")
                         await liveActivityManager.cancelEncounter()
                         dismiss()
                     }

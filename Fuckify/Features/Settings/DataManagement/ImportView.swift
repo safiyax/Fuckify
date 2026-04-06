@@ -9,6 +9,8 @@ import Dependencies
 import UniformTypeIdentifiers
 import SQLiteData
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ImportExport")
+
 extension UTType {
     static var database: UTType {
         // Use .data to accept any file, or create a specific one for .db files
@@ -471,7 +473,7 @@ struct ImportView: View {
             csvString += "\(name),\(phoneNumber),\(notes),\(relationshipType),\(dateMet)\n"
         }
         
-        print("csv generation time: \(Date().timeIntervalSince(created))")
+        logger.debug("CSV generation time: \(Date().timeIntervalSince(created))s")
 
         let tempDir = FileManager.default.temporaryDirectory
         let fileURL = tempDir.appendingPathComponent("partners_export.csv")
@@ -479,10 +481,10 @@ struct ImportView: View {
         do {
             let created = Date()
             try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("csv write time: \(Date().timeIntervalSince(created))")
+            logger.debug("CSV write time: \(Date().timeIntervalSince(created))s")
             partnerExportURL = fileURL
         } catch {
-            print("Failed to write CSV: \(error)")
+            logger.error("Failed to write CSV: \(error)")
         }
     }
 
@@ -516,7 +518,7 @@ struct ImportView: View {
             try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
             encounterExportURL = fileURL
         } catch {
-            print("Failed to write CSV: \(error)")
+            logger.error("Failed to write encounters CSV: \(error)")
         }
     }
 
@@ -537,7 +539,7 @@ struct ImportView: View {
             let sourceURL: URL
             if dbPathString.hasPrefix("file://") {
                 guard let url = URL(string: dbPathString) else {
-                    print("Failed to parse database URL: \(dbPathString)")
+                    logger.error("Failed to parse database URL: \(dbPathString)")
                     return
                 }
                 sourceURL = url
@@ -547,7 +549,7 @@ struct ImportView: View {
             
             // Verify source file exists
             guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-                print("Database file does not exist at: \(sourceURL.path)")
+                logger.error("Database file does not exist at: \(sourceURL.path)")
                 return
             }
             
@@ -564,10 +566,10 @@ struct ImportView: View {
             // Copy the database file
             try FileManager.default.copyItem(at: sourceURL, to: fileURL)
             
-            print("Database exported successfully to: \(fileURL.path)")
+            logger.info("Database exported to: \(fileURL.path)")
             databaseExportURL = fileURL
         } catch {
-            print("Failed to export database: \(error)")
+            logger.error("Failed to export database: \(error)")
         }
     }
     
@@ -625,14 +627,13 @@ struct ImportView: View {
             
             // Read the database file data
             let databaseData = try Data(contentsOf: sourceURL)
-            print("📥 Read database file: \(databaseData.count) bytes")
+            logger.info("Read database file: \(databaseData.count) bytes")
             
             // Store the database data in UserDefaults
             UserDefaults.standard.set(databaseData, forKey: "pendingDatabaseImport")
             UserDefaults.standard.synchronize()
             
-            print("📥 Database data stored in UserDefaults")
-            print("📥 UserDefaults has data: \(UserDefaults.standard.data(forKey: "pendingDatabaseImport") != nil)")
+            logger.info("Database data staged for import on next launch")
             
             // Clear the selected URL
             selectedDatabaseURL = nil
@@ -645,7 +646,7 @@ struct ImportView: View {
         } catch {
             importError = "Failed to import database: \(error.localizedDescription)"
             showingImportError = true
-            print("Failed to import database: \(error)")
+            logger.error("Failed to import database: \(error)")
         }
     }
 }

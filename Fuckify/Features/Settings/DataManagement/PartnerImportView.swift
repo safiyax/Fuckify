@@ -8,6 +8,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerImport")
+
 struct PartnerImportView: View {
     @Dependency(\.partnerService) private var partnerService
     @Environment(\.dismiss) private var dismiss
@@ -250,7 +252,7 @@ struct PartnerImportView: View {
             do {
                 _ = try partnerService.create(partnerDraft)
             } catch {
-                print("Failed to import partner \(partnerData.name): \(error)")
+                logger.error("Failed to import partner: \(error)")
             }
         }
 

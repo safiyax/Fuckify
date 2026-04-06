@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ActivitiesSettings")
+
 struct ActivitiesSettingsView: View {
     @Environment(UserSettings.self) private var settings
     @State private var activities: [SQLActivityTypeEntity] = []
@@ -129,11 +131,13 @@ struct ActivitiesSettingsView: View {
     }
     
     private func toggleActivity(_ activity: SQLActivityTypeEntity) {
+        logger.info("Toggling activity: \(activity.id)")
         settings.toggleActivity(activity.id)
         loadActivities()
     }
     
     private func deleteActivity(_ activity: SQLActivityTypeEntity) {
+        logger.info("Deleting activity: \(activity.id)")
         settings.deleteActivity(activity.id)
         loadActivities()
     }

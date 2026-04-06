@@ -8,6 +8,8 @@ import SwiftUI
 import SQLiteData
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerDetailView")
+
 struct PartnerDetailView: View {
     let partner: SQLPartner
     @Environment(\.editMode) private var editMode
@@ -272,7 +274,7 @@ struct PartnerDetailView: View {
                 currentPartner = updatedPartner
             }
         } catch {
-            print("Failed to update partner: \(error)")
+            logger.error("Failed to update partner: \(error)")
         }
     }
 
@@ -306,7 +308,7 @@ struct PartnerDetailView: View {
             }
             encounters = partnerEncounters
         } catch {
-            print("Failed to load encounters: \(error)")
+            logger.error("Failed to load encounters: \(error)")
         }
         
         isLoadingEncounters = false
@@ -323,7 +325,7 @@ struct PartnerDetailView: View {
             attributesWithValues = attrs
             loadEditableAttributeValues()
         } catch {
-            print("Failed to load custom attributes: \(error)")
+            logger.error("Failed to load custom attributes: \(error)")
         }
     }
     
@@ -345,7 +347,7 @@ struct PartnerDetailView: View {
                     }
                 }.value
             } catch {
-                print("Failed to save custom attribute \(attributeTypeId): \(error)")
+                logger.error("Failed to save custom attribute \(attributeTypeId): \(error)")
             }
         }
         

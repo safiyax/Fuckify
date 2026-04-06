@@ -10,6 +10,8 @@ import Dependencies
 import SQLiteData
 import GRDB
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "EncounterService")
+
 /// Complete encounter data with all relationships loaded
 /// Used to avoid N+1 query problems
 struct EncounterWithRelationships: Identifiable {
@@ -122,6 +124,7 @@ struct EncounterService {
                 }
             }
             
+            logger.info("Created encounter: \(encounterID) with \(partnerIDs.count) partners, \(activityTypeIDs.count) activities, \(protectionMethodIDs.count) protection methods")
             return encounterID
         }
     }
@@ -218,6 +221,8 @@ struct EncounterService {
                     protectionEntitiesByEncounter[protection.encounterId, default: []].append(entity)
                 }
             }
+            
+            logger.info("Fetched \(encounters.count) encounters with \(allPartners.count) partners, \(allActivities.count) activities, \(allProtectionMethods.count) protection methods")
             
             // 5. Combine everything
             return encounters.map { encounter in
@@ -395,6 +400,7 @@ struct EncounterService {
             for partnerID in partnerIDs {
                 try recalculateLastEncounterDate(for: partnerID, db: db)
             }
+            logger.info("Deleted encounter: \(encounterID)")
         }
     }
     
@@ -412,6 +418,7 @@ struct EncounterService {
             
             // Delete all encounters
             try SQLEncounter.delete().execute(db)
+            logger.info("Deleted all encounters")
         }
     }
     

@@ -10,6 +10,8 @@ import Dependencies
 import SQLiteData
 import GRDB
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "CustomizationService")
+
 /// Service layer for customizable activity and protection method types
 struct CustomizationService {
     @Dependency(\.defaultDatabase) var database
@@ -70,6 +72,7 @@ struct CustomizationService {
             try SQLActivityTypeEntity.insert { entity }
                 .execute(db)
             
+            logger.info("Created activity type: \(entity.id)")
             return entity.id
         }
     }
@@ -100,6 +103,7 @@ struct CustomizationService {
             // Check if it's built-in
             if let entity = try SQLActivityTypeEntity.find(id).fetchOne(db),
                entity.isBuiltIn {
+                logger.warning("Attempted to delete built-in activity type: \(id)")
                 throw CustomizationError.cannotDeleteBuiltIn
             }
             
@@ -108,6 +112,7 @@ struct CustomizationService {
                 .where { $0.id.eq(id) }
                 .delete()
                 .execute(db)
+            logger.info("Deleted activity type: \(id)")
         }
     }
     
@@ -191,6 +196,7 @@ struct CustomizationService {
             try SQLProtectionMethodEntity.insert { entity }
                 .execute(db)
             
+            logger.info("Created protection method: \(entity.id)")
             return entity.id
         }
     }
@@ -221,6 +227,7 @@ struct CustomizationService {
             // Check if it's built-in
             if let entity = try SQLProtectionMethodEntity.find(id).fetchOne(db),
                entity.isBuiltIn {
+                logger.warning("Attempted to delete built-in protection method: \(id)")
                 throw CustomizationError.cannotDeleteBuiltIn
             }
             
@@ -229,6 +236,7 @@ struct CustomizationService {
                 .where { $0.id.eq(id) }
                 .delete()
                 .execute(db)
+            logger.info("Deleted protection method: \(id)")
         }
     }
     

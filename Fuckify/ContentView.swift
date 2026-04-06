@@ -8,6 +8,8 @@
 import SwiftUI
 import SQLiteData
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ContentView")
+
 struct ContentView: View {
     @SceneStorage("selectedTab") var selectedTab = 0
     @State private var partnersViewModel = PartnersViewModel()
@@ -70,6 +72,7 @@ struct ContentView: View {
                 .navigationTransition(.zoom(sourceID: "MINIPLAYER", in: animation))
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("showActiveEncounter"))) { _ in
+            logger.info("showActiveEncounter notification received")
             showingActiveEncounter = true
         }
     }
@@ -129,6 +132,7 @@ struct ContentView: View {
             // Finish button
             Button {
                 Task {
+                    logger.info("Finish encounter triggered from mini player")
                     if let data = await liveActivityManager.finishEncounter() {
                         NotificationCenter.default.post(
                             name: Notification.Name("finishEncounter"),

@@ -8,10 +8,9 @@
 import ActivityKit
 import WidgetKit
 import SwiftUI
-import OSLog
 import AppIntents
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify.widget", category: "LiveActivity")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify.widget", category: "LiveActivity")
 
 // Helper function to format partner names
 private func formatPartnerNames(_ partners: [PartnerData]) -> String {

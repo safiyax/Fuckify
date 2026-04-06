@@ -9,9 +9,8 @@ import SwiftUI
 import StoreKit
 import Combine
 import Foundation
-import OSLog
 
-private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "IAP")
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "IAP")
 
 // MARK: - Shared IAP State Manager
 

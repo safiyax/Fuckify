@@ -8,6 +8,8 @@
 import SwiftUI
 import LocalAuthentication
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "LockScreen")
+
 struct LockScreenView: View {
     @Binding var isUnlocked: Bool
     @Environment(SecuritySettings.self) private var settings
@@ -150,10 +152,10 @@ struct LockScreenView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                     // Only trigger if scene is active (prevents app switcher race)
                     if scenePhase == .active && !isAuthenticating {
-                        print("🔐 [LockScreen] onAppear - Triggering Face ID")
+                        logger.debug("onAppear - triggering Face ID")
                         authenticateWithBiometrics()
                     } else {
-                        print("🔐 [LockScreen] onAppear - Skipping Face ID (scenePhase: \(scenePhase))")
+                        logger.debug("onAppear - skipping Face ID (scenePhase: \(String(describing: scenePhase)))")
                     }
                 }
             }
@@ -162,15 +164,14 @@ struct LockScreenView: View {
             // Re-trigger biometric when app becomes active from any non-active state
             // This includes app switcher (.inactive → .active) and backgrounding (.background → .active)
             if oldPhase != .active && newPhase == .active && settings.isBiometricEnabled && !isAuthenticating {
-                print("🔐 [LockScreen] Scene became active, scheduling Face ID check...")
+                logger.debug("Scene became active, scheduling Face ID check")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    // Double-check we're still active before prompting (prevents app switcher race condition)
-                    print("🔐 [LockScreen] Delayed check - scenePhase: \(scenePhase), isAuthenticating: \(isAuthenticating)")
+                    logger.debug("Delayed check - scenePhase: \(String(describing: scenePhase)), isAuthenticating: \(isAuthenticating)")
                     if scenePhase == .active && !isAuthenticating {
-                        print("🔐 [LockScreen] Triggering Face ID")
+                        logger.debug("Triggering Face ID")
                         authenticateWithBiometrics()
                     } else {
-                        print("🔐 [LockScreen] Skipping Face ID - not active or already authenticating")
+                        logger.debug("Skipping Face ID - not active or already authenticating")
                     }
                 }
             }

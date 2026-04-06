@@ -7,6 +7,8 @@
 import SwiftUI
 import Dependencies
 
+private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "DeleteData")
+
 struct DeleteDataView: View {
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
@@ -138,24 +140,36 @@ struct DeleteDataView: View {
     }
 
     private func deleteAllPartners() {
+        logger.info("Deleting all partners (\(allPartners.count))")
         for partner in allPartners {
-            try? partnerService.delete(partner.id)
+            do {
+                try partnerService.delete(partner.id)
+            } catch {
+                logger.error("Failed to delete partner \(partner.id): \(error.localizedDescription)")
+            }
         }
         allPartners = []
     }
 
     private func deleteAllEncounters() {
+        logger.info("Deleting all encounters (\(allEncounters.count))")
         for encounter in allEncounters {
-            try? encounterService.delete(encounter.id)
+            do {
+                try encounterService.delete(encounter.id)
+            } catch {
+                logger.error("Failed to delete encounter \(encounter.id): \(error.localizedDescription)")
+            }
         }
         allEncounters = []
     }
 
     private func deleteProfileData() {
+        logger.info("Deleting profile data")
         userProfile.clearProfile()
     }
 
     private func deleteAllData() {
+        logger.info("Deleting all data")
         deleteAllPartners()
         deleteAllEncounters()
         deleteProfileData()
