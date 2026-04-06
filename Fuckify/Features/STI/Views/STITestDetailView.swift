@@ -62,6 +62,7 @@ struct STITestDetailView: View {
                                 Label(type.name, systemImage: type.icon).tag(Optional(type.id))
                             }
                         }
+                        .pickerStyle(.menu)
                     }
                 } else {
                     if let rt = resultType {
