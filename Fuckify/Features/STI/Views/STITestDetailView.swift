@@ -73,6 +73,9 @@ struct STITestDetailView: View {
                                 .fontWeight(.medium)
                                 .foregroundStyle(rt.displayColor)
                         }
+                    } else {
+                        Text("Unknown result type")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -97,19 +100,20 @@ struct STITestDetailView: View {
                 EditButton()
             }
         }
-        .onChange(of: editMode?.wrappedValue) { _, newValue in
+        .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if newValue?.isEditing == true {
                 editDate = test.date
                 editResultTypeId = test.resultTypeId
                 editNotes = test.notes
-            } else if newValue?.isEditing == false {
-                saveIfChanged()
+            } else if oldValue?.isEditing == true && (newValue?.isEditing == false || newValue == nil) {
+                saveEdits()
             }
         }
     }
 
-    private func saveIfChanged() {
+    private func saveEdits() {
         guard let resultTypeId = editResultTypeId else { return }
+        guard editDate != test.date || editResultTypeId != test.resultTypeId || editNotes != test.notes else { return }
         var updated = test
         updated.date = editDate
         updated.resultTypeId = resultTypeId
