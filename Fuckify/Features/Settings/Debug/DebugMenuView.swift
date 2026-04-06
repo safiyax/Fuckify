@@ -96,7 +96,7 @@ struct DebugMenuView: View {
                 
                 Section("App Info") {
                     LabeledContent("Version", value: getCurrentAppVersion())
-                    LabeledContent("PostHog Distinct ID", value: PostHogSDK.shared.getDistinctId() ?? "Unknown")
+                    LabeledContent("PostHog Distinct ID", value: PostHogSDK.shared.getDistinctId())
                     LabeledContent("Last Flags Version", value: flagsManager.getLastFlagsVersion() ?? "Never loaded")
                 }
                 

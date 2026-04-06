@@ -532,39 +532,15 @@ struct ImportView: View {
     
     private func exportDatabase() {
         do {
-            // Get the database path (might be a file:// URL string or a path)
-            let dbPathString = try databaseService.getDatabasePath()
-            
-            // Convert to URL, handling both file:// URLs and plain paths
-            let sourceURL: URL
-            if dbPathString.hasPrefix("file://") {
-                guard let url = URL(string: dbPathString) else {
-                    logger.error("Failed to parse database URL: \(dbPathString)")
-                    return
-                }
-                sourceURL = url
-            } else {
-                sourceURL = URL(fileURLWithPath: dbPathString)
-            }
-            
-            // Verify source file exists
-            guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-                logger.error("Database file does not exist at: \(sourceURL.path)")
-                return
-            }
-            
-            // Create a copy in the temp directory for sharing
+            // Build the destination path in the temp directory
             let tempDir = FileManager.default.temporaryDirectory
             let timestamp = Formatters.iso8601Full.string(from: Date()).replacingOccurrences(of: ":", with: "-")
             let fileURL = tempDir.appendingPathComponent("CoitalComrade_\(timestamp).db")
             
-            // Remove existing temp file if present
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                try FileManager.default.removeItem(at: fileURL)
-            }
-            
-            // Copy the database file
-            try FileManager.default.copyItem(at: sourceURL, to: fileURL)
+            // Use GRDB's backup API so WAL-mode data is fully flushed into the
+            // exported file. A raw FileManager.copyItem would miss any pages
+            // that are still in the WAL file and not yet checkpointed.
+            try databaseService.exportDatabase(to: fileURL)
             
             logger.info("Database exported to: \(fileURL.path)")
             databaseExportURL = fileURL
