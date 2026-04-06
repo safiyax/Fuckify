@@ -234,7 +234,8 @@ private struct STITestingCard: View {
 
                     // Next test due row
                     if let nextDate = stiManager.nextTestDueDate,
-                       let daysUntil = stiManager.daysUntilNextTest {
+                       let daysUntil = stiManager.daysUntilNextTest,
+                       daysUntil > 0 {
                         Divider()
                         HStack {
                             Label("Next Test Due", systemImage: "bell.badge")
