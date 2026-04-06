@@ -27,7 +27,7 @@ struct AddSTITables {
         let negativeId = "00000000-0000-0000-0000-000000000301"
         let positiveId = "00000000-0000-0000-0000-000000000302"
         let pendingId  = "00000000-0000-0000-0000-000000000303"
-        let now = ISO8601DateFormatter().string(from: Date())
+        let now = Date()
 
         let insertResultType = """
             INSERT INTO "stiTestResultType" ("id","name","icon","isBuiltIn","isEnabled","sortOrder","dateAdded")
@@ -55,16 +55,15 @@ struct AddSTITables {
         """)
 
         // 5. Migrate existing lastSTITestDate from UserDefaults → first stiTest record
-        // Note: dateAdded is set to migration run time, not the original record creation date
         if let existingDate = UserDefaults.standard.object(forKey: "userLastSTITestDate") as? Date {
-            let dateStr = ISO8601DateFormatter().string(from: existingDate)
             let recordId = UUID().uuidString
+            // Note: dateAdded is set to migration run time, not the original record creation date
             try db.execute(
                 sql: """
                     INSERT INTO "stiTest" ("id","date","resultTypeId","notes","dateAdded")
                     VALUES (?, ?, ?, ?, ?)
                     """,
-                arguments: [recordId, dateStr, negativeId, "", now]
+                arguments: [recordId, existingDate, negativeId, "", now]
             )
         }
 
