@@ -40,7 +40,7 @@ struct STIService {
     // MARK: - Create
 
     /// Create a new STI test record and return its ID
-    func create(date: Date, resultTypeId: UUID, notes: String) throws -> UUID {
+    func create(date: Date, resultTypeId: UUID, notes: String = "") throws -> UUID {
         try database.write { db in
             let test = SQLSTITest(
                 id: UUID(),

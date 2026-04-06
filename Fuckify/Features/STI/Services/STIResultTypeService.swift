@@ -12,20 +12,6 @@ import GRDB
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "STIResultTypeService")
 
-enum STIResultTypeError: LocalizedError {
-    case cannotDeleteBuiltIn
-    case hasAssociatedTests
-
-    var errorDescription: String? {
-        switch self {
-        case .cannotDeleteBuiltIn:
-            return "Built-in result types cannot be deleted. You can disable them instead."
-        case .hasAssociatedTests:
-            return "This result type has associated tests and cannot be deleted."
-        }
-    }
-}
-
 struct STIResultTypeService {
     @Dependency(\.defaultDatabase) var database
 
@@ -94,7 +80,7 @@ struct STIResultTypeService {
             let count = try Int.fetchOne(
                 db,
                 sql: "SELECT COUNT(*) FROM stiTest WHERE resultTypeId = ?",
-                arguments: [id.uuidString]
+                arguments: [id]
             ) ?? 0
 
             if count > 0 {
@@ -121,7 +107,7 @@ struct STIResultTypeService {
             if updated.isBuiltIn {
                 try db.execute(
                     sql: "UPDATE stiTestResultType SET isEnabled = ?, sortOrder = ? WHERE id = ?",
-                    arguments: [updated.isEnabled, updated.sortOrder, updated.id.uuidString]
+                    arguments: [updated.isEnabled, updated.sortOrder, updated.id]
                 )
             } else {
                 try SQLSTITestResultType.update(updated).execute(db)
@@ -155,5 +141,21 @@ extension DependencyValues {
     var stiResultTypeService: STIResultTypeService {
         get { self[STIResultTypeService.self] }
         set { self[STIResultTypeService.self] = newValue }
+    }
+}
+
+// MARK: - Errors
+
+enum STIResultTypeError: LocalizedError {
+    case cannotDeleteBuiltIn
+    case hasAssociatedTests
+
+    var errorDescription: String? {
+        switch self {
+        case .cannotDeleteBuiltIn:
+            return "Built-in result types cannot be deleted. You can disable them instead."
+        case .hasAssociatedTests:
+            return "This result type has associated tests and cannot be deleted."
+        }
     }
 }
