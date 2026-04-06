@@ -90,6 +90,7 @@ struct FuckifyApp: App {
     @State private var userProfile = UserProfile()
     @State private var userSettings = UserSettings()
     @State private var liveActivityManager = LiveActivityManager()
+    @State private var stiManager = STIManager()
     
     @StateObject private var iapState = IAPStateManager.shared
     @State private var wasInactive = false
@@ -148,6 +149,7 @@ struct FuckifyApp: App {
                     .environment(userProfile)
                     .environment(userSettings)
                     .environment(liveActivityManager)
+                    .environment(stiManager)
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
