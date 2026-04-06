@@ -95,7 +95,7 @@ final class STIManager {
             tests = try stiService.fetchAll()
             resultTypes = try stiResultTypeService.fetchAll()
         } catch {
-            logger.error("Failed to load STI data: \(error.localizedDescription)")
+            logger.error("Failed to load STI data: \(error.localizedDescription.debugDescription)")
             errorMessage = "Unable to load STI test history."
         }
         isLoading = false

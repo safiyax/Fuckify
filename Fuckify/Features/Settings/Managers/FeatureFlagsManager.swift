@@ -131,7 +131,7 @@ class FeatureFlagsManager {
         let lastVersion = UserDefaults.standard.string(forKey: versionKey)
         
         // Always check debug menu flag first
-        isDebugMenuEnabled = PostHogSDK.shared.isFeatureEnabled(debugMenuFlagName)
+//        isDebugMenuEnabled = PostHogSDK.shared.isFeatureEnabled(debugMenuFlagName)
         
         // In debug mode, always reload. Otherwise, only reload if version changed
         let shouldReload = isDebugMenuEnabled || lastVersion != currentVersion

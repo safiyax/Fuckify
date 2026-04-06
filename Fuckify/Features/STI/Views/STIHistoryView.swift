@@ -30,7 +30,7 @@ struct STIHistoryView: View {
                 timelineSection
             }
         }
-        .navigationTitle("STI Test History")
+        .navigationTitle("Sexual Health")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -172,13 +172,23 @@ struct STIHistoryView: View {
     private var timelineSection: some View {
         Section("Test History") {
             ForEach(stiManager.tests) { test in
+                let index = stiManager.tests.firstIndex(where: { $0.id == test.id })!
+                let nextTest = index + 1 < stiManager.tests.count ? stiManager.tests[index + 1] : nil
+                let nextResultType = nextTest.flatMap { next in
+                    stiManager.resultTypes.first { $0.id == next.resultTypeId }
+                }
                 NavigationLink(destination: STITestDetailView(test: test)) {
                     TimelineRowView(
                         test: test,
                         resultType: stiManager.resultTypes.first { $0.id == test.resultTypeId },
+                        nextResultType: nextResultType,
                         isLast: test.id == stiManager.tests.last?.id
                     )
                 }
+                .navigationLinkIndicatorVisibility(.hidden)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
                         testToDelete = test
@@ -208,8 +218,14 @@ struct STIHistoryView: View {
                 Button {
                     showingAddForm = true
                 } label: {
-                    Label("Log First Test", systemImage: "plus.circle.fill")
-                        .fontWeight(.medium)
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text("Log First Test")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -225,51 +241,68 @@ struct STIHistoryView: View {
 private struct TimelineRowView: View {
     let test: SQLSTITest
     let resultType: SQLSTITestResultType?
+    let nextResultType: SQLSTITestResultType?
     let isLast: Bool
 
-    var dotColor: Color {
+    private var dotColor: Color {
         resultType?.displayColor ?? .gray
     }
 
+    private var nextDotColor: Color {
+        nextResultType?.displayColor ?? .gray
+    }
+
+    private var icon: String {
+        resultType?.icon ?? "questionmark"
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Dot + vertical line
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            // Circle with icon + vertical connector line
             VStack(spacing: 0) {
-                Circle()
-                    .fill(dotColor)
-                    .frame(width: 12, height: 12)
-                    .padding(.top, 4)
+                ZStack {
+                    Circle()
+                        .fill(dotColor)
+                        .frame(width: 44, height: 44)
+                    Image(systemName: icon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
                 if !isLast {
                     Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 2)
+                        .fill(
+                            LinearGradient(
+                                colors: [dotColor, nextDotColor],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 3)
                         .frame(maxHeight: .infinity)
                 }
             }
-            .frame(width: 12)
+            .frame(width: 44)
 
             // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(test.date.formatted(date: .abbreviated, time: .omitted))
-                    .fontWeight(.medium)
-                if let rt = resultType {
-                    Label(rt.name, systemImage: rt.icon)
-                        .font(.caption)
-                        .foregroundStyle(rt.displayColor)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(dotColor.opacity(0.12), in: Capsule())
-                }
+                    .fontWeight(.semibold)
                 if !test.notes.isEmpty {
                     Text(test.notes)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
             }
-            .padding(.bottom, isLast ? 0 : 16)
+            .padding(.top, 12)
+            .padding(.bottom, isLast ? 28 : 44)
+
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
     }
 }
 

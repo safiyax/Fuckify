@@ -202,11 +202,16 @@ private struct STITestingCard: View {
                 Button {
                     showingAddForm = true
                 } label: {
-                    Label("Log First Test", systemImage: "plus.circle.fill")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text("Log First Test")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .padding(.top, 4)
             }
             .padding(.vertical, 12)
