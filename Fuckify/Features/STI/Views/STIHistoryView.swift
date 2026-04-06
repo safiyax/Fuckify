@@ -118,6 +118,10 @@ struct STIHistoryView: View {
                     Task {
                         if enabled {
                             await stiManager.enableReminders()
+                            // If permission was denied, revert the toggle
+                            if stiManager.reminderDenied {
+                                profile.stiRemindersEnabled = false
+                            }
                         } else {
                             await stiManager.disableReminders()
                         }
@@ -133,7 +137,10 @@ struct STIHistoryView: View {
                     Text("Every 180 days").tag(180)
                 }
                 .onChange(of: profile.stiTestingIntervalDays) { _, _ in
-                    Task { await stiManager.rescheduleReminderIfEnabled() }
+                    Task {
+                        await stiManager.rescheduleReminderIfEnabled()
+                        await stiManager.load()
+                    }
                 }
             }
 
@@ -164,12 +171,12 @@ struct STIHistoryView: View {
 
     private var timelineSection: some View {
         Section("Test History") {
-            ForEach(Array(stiManager.tests.enumerated()), id: \.element.id) { index, test in
+            ForEach(stiManager.tests) { test in
                 NavigationLink(destination: STITestDetailView(test: test)) {
                     TimelineRowView(
                         test: test,
                         resultType: stiManager.resultTypes.first { $0.id == test.resultTypeId },
-                        isLast: index == stiManager.tests.count - 1
+                        isLast: test.id == stiManager.tests.last?.id
                     )
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {

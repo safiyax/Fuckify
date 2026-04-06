@@ -83,6 +83,11 @@ struct STITestFormView: View {
                     selectedResultTypeId = stiManager.resultTypes.first?.id
                 }
             }
+            .onChange(of: stiManager.resultTypes) { _, newTypes in
+                if selectedResultTypeId == nil, let first = newTypes.first {
+                    selectedResultTypeId = first.id
+                }
+            }
         }
     }
 
@@ -90,6 +95,7 @@ struct STITestFormView: View {
         guard let resultTypeId = selectedResultTypeId else { return }
         isSaving = true
         Task {
+            defer { isSaving = false }
             if let test = existingTest {
                 var updated = test
                 updated.date = date
