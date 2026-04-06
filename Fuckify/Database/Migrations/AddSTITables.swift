@@ -29,13 +29,13 @@ struct AddSTITables {
         let pendingId  = "00000000-0000-0000-0000-000000000303"
         let now = ISO8601DateFormatter().string(from: Date())
 
-        try db.execute(sql: """
+        let insertResultType = """
             INSERT INTO "stiTestResultType" ("id","name","icon","isBuiltIn","isEnabled","sortOrder","dateAdded")
-            VALUES
-                ('\(negativeId)', 'Negative', 'checkmark.circle.fill',    1, 1, 0, '\(now)'),
-                ('\(positiveId)', 'Positive', 'exclamationmark.triangle.fill', 1, 1, 1, '\(now)'),
-                ('\(pendingId)',  'Pending',  'clock.fill',               1, 1, 2, '\(now)')
-        """)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """
+        try db.execute(sql: insertResultType, arguments: [negativeId, "Negative", "checkmark.circle.fill",         1, 1, 0, now])
+        try db.execute(sql: insertResultType, arguments: [positiveId, "Positive", "exclamationmark.triangle.fill", 1, 1, 1, now])
+        try db.execute(sql: insertResultType, arguments: [pendingId,  "Pending",  "clock.fill",                   1, 1, 2, now])
 
         // 3. Create stiTest table
         try db.execute(sql: """
@@ -43,7 +43,7 @@ struct AddSTITables {
                 "id" TEXT NOT NULL PRIMARY KEY,
                 "date" TEXT NOT NULL,
                 "resultTypeId" TEXT NOT NULL,
-                "notes" TEXT NOT NULL,
+                "notes" TEXT NOT NULL DEFAULT '',
                 "dateAdded" TEXT NOT NULL,
                 FOREIGN KEY ("resultTypeId") REFERENCES "stiTestResultType"("id") ON DELETE RESTRICT
             ) STRICT
@@ -55,13 +55,17 @@ struct AddSTITables {
         """)
 
         // 5. Migrate existing lastSTITestDate from UserDefaults → first stiTest record
+        // Note: dateAdded is set to migration run time, not the original record creation date
         if let existingDate = UserDefaults.standard.object(forKey: "userLastSTITestDate") as? Date {
             let dateStr = ISO8601DateFormatter().string(from: existingDate)
             let recordId = UUID().uuidString
-            try db.execute(sql: """
-                INSERT INTO "stiTest" ("id","date","resultTypeId","notes","dateAdded")
-                VALUES ('\(recordId)', '\(dateStr)', '\(negativeId)', '', '\(now)')
-            """)
+            try db.execute(
+                sql: """
+                    INSERT INTO "stiTest" ("id","date","resultTypeId","notes","dateAdded")
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                arguments: [recordId, dateStr, negativeId, "", now]
+            )
         }
 
         // 6. Clear migrated UserDefaults keys
