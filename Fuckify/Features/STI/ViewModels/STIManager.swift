@@ -28,6 +28,7 @@ final class STIManager {
     var resultTypes: [SQLSTITestResultType] = []
     var errorMessage: String?
     var reminderDenied: Bool = false
+    var isLoading = false
 
     // MARK: - Computed Properties
 
@@ -38,9 +39,13 @@ final class STIManager {
         return Calendar.current.dateComponents([.day], from: latest.date, to: Date()).day
     }
 
+    private var testingIntervalDays: Int {
+        let v = UserDefaults.standard.integer(forKey: "stiTestingIntervalDays")
+        return v > 0 ? v : 90
+    }
+
     var nextTestDueDate: Date? {
-        let interval = UserDefaults.standard.integer(forKey: "stiTestingIntervalDays")
-        let days = interval > 0 ? interval : 90
+        let days = testingIntervalDays
         guard let latest = latestTest else {
             // No tests — schedule from today
             return Calendar.current.date(byAdding: .day, value: days, to: Date())
@@ -83,6 +88,7 @@ final class STIManager {
     // MARK: - Data Operations
 
     func load() async {
+        isLoading = true
         do {
             tests = try stiService.fetchAll()
             resultTypes = try stiResultTypeService.fetchAll()
@@ -90,6 +96,7 @@ final class STIManager {
             logger.error("Failed to load STI data: \(error.localizedDescription)")
             errorMessage = "Unable to load STI test history."
         }
+        isLoading = false
     }
 
     func addTest(date: Date, resultTypeId: UUID, notes: String) async {
@@ -162,8 +169,7 @@ final class STIManager {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [reminderNotificationId])
 
-        let interval = UserDefaults.standard.integer(forKey: "stiTestingIntervalDays")
-        let days = interval > 0 ? interval : 90
+        let days = testingIntervalDays
 
         let fireDate: Date
         if let latest = latestTest {
@@ -171,7 +177,7 @@ final class STIManager {
                   candidate > Date() else {
                 // Due date already passed — schedule from today
                 let fallback = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date().addingTimeInterval(Double(days) * 86400)
-                scheduleNotification(at: fallback, center: center)
+                await scheduleNotification(at: fallback, center: center)
                 return
             }
             fireDate = candidate
@@ -179,10 +185,10 @@ final class STIManager {
             fireDate = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date().addingTimeInterval(Double(days) * 86400)
         }
 
-        scheduleNotification(at: fireDate, center: center)
+        await scheduleNotification(at: fireDate, center: center)
     }
 
-    private func scheduleNotification(at date: Date, center: UNUserNotificationCenter) {
+    private func scheduleNotification(at date: Date, center: UNUserNotificationCenter) async {
         let content = UNMutableNotificationContent()
         content.title = "STI Test Reminder"
         content.body = "Time for your STI test. Stay on top of your sexual health."
@@ -192,12 +198,11 @@ final class STIManager {
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(identifier: reminderNotificationId, content: content, trigger: trigger)
 
-        center.add(request) { error in
-            if let error = error {
-                logger.error("Failed to schedule STI reminder: \(error.localizedDescription)")
-            } else {
-                logger.info("Scheduled STI reminder for \(date)")
-            }
+        do {
+            try await center.add(request)
+            logger.info("Scheduled STI reminder for \(date)")
+        } catch {
+            logger.error("Failed to schedule STI reminder: \(error.localizedDescription)")
         }
     }
 
