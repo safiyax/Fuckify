@@ -69,10 +69,10 @@
 		89C22A0D2F2FEC5E00B9A0DF /* Exceptions for "Fuckify" folder in "EncounterActivityWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Extensions/Color+Partner.swift",
-				Extensions/PartnerColors.swift,
-				"Extensions/String+Initials.swift",
-				"Extensions/View+If.swift",
+				"Core/Extensions/Color+Partner.swift",
+				Core/Theme/PartnerColors.swift,
+				"Core/Extensions/String+Initials.swift",
+				"Core/Extensions/View+If.swift",
 				Shared/LiveActivity/EncounterActivityAttributes.swift,
 				Shared/LiveActivity/LiveActivityIntents.swift,
 				Shared/LiveActivity/PartnerData.swift,

@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.fuckify", category: "EncountersViewModel")
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "EncountersViewModel")
 
 /// ViewModel for managing encounters list UI state and operations
 /// Provides presentation logic, search filtering, and error handling for encounter-related views

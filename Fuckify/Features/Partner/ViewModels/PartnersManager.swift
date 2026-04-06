@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.fuckify", category: "PartnersViewModel")
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "PartnersViewModel")
 
 /// ViewModel for managing partners list UI state and operations
 /// Provides presentation logic, search filtering, pinning, and error handling for partner-related views

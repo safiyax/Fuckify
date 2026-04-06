@@ -11,7 +11,7 @@ import SwiftUI
 import OSLog
 import UserNotifications
 
-private let logger = Logger(subsystem: "com.fuckify", category: "LiveActivity")
+private let logger = Logger(subsystem: "baby.safi.Fuckify", category: "LiveActivity")
 
 /// Manages the encounter tracking Live Activity
 @MainActor
