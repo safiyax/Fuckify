@@ -60,18 +60,20 @@ final class STIManager {
         return Calendar.current.dateComponents([.day], from: Date(), to: next).day
     }
 
-    /// Color for "days since last test" status (matches existing ProfileView logic)
+    /// Color for "days since last test" status (uses user-configured testing interval)
     var statusColor: Color {
         guard let days = daysSinceLastTest else { return .red }
-        if days < 90 { return .green }
-        if days < 180 { return .orange }
+        let interval = testingIntervalDays
+        if days < interval { return .green }
+        if days < interval * 2 { return .orange }
         return .red
     }
 
     var statusIcon: String {
         guard let days = daysSinceLastTest else { return "exclamationmark.triangle.fill" }
-        if days < 90 { return "checkmark.circle.fill" }
-        if days < 180 { return "exclamationmark.circle.fill" }
+        let interval = testingIntervalDays
+        if days < interval { return "checkmark.circle.fill" }
+        if days < interval * 2 { return "exclamationmark.circle.fill" }
         return "exclamationmark.triangle.fill"
     }
 

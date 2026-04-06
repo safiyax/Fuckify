@@ -77,6 +77,16 @@ struct STIService {
             logger.info("Deleted STI test: \(id)")
         }
     }
+
+    /// Delete all STI test records
+    func deleteAll() throws {
+        try database.write { db in
+            try SQLSTITest
+                .delete()
+                .execute(db)
+            logger.info("Deleted all STI tests")
+        }
+    }
 }
 
 // MARK: - Dependency Key

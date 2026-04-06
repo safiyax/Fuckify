@@ -6,6 +6,7 @@
 
 import SwiftUI
 import Dependencies
+import UserNotifications
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "DeleteData")
 
@@ -168,10 +169,21 @@ struct DeleteDataView: View {
         userProfile.clearProfile()
     }
 
+    private func deleteAllSTITests() {
+        logger.info("Deleting all STI tests")
+        do {
+            try STIService().deleteAll()
+        } catch {
+            logger.error("Failed to delete STI tests: \(error.localizedDescription)")
+        }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["sti-test-reminder"])
+    }
+
     private func deleteAllData() {
         logger.info("Deleting all data")
         deleteAllPartners()
         deleteAllEncounters()
+        deleteAllSTITests()
         deleteProfileData()
     }
 }
