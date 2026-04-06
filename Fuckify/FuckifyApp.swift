@@ -151,6 +151,9 @@ struct FuckifyApp: App {
                     .environment(liveActivityManager)
                     .environment(stiManager)
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
+                    .task {
+                        await stiManager.load()
+                    }
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
                         if securitySettings.isSecurityEnabled && isUnlocked {
