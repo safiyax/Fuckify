@@ -56,7 +56,7 @@ struct AddSTITables {
 
         // 5. Migrate existing lastSTITestDate from UserDefaults → first stiTest record
         if let existingDate = UserDefaults.standard.object(forKey: "userLastSTITestDate") as? Date {
-            let recordId = UUID().uuidString
+            let recordId = UUID().uuidString.lowercased()
             // Note: dateAdded is set to migration run time, not the original record creation date
             try db.execute(
                 sql: """
