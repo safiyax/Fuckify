@@ -170,19 +170,19 @@ struct STIHistoryView: View {
     // MARK: - Timeline
 
     private var timelineSection: some View {
-        Section("Test History") {
-            ForEach(stiManager.tests) { test in
-                let index = stiManager.tests.firstIndex(where: { $0.id == test.id })!
-                let nextTest = index + 1 < stiManager.tests.count ? stiManager.tests[index + 1] : nil
-                let nextResultType = nextTest.flatMap { next in
-                    stiManager.resultTypes.first { $0.id == next.resultTypeId }
-                }
-                NavigationLink(destination: STITestDetailView(test: test)) {
+        let pairs: [(test: SQLSTITest, nextResultType: SQLSTITestResultType?)] = stiManager.tests.indices.map { i in
+            let next = i + 1 < stiManager.tests.count ? stiManager.tests[i + 1] : nil
+            let nextResultType = next.flatMap { n in stiManager.resultTypes.first { $0.id == n.resultTypeId } }
+            return (stiManager.tests[i], nextResultType)
+        }
+        return Section("Test History") {
+            ForEach(pairs, id: \.test.id) { pair in
+                NavigationLink(destination: STITestDetailView(test: pair.test)) {
                     TimelineRowView(
-                        test: test,
-                        resultType: stiManager.resultTypes.first { $0.id == test.resultTypeId },
-                        nextResultType: nextResultType,
-                        isLast: test.id == stiManager.tests.last?.id
+                        test: pair.test,
+                        resultType: stiManager.resultTypes.first { $0.id == pair.test.resultTypeId },
+                        nextResultType: pair.nextResultType,
+                        isLast: pair.test.id == stiManager.tests.last?.id
                     )
                 }
                 .navigationLinkIndicatorVisibility(.hidden)
@@ -190,8 +190,8 @@ struct STIHistoryView: View {
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        testToDelete = test
+                     Button(role: .destructive) {
+                        testToDelete = pair.test
                         showingDeleteAlert = true
                     } label: {
                         Label("Delete", systemImage: "trash")
