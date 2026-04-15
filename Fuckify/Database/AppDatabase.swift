@@ -100,6 +100,9 @@ func appDatabase() throws -> any DatabaseWriter {
     migrator.registerMigration("Add STI tables") { db in
         try AddSTITables.migrate(db)
     }
+    migrator.registerMigration("Normalize STI test IDs") { db in
+        try NormalizeSTITestIds.migrate(db)
+    }
 
     // Note: SwiftData migration has been removed since all data has been migrated
     // If you need to re-migrate data, restore from git history:
