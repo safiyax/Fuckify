@@ -41,6 +41,9 @@ struct EncounterFormView: View {
     // NEW: Load entities from database
     @State private var availableActivities: [SQLActivityTypeEntity] = []
     @State private var availableProtectionMethods: [SQLProtectionMethodEntity] = []
+    @State private var availablePositions: [SQLPositionType] = []
+    @State private var myPositionTypeId: UUID? = nil
+    @State private var partnerPositionTypeIDs: [UUID: UUID?] = [:]
 
     var isEditing: Bool {
         encounter != nil
@@ -131,6 +134,19 @@ struct EncounterFormView: View {
                     selectedProtectionIDs: $selectedProtectionIDs
                 )
 
+                // My Position
+                MyPositionSection(
+                    availablePositions: availablePositions,
+                    selectedPositionId: $myPositionTypeId
+                )
+
+                // Partner Positions
+                PartnerPositionsSection(
+                    partners: selectedPartners,
+                    availablePositions: availablePositions,
+                    partnerPositionTypeIDs: $partnerPositionTypeIDs
+                )
+
                 // Experience
                 RatingSection(rating: $rating, reachedOrgasm: $reachedOrgasm)
 
@@ -190,6 +206,11 @@ struct EncounterFormView: View {
         // Load available activities and protection methods from database
         availableActivities = settings.allActivityTypes()
         availableProtectionMethods = settings.allProtectionMethods()
+        do {
+            availablePositions = try PositionTypeService().fetchAll()
+        } catch {
+            availablePositions = []
+        }
         
         // Load encounter data if editing
         if let encounter = encounter {
@@ -210,6 +231,7 @@ struct EncounterFormView: View {
     private func togglePartner(_ partnerID: UUID) {
         if selectedPartnerIDs.contains(partnerID) {
             selectedPartnerIDs.remove(partnerID)
+            partnerPositionTypeIDs.removeValue(forKey: partnerID)
         } else {
             selectedPartnerIDs.insert(partnerID)
         }
@@ -237,6 +259,19 @@ struct EncounterFormView: View {
             selectedProtectionIDs = Set(protectionEntities.map(\.id))
         } catch {
             errorMessage = "Failed to load encounter data"
+        }
+
+        // Load my position
+        myPositionTypeId = encounter.positionTypeId
+
+        // Load partner positions from junction rows
+        do {
+            let junctions = try encounterService.fetchEncounterPartnerJunctions(for: encounter.id)
+            for junction in junctions {
+                partnerPositionTypeIDs[junction.partnerId] = junction.positionTypeId
+            }
+        } catch {
+            // Non-fatal — positions just won't be pre-populated
         }
     }
 
@@ -267,16 +302,13 @@ struct EncounterFormView: View {
                 try encounterService.update(
                     updated,
                     partnerIDs: partnerIDs,
+                    partnerPositionTypeIDs: partnerPositionTypeIDs,
+                    myPositionTypeId: .some(myPositionTypeId),
                     activityTypeIDs: activityTypeIDs,
                     protectionMethodIDs: protectionMethodIDs
                 )
                 
                 logger.info("Encounter updated successfully")
-                
-                // Update partner last encounter dates
-                for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
-                }
             } else {
                 logger.debug("Creating new encounter")
                 // Create new encounter
@@ -295,16 +327,13 @@ struct EncounterFormView: View {
                 _ = try encounterService.create(
                     draft,
                     partnerIDs: partnerIDs,
+                    partnerPositionTypeIDs: partnerPositionTypeIDs,
+                    myPositionTypeId: myPositionTypeId,
                     activityTypeIDs: activityTypeIDs,
                     protectionMethodIDs: protectionMethodIDs
                 )
                 
                 logger.info("Encounter created successfully")
-                
-                // Update partner last encounter dates
-                for partnerID in partnerIDs {
-                    try? partnerService.updateLastEncounterDate(partnerID, date: date)
-                }
             }
             
             dismiss()
