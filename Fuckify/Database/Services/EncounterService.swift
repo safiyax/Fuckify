@@ -60,6 +60,7 @@ struct EncounterService {
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
         partnerPositionTypeIDs: [UUID: UUID?] = [:],
+        partnerOrgasms: [UUID: Bool] = [:],
         myPositionTypeId: UUID? = nil,
         activityTypeIDs: [UUID],
         protectionMethodIDs: [UUID]
@@ -80,14 +81,14 @@ struct EncounterService {
 
             try SQLEncounter.insert { encounter }.execute(db)
 
-            // Link partners with positions
+            // Link partners with positions and orgasm status
             for partnerID in partnerIDs {
-                let positionId = partnerPositionTypeIDs[partnerID] ?? nil
                 let junction = SQLEncounterPartner(
                     id: UUID(),
                     encounterId: encounterID,
                     partnerId: partnerID,
-                    positionTypeId: positionId
+                    positionTypeId: partnerPositionTypeIDs[partnerID] ?? nil,
+                    hadOrgasm: partnerOrgasms[partnerID] ?? false
                 )
                 try SQLEncounterPartner.insert { junction }.execute(db)
             }
@@ -290,6 +291,7 @@ struct EncounterService {
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
         partnerPositionTypeIDs: [UUID: UUID?]? = nil,
+        partnerOrgasms: [UUID: Bool]? = nil,
         myPositionTypeId: UUID?? = nil,
         activityTypeIDs: [UUID]? = nil,
         protectionMethodIDs: [UUID]? = nil
@@ -314,15 +316,16 @@ struct EncounterService {
                     .delete()
                     .execute(db)
 
-                // Re-insert with positions
+                // Re-insert with positions and orgasm status
                 let positions = partnerPositionTypeIDs ?? [:]
+                let orgasms = partnerOrgasms ?? [:]
                 for partnerID in newPartnerIDs {
-                    let positionId = positions[partnerID] ?? nil
                     let junction = SQLEncounterPartner(
                         id: UUID(),
                         encounterId: encounter.id,
                         partnerId: partnerID,
-                        positionTypeId: positionId
+                        positionTypeId: positions[partnerID] ?? nil,
+                        hadOrgasm: orgasms[partnerID] ?? false
                     )
                     try SQLEncounterPartner.insert { junction }.execute(db)
                 }
