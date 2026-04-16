@@ -75,6 +75,7 @@ final class EncountersViewModel {
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
         partnerPositionTypeIDs: [UUID: UUID?] = [:],
+        partnerOrgasms: [UUID: Bool] = [:],
         myPositionTypeId: UUID? = nil,
         activityTypeIDs: [UUID],
         protectionMethodIDs: [UUID]
@@ -84,6 +85,7 @@ final class EncountersViewModel {
                 encounterDraft,
                 partnerIDs: partnerIDs,
                 partnerPositionTypeIDs: partnerPositionTypeIDs,
+                partnerOrgasms: partnerOrgasms,
                 myPositionTypeId: myPositionTypeId,
                 activityTypeIDs: activityTypeIDs,
                 protectionMethodIDs: protectionMethodIDs
@@ -100,6 +102,7 @@ final class EncountersViewModel {
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
         partnerPositionTypeIDs: [UUID: UUID?]? = nil,
+        partnerOrgasms: [UUID: Bool]? = nil,
         myPositionTypeId: UUID?? = nil,
         activityTypeIDs: [UUID]? = nil,
         protectionMethodIDs: [UUID]? = nil
@@ -109,6 +112,7 @@ final class EncountersViewModel {
                 encounter,
                 partnerIDs: partnerIDs,
                 partnerPositionTypeIDs: partnerPositionTypeIDs,
+                partnerOrgasms: partnerOrgasms,
                 myPositionTypeId: myPositionTypeId,
                 activityTypeIDs: activityTypeIDs,
                 protectionMethodIDs: protectionMethodIDs
