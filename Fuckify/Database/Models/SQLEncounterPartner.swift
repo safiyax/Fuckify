@@ -14,4 +14,5 @@ struct SQLEncounterPartner: Identifiable {
     let id: UUID
     var encounterId: UUID
     var partnerId: UUID
+    var positionTypeId: UUID?   // Optional position for this partner in this encounter
 }

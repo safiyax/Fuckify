@@ -24,6 +24,7 @@ struct SQLEncounter: Identifiable {
     // Experience
     var rating: Int = 5 // 1-5 stars
     var reachedOrgasm: Bool = false
+    var positionTypeId: UUID? = nil   // User's own position for this encounter
     
     // Metadata
     var dateAdded: Date = Date()
