@@ -34,6 +34,7 @@ struct EncounterFormView: View {
     @State private var rating: Int = 0
     @State private var reachedOrgasm: Bool = false
     @Environment(UserSettings.self) private var settings
+    @Environment(UserProfile.self) private var profile
     @State private var errorMessage: String?
     @State private var showingPartnerPicker = false
     @State private var partnerSearchText = ""
@@ -134,16 +135,12 @@ struct EncounterFormView: View {
                     selectedProtectionIDs: $selectedProtectionIDs
                 )
 
-                // My Position
-                MyPositionSection(
-                    availablePositions: availablePositions,
-                    selectedPositionId: $myPositionTypeId
-                )
-
-                // Partner Positions
-                PartnerPositionsSection(
+                // Positions (Me + Partners combined)
+                PositionsSection(
+                    profile: profile,
                     partners: selectedPartners,
                     availablePositions: availablePositions,
+                    myPositionTypeId: $myPositionTypeId,
                     partnerPositionTypeIDs: $partnerPositionTypeIDs
                 )
 
