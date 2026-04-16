@@ -19,19 +19,27 @@ struct EncounterWithRelationships: Identifiable {
     let partners: [SQLPartner]
     let activityEntities: [SQLActivityTypeEntity]
     let protectionEntities: [SQLProtectionMethodEntity]
-    
+    /// Maps partnerId → SQLPositionType (nil if no position set for that partner)
+    let partnerPositions: [UUID: SQLPositionType]
+    /// The user's own position for this encounter
+    let myPosition: SQLPositionType?
+
     var id: UUID { encounter.id }
-    
+
     init(
         encounter: SQLEncounter,
         partners: [SQLPartner],
         activityEntities: [SQLActivityTypeEntity] = [],
-        protectionEntities: [SQLProtectionMethodEntity] = []
+        protectionEntities: [SQLProtectionMethodEntity] = [],
+        partnerPositions: [UUID: SQLPositionType] = [:],
+        myPosition: SQLPositionType? = nil
     ) {
         self.encounter = encounter
         self.partners = partners
         self.activityEntities = activityEntities
         self.protectionEntities = protectionEntities
+        self.partnerPositions = partnerPositions
+        self.myPosition = myPosition
     }
 }
 
@@ -46,16 +54,17 @@ struct EncounterService {
     
     // MARK: - Create
     
-    /// Create an encounter with partners, activities, and protection methods (NEW: UUID-based)
+    /// Create an encounter with partners, activities, and protection methods
     /// All operations in a single transaction
     func create(
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
+        partnerPositionTypeIDs: [UUID: UUID?] = [:],
+        myPositionTypeId: UUID? = nil,
         activityTypeIDs: [UUID],
         protectionMethodIDs: [UUID]
     ) throws -> UUID {
         try database.write { db in
-            // Use the ID from the draft if provided, otherwise generate a new one
             let encounterID = encounterDraft.id ?? UUID()
             let encounter = SQLEncounter(
                 id: encounterID,
@@ -65,72 +74,54 @@ struct EncounterService {
                 notes: encounterDraft.notes,
                 rating: encounterDraft.rating,
                 reachedOrgasm: encounterDraft.reachedOrgasm,
+                positionTypeId: myPositionTypeId,
                 dateAdded: encounterDraft.dateAdded
             )
-            
-            // Insert encounter
-            try SQLEncounter.insert { encounter }
-                .execute(db)
-            
-            // Link partners
-            try SQLEncounterPartner.insert {
-                partnerIDs.map { partnerID in
-                    SQLEncounterPartner.Draft(
-                        id: UUID(),
-                        encounterId: encounterID,
-                        partnerId: partnerID
-                    )
-                }
+
+            try SQLEncounter.insert { encounter }.execute(db)
+
+            // Link partners with positions
+            for partnerID in partnerIDs {
+                let positionId = partnerPositionTypeIDs[partnerID] ?? nil
+                let junction = SQLEncounterPartner(
+                    id: UUID(),
+                    encounterId: encounterID,
+                    partnerId: partnerID,
+                    positionTypeId: positionId
+                )
+                try SQLEncounterPartner.insert { junction }.execute(db)
             }
-            .execute(db)
-            
-            // Link activities using UUIDs
+
+            // Link activities
             try EncounterActivity.insert {
                 activityTypeIDs.map { activityTypeID in
-                    EncounterActivity(
-                        id: UUID(),
-                        encounterId: encounterID,
-                        activityTypeId: activityTypeID
-                    )
+                    EncounterActivity(id: UUID(), encounterId: encounterID, activityTypeId: activityTypeID)
                 }
-            }
-            .execute(db)
-            
-            // Link protection methods using UUIDs
+            }.execute(db)
+
+            // Link protection methods
             try EncounterProtectionMethod.insert {
                 protectionMethodIDs.map { methodID in
-                    EncounterProtectionMethod(
-                        id: UUID(),
-                        encounterId: encounterID,
-                        protectionMethodId: methodID
-                    )
+                    EncounterProtectionMethod(id: UUID(), encounterId: encounterID, protectionMethodId: methodID)
                 }
-            }
-            .execute(db)
-            
-            // Update lastEncounterDate for all partners in this encounter
+            }.execute(db)
+
+            // Update lastEncounterDate for all partners
             if let encounterDate = encounter.date {
                 for partnerID in partnerIDs {
-                    // Update directly in this transaction to avoid re-entrant error
-                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else {
-                        continue
-                    }
-                    
-                    // Only update if this date is newer
+                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else { continue }
                     if partner.lastEncounterDate == nil || partner.lastEncounterDate! < encounterDate {
                         partner.lastEncounterDate = encounterDate
                         try SQLPartner.update(partner).execute(db)
                     }
                 }
             }
-            
-            logger.info("Created encounter: \(encounterID) with \(partnerIDs.count) partners, \(activityTypeIDs.count) activities, \(protectionMethodIDs.count) protection methods")
+
+            logger.info("Created encounter: \(encounterID) with \(partnerIDs.count) partners")
             return encounterID
         }
     }
-    
-    /// Create an encounter with partners, activities, and protection methods (DEPRECATED: enum-based)
-    /// All operations in a single transaction
+
     // MARK: - Read
     
     /// Fetch all encounters sorted by date (descending)
@@ -221,16 +212,46 @@ struct EncounterService {
                     protectionEntitiesByEncounter[protection.encounterId, default: []].append(entity)
                 }
             }
+
+            // 5. Batch load ALL position types referenced by encounterPartner rows
+            let allPositionTypeIDs = Set(partnerJunctions.compactMap { $0.positionTypeId })
+            var positionTypesByID: [UUID: SQLPositionType] = [:]
+            if !allPositionTypeIDs.isEmpty {
+                let positionTypes = try SQLPositionType
+                    .where { allPositionTypeIDs.contains($0.id) }
+                    .fetchAll(db)
+                positionTypesByID = Dictionary(uniqueKeysWithValues: positionTypes.map { ($0.id, $0) })
+            }
+
+            // Also load position types for encounter.positionTypeId (my positions)
+            let myPositionTypeIDs = Set(encounters.compactMap { $0.positionTypeId })
+            var myPositionTypesByID: [UUID: SQLPositionType] = [:]
+            if !myPositionTypeIDs.isEmpty {
+                let myPositionTypes = try SQLPositionType
+                    .where { myPositionTypeIDs.contains($0.id) }
+                    .fetchAll(db)
+                for pt in myPositionTypes { myPositionTypesByID[pt.id] = pt }
+            }
+
+            // Build partnerPositions per encounter: [encounterId: [partnerId: SQLPositionType]]
+            var partnerPositionsByEncounter: [UUID: [UUID: SQLPositionType]] = [:]
+            for junction in partnerJunctions {
+                guard let positionId = junction.positionTypeId,
+                      let position = positionTypesByID[positionId] else { continue }
+                partnerPositionsByEncounter[junction.encounterId, default: [:]][junction.partnerId] = position
+            }
             
             logger.info("Fetched \(encounters.count) encounters with \(allPartners.count) partners, \(allActivities.count) activities, \(allProtectionMethods.count) protection methods")
             
-            // 5. Combine everything
+            // 6. Combine everything
             return encounters.map { encounter in
                 EncounterWithRelationships(
                     encounter: encounter,
                     partners: partnersByEncounter[encounter.id] ?? [],
                     activityEntities: activityEntitiesByEncounter[encounter.id] ?? [],
-                    protectionEntities: protectionEntitiesByEncounter[encounter.id] ?? []
+                    protectionEntities: protectionEntitiesByEncounter[encounter.id] ?? [],
+                    partnerPositions: partnerPositionsByEncounter[encounter.id] ?? [:],
+                    myPosition: encounter.positionTypeId.flatMap { myPositionTypesByID[$0] }
                 )
             }
         }
@@ -264,99 +285,74 @@ struct EncounterService {
     
     // MARK: - Update
     
-    /// Update an encounter and optionally its relationships (NEW: UUID-based)
+    /// Update an encounter and optionally its relationships
     func update(
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
+        partnerPositionTypeIDs: [UUID: UUID?]? = nil,
+        myPositionTypeId: UUID?? = nil,
         activityTypeIDs: [UUID]? = nil,
         protectionMethodIDs: [UUID]? = nil
     ) throws {
         try database.write { db in
-            // Get old partners before updating (to recalculate their lastEncounterDate)
             let oldPartnerIDs = try SQLEncounterPartner
                 .where { $0.encounterId.eq(encounter.id) }
                 .fetchAll(db)
                 .map { $0.partnerId }
-            
-            // Update encounter
-            try SQLEncounter.update(encounter).execute(db)
-            
-            // Update partners if provided
+
+            // Apply myPositionTypeId if provided (double-optional: nil = don't touch)
+            var updatedEncounter = encounter
+            if let newMyPosition = myPositionTypeId {
+                updatedEncounter.positionTypeId = newMyPosition
+            }
+            try SQLEncounter.update(updatedEncounter).execute(db)
+
             if let newPartnerIDs = partnerIDs {
-                // Delete existing links
+                // Delete existing junction rows
                 try SQLEncounterPartner
                     .where { $0.encounterId.eq(encounter.id) }
                     .delete()
                     .execute(db)
-                
-                // Insert new links
-                try SQLEncounterPartner.insert {
-                    newPartnerIDs.map { partnerID in
-                        SQLEncounterPartner.Draft(
-                            id: UUID(),
-                            encounterId: encounter.id,
-                            partnerId: partnerID
-                        )
-                    }
+
+                // Re-insert with positions
+                let positions = partnerPositionTypeIDs ?? [:]
+                for partnerID in newPartnerIDs {
+                    let positionId = positions[partnerID] ?? nil
+                    let junction = SQLEncounterPartner(
+                        id: UUID(),
+                        encounterId: encounter.id,
+                        partnerId: partnerID,
+                        positionTypeId: positionId
+                    )
+                    try SQLEncounterPartner.insert { junction }.execute(db)
                 }
-                .execute(db)
-                
-                // Update lastEncounterDate for all affected partners
+
                 let allAffectedPartnerIDs = Set(oldPartnerIDs + newPartnerIDs)
                 for partnerID in allAffectedPartnerIDs {
                     try recalculateLastEncounterDate(for: partnerID, db: db)
                 }
-            } else if let encounterDate = encounter.date {
-                // If partners weren't changed but date was, update existing partners directly
+            } else if let encounterDate = updatedEncounter.date {
                 for partnerID in oldPartnerIDs {
-                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else {
-                        continue
-                    }
-                    
-                    // Only update if this date is newer
+                    guard var partner = try SQLPartner.find(partnerID).fetchOne(db) else { continue }
                     if partner.lastEncounterDate == nil || partner.lastEncounterDate! < encounterDate {
                         partner.lastEncounterDate = encounterDate
                         try SQLPartner.update(partner).execute(db)
                     }
                 }
             }
-            
-            // Update activities if provided (NEW: UUID-based)
+
             if let newActivityTypeIDs = activityTypeIDs {
-                try EncounterActivity
-                    .where { $0.encounterId.eq(encounter.id) }
-                    .delete()
-                    .execute(db)
-                
+                try EncounterActivity.where { $0.encounterId.eq(encounter.id) }.delete().execute(db)
                 try EncounterActivity.insert {
-                    newActivityTypeIDs.map { activityTypeID in
-                        EncounterActivity(
-                            id: UUID(),
-                            encounterId: encounter.id,
-                            activityTypeId: activityTypeID
-                        )
-                    }
-                }
-                .execute(db)
+                    newActivityTypeIDs.map { EncounterActivity(id: UUID(), encounterId: encounter.id, activityTypeId: $0) }
+                }.execute(db)
             }
-            
-            // Update protection methods if provided (NEW: UUID-based)
+
             if let newProtectionMethodIDs = protectionMethodIDs {
-                try EncounterProtectionMethod
-                    .where { $0.encounterId.eq(encounter.id) }
-                    .delete()
-                    .execute(db)
-                
+                try EncounterProtectionMethod.where { $0.encounterId.eq(encounter.id) }.delete().execute(db)
                 try EncounterProtectionMethod.insert {
-                    newProtectionMethodIDs.map { methodID in
-                        EncounterProtectionMethod(
-                            id: UUID(),
-                            encounterId: encounter.id,
-                            protectionMethodId: methodID
-                        )
-                    }
-                }
-                .execute(db)
+                    newProtectionMethodIDs.map { EncounterProtectionMethod(id: UUID(), encounterId: encounter.id, protectionMethodId: $0) }
+                }.execute(db)
             }
         }
     }
@@ -511,7 +507,16 @@ struct EncounterService {
                 .fetchAll(db)
         }
     }
-    
+
+    /// Fetch raw encounterPartner junction rows for a specific encounter (for loading positions in form/detail views)
+    func fetchEncounterPartnerJunctions(for encounterID: UUID) throws -> [SQLEncounterPartner] {
+        try database.read { db in
+            try SQLEncounterPartner
+                .where { $0.encounterId.eq(encounterID) }
+                .fetchAll(db)
+        }
+    }
+
 }
 
 // MARK: - Dependency Key
