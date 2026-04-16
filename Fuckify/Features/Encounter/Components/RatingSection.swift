@@ -2,15 +2,14 @@
 //  RatingSection.swift
 //  Fuckify
 //
-//  Reusable rating and orgasm section for encounter forms
+//  Reusable rating section for encounter forms
 //
 
 import SwiftUI
 
 struct RatingSection: View {
     @Binding var rating: Int
-    @Binding var reachedOrgasm: Bool
-    
+
     var body: some View {
         Section("Experience") {
             VStack(alignment: .leading, spacing: 8) {
@@ -31,15 +30,12 @@ struct RatingSection: View {
                 }
             }
             .padding(.vertical, 4)
-
-            Toggle("Reached Orgasm", isOn: $reachedOrgasm)
-                .accessibilityHint("Track whether you reached orgasm during this encounter")
         }
     }
 }
 
 #Preview {
     Form {
-        RatingSection(rating: .constant(4), reachedOrgasm: .constant(true))
+        RatingSection(rating: .constant(4))
     }
 }
