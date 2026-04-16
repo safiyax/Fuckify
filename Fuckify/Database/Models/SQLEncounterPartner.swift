@@ -15,4 +15,5 @@ struct SQLEncounterPartner: Identifiable {
     var encounterId: UUID
     var partnerId: UUID
     var positionTypeId: UUID?   // Optional position for this partner in this encounter
+    var hadOrgasm: Bool         // Whether this partner had an orgasm
 }
