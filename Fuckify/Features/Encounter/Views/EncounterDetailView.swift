@@ -241,6 +241,10 @@ struct EncounterDetailView: View {
         do {
             let junctions = try service.fetchEncounterPartnerJunctions(for: encounterId)
             let allPositionIDs = Set(junctions.compactMap { $0.positionTypeId })
+            // Always load orgasm status from all junctions
+            for junction in junctions {
+                partnerOrgasms[junction.partnerId] = junction.hadOrgasm
+            }
             if !allPositionIDs.isEmpty {
                 let posTypes = try PositionTypeService().fetchAll()
                 let posDict = Dictionary(uniqueKeysWithValues: posTypes.map { ($0.id, $0) })
@@ -248,7 +252,6 @@ struct EncounterDetailView: View {
                     if let posId = junction.positionTypeId, let pos = posDict[posId] {
                         partnerPositions[junction.partnerId] = pos
                     }
-                    partnerOrgasms[junction.partnerId] = junction.hadOrgasm
                 }
             }
             if let myPosId = currentEncounter.positionTypeId {
@@ -281,6 +284,7 @@ struct EncounterDetailView: View {
             // Reload positions
             let junctions = try service.fetchEncounterPartnerJunctions(for: encounterId)
             var newPartnerPositions: [UUID: SQLPositionType] = [:]
+            var newPartnerOrgasms: [UUID: Bool] = [:]
             let allPositionIDs = Set(junctions.compactMap { $0.positionTypeId })
             if !allPositionIDs.isEmpty {
                 let posTypes = try PositionTypeService().fetchAll()
@@ -289,10 +293,15 @@ struct EncounterDetailView: View {
                     if let posId = junction.positionTypeId, let pos = posDict[posId] {
                         newPartnerPositions[junction.partnerId] = pos
                     }
+                    newPartnerOrgasms[junction.partnerId] = junction.hadOrgasm
+                }
+            } else {
+                for junction in junctions {
+                    newPartnerOrgasms[junction.partnerId] = junction.hadOrgasm
                 }
             }
             partnerPositions = newPartnerPositions
-            partnerOrgasms = [:]
+            partnerOrgasms = newPartnerOrgasms
             if let myPosId = currentEncounter.positionTypeId {
                 myPosition = try PositionTypeService().fetchAll().first { $0.id == myPosId }
             } else {
