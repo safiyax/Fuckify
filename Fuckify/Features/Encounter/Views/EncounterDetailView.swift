@@ -17,6 +17,7 @@ struct EncounterDetailView: View {
     @State private var activityEntities: [SQLActivityTypeEntity] = []       // NEW: Entity-based
     @State private var protectionEntities: [SQLProtectionMethodEntity] = [] // NEW: Entity-based
     @State private var partnerPositions: [UUID: SQLPositionType] = [:]
+    @State private var partnerOrgasms: [UUID: Bool] = [:]
     @State private var myPosition: SQLPositionType? = nil
     @State private var isLoading = true
     @State private var currentEncounter: SQLEncounter
@@ -57,9 +58,14 @@ struct EncounterDetailView: View {
                     }
                 }
 
-                if let myPos = myPosition {
-                    Section("My Position") {
-                        Label(myPos.name, systemImage: myPos.icon)
+                if myPosition != nil || currentEncounter.reachedOrgasm {
+                    Section("Me") {
+                        if let myPos = myPosition {
+                            Label(myPos.name, systemImage: myPos.icon)
+                        }
+                        if currentEncounter.reachedOrgasm {
+                            Label("Orgasm", systemImage: "heart.fill")
+                        }
                     }
                 }
 
@@ -76,12 +82,19 @@ struct EncounterDetailView: View {
                                     }
                                     .buttonStyle(.plain)
 
-                                    if let position = partnerPositions[partner.id] {
-                                        Label(position.name, systemImage: position.icon)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .padding(.leading, 4)
+                                    HStack(spacing: 8) {
+                                        if let position = partnerPositions[partner.id] {
+                                            Label(position.name, systemImage: position.icon)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        if partnerOrgasms[partner.id] == true {
+                                            Label("Orgasm", systemImage: "heart.fill")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
+                                    .padding(.leading, 4)
                                 }
                             }
                         }
@@ -235,6 +248,7 @@ struct EncounterDetailView: View {
                     if let posId = junction.positionTypeId, let pos = posDict[posId] {
                         partnerPositions[junction.partnerId] = pos
                     }
+                    partnerOrgasms[junction.partnerId] = junction.hadOrgasm
                 }
             }
             if let myPosId = currentEncounter.positionTypeId {
@@ -278,6 +292,7 @@ struct EncounterDetailView: View {
                 }
             }
             partnerPositions = newPartnerPositions
+            partnerOrgasms = [:]
             if let myPosId = currentEncounter.positionTypeId {
                 myPosition = try PositionTypeService().fetchAll().first { $0.id == myPosId }
             } else {
