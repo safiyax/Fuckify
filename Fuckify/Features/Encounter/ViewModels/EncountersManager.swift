@@ -26,6 +26,7 @@ final class EncountersViewModel {
     var searchText: String = ""
     var errorMessage: String?
     var isLoading = false
+    var positionTypes: [SQLPositionType] = []
     
     // MARK: - Computed Properties
     
@@ -59,6 +60,7 @@ final class EncountersViewModel {
             // This loads all encounters with their relationships in just 4 queries
             // instead of 3N+1 queries (where N = number of encounters)
             encountersWithRelationships = try encounterService.fetchAllWithRelationships()
+            positionTypes = (try? PositionTypeService().fetchAll()) ?? []
             logger.info("Fetched \(self.encounters.count) encounters with relationships")
         } catch {
             logger.error("Failed to fetch encounters: \(error.localizedDescription)")
@@ -72,21 +74,21 @@ final class EncountersViewModel {
     func addEncounter(
         _ encounterDraft: SQLEncounter.Draft,
         partnerIDs: [UUID],
-        activityTypeIDs: [UUID],            // NEW: UUID-based
-        protectionMethodIDs: [UUID]         // NEW: UUID-based
+        partnerPositionTypeIDs: [UUID: UUID?] = [:],
+        myPositionTypeId: UUID? = nil,
+        activityTypeIDs: [UUID],
+        protectionMethodIDs: [UUID]
     ) async {
         do {
             let encounterID = try encounterService.create(
                 encounterDraft,
                 partnerIDs: partnerIDs,
+                partnerPositionTypeIDs: partnerPositionTypeIDs,
+                myPositionTypeId: myPositionTypeId,
                 activityTypeIDs: activityTypeIDs,
                 protectionMethodIDs: protectionMethodIDs
             )
             logger.info("Created encounter: \(encounterID)")
-            
-            // Note: lastEncounterDate is automatically updated inside encounterService.create()
-            
-            // Refresh the list
             await fetchEncounters()
         } catch {
             logger.error("Failed to create encounter: \(error.localizedDescription)")
@@ -97,21 +99,21 @@ final class EncountersViewModel {
     func updateEncounter(
         _ encounter: SQLEncounter,
         partnerIDs: [UUID]? = nil,
-        activityTypeIDs: [UUID]? = nil,            // NEW: UUID-based
-        protectionMethodIDs: [UUID]? = nil         // NEW: UUID-based
+        partnerPositionTypeIDs: [UUID: UUID?]? = nil,
+        myPositionTypeId: UUID?? = nil,
+        activityTypeIDs: [UUID]? = nil,
+        protectionMethodIDs: [UUID]? = nil
     ) async {
         do {
             try encounterService.update(
                 encounter,
                 partnerIDs: partnerIDs,
+                partnerPositionTypeIDs: partnerPositionTypeIDs,
+                myPositionTypeId: myPositionTypeId,
                 activityTypeIDs: activityTypeIDs,
                 protectionMethodIDs: protectionMethodIDs
             )
             logger.info("Updated encounter: \(encounter.id)")
-            
-            // Note: lastEncounterDate is automatically updated inside encounterService.update()
-            
-            // Refresh the list
             await fetchEncounters()
         } catch {
             logger.error("Failed to update encounter: \(error.localizedDescription)")
