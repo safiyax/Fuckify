@@ -81,7 +81,7 @@ private struct EncounterPositionRow: View {
             Spacer()
 
             Picker("", selection: $selectedPositionId) {
-                Text("None").tag(UUID?.none)
+                Label("None", systemImage: "minus.circle").tag(UUID?.none)
                 ForEach(availablePositions) { position in
                     Label(position.name, systemImage: position.icon)
                         .tag(Optional(position.id))
