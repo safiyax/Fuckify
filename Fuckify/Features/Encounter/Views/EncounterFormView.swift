@@ -45,6 +45,7 @@ struct EncounterFormView: View {
     @State private var availablePositions: [SQLPositionType] = []
     @State private var myPositionTypeId: UUID? = nil
     @State private var partnerPositionTypeIDs: [UUID: UUID?] = [:]
+    @State private var partnerOrgasms: [UUID: Bool] = [:]
 
     var isEditing: Bool {
         encounter != nil
@@ -135,17 +136,19 @@ struct EncounterFormView: View {
                     selectedProtectionIDs: $selectedProtectionIDs
                 )
 
-                // Positions (Me + Partners combined)
-                PositionsSection(
+                // Participants (Me + Partners — position and orgasm per person)
+                ParticipantsSection(
                     profile: profile,
                     partners: selectedPartners,
                     availablePositions: availablePositions,
                     myPositionTypeId: $myPositionTypeId,
-                    partnerPositionTypeIDs: $partnerPositionTypeIDs
+                    myReachedOrgasm: $reachedOrgasm,
+                    partnerPositionTypeIDs: $partnerPositionTypeIDs,
+                    partnerOrgasms: $partnerOrgasms
                 )
 
                 // Experience
-                RatingSection(rating: $rating, reachedOrgasm: $reachedOrgasm)
+                RatingSection(rating: $rating)
 
                 // Location
                 Section("Location") {
@@ -229,6 +232,7 @@ struct EncounterFormView: View {
         if selectedPartnerIDs.contains(partnerID) {
             selectedPartnerIDs.remove(partnerID)
             partnerPositionTypeIDs.removeValue(forKey: partnerID)
+            partnerOrgasms.removeValue(forKey: partnerID)
         } else {
             selectedPartnerIDs.insert(partnerID)
         }
@@ -266,9 +270,10 @@ struct EncounterFormView: View {
             let junctions = try encounterService.fetchEncounterPartnerJunctions(for: encounter.id)
             for junction in junctions {
                 partnerPositionTypeIDs[junction.partnerId] = junction.positionTypeId
+                partnerOrgasms[junction.partnerId] = junction.hadOrgasm
             }
         } catch {
-            // Non-fatal — positions just won't be pre-populated
+            // Non-fatal — positions/orgasms just won't be pre-populated
         }
     }
 
@@ -300,6 +305,7 @@ struct EncounterFormView: View {
                     updated,
                     partnerIDs: partnerIDs,
                     partnerPositionTypeIDs: partnerPositionTypeIDs,
+                    partnerOrgasms: partnerOrgasms,
                     myPositionTypeId: .some(myPositionTypeId),
                     activityTypeIDs: activityTypeIDs,
                     protectionMethodIDs: protectionMethodIDs
@@ -325,6 +331,7 @@ struct EncounterFormView: View {
                     draft,
                     partnerIDs: partnerIDs,
                     partnerPositionTypeIDs: partnerPositionTypeIDs,
+                    partnerOrgasms: partnerOrgasms,
                     myPositionTypeId: myPositionTypeId,
                     activityTypeIDs: activityTypeIDs,
                     protectionMethodIDs: protectionMethodIDs
