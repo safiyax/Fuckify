@@ -19,6 +19,7 @@ class SettingsConfig {
     var showAppIconPicker: Bool
     var showActivities: Bool
     var showProtectionMethods: Bool
+    var showPositions: Bool
     var showSecurity: Bool
     
     // Data Section
@@ -45,6 +46,7 @@ class SettingsConfig {
             showAppIconPicker: false,
             showActivities: true,
             showProtectionMethods: true,
+            showPositions: true,
             showSecurity: true
         ),
         data: .init(
@@ -65,6 +67,7 @@ class SettingsConfig {
         self.showAppIconPicker = defaults.personalization.showAppIconPicker
         self.showActivities = defaults.personalization.showActivities
         self.showProtectionMethods = defaults.personalization.showProtectionMethods
+        self.showPositions = defaults.personalization.showPositions
         self.showSecurity = defaults.personalization.showSecurity
         
         self.showImportExport = defaults.data.showImportExport
@@ -94,6 +97,7 @@ class SettingsConfig {
         showAppIconPicker = payload.personalization.showAppIconPicker
         showActivities = payload.personalization.showActivities
         showProtectionMethods = payload.personalization.showProtectionMethods
+        showPositions = payload.personalization.showPositions
         showSecurity = payload.personalization.showSecurity
         
         // Data
@@ -110,7 +114,7 @@ class SettingsConfig {
     
     /// Whether to show the entire Personalization section
     var showPersonalizationSection: Bool {
-        showAppIconPicker || showActivities || showProtectionMethods || showSecurity
+        showAppIconPicker || showActivities || showProtectionMethods || showPositions || showSecurity
     }
     
     /// Whether to show the entire Data section

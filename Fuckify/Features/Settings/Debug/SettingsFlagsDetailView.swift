@@ -22,6 +22,7 @@ struct SettingsFlagsDetailView: View {
                 DebugFlagRow(label: "App Icon Picker", value: $config.showAppIconPicker)
                 DebugFlagRow(label: "Activities", value: $config.showActivities)
                 DebugFlagRow(label: "Protection Methods", value: $config.showProtectionMethods)
+                DebugFlagRow(label: "Positions", value: $config.showPositions)
                 DebugFlagRow(label: "Security", value: $config.showSecurity)
             }
             

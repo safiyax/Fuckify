@@ -141,7 +141,7 @@ struct DebugMenuView: View {
     }
     
     private func getSettingsFlagsCount() -> Int {
-        return 9 // showAppIconPicker, showActivities, showProtectionMethods, showSecurity, showImportExport, showDeleteData, showAbout, showSupport, showExperiments
+        return 10 // showAppIconPicker, showActivities, showProtectionMethods, showPositions, showSecurity, showImportExport, showDeleteData, showAbout, showSupport, showExperiments
     }
     
     private func getImportExportFlagsCount() -> Int {

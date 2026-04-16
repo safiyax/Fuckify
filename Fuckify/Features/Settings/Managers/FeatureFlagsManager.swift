@@ -51,12 +51,14 @@ struct SettingsFlagsPayload: Codable {
         let showAppIconPicker: Bool
         let showActivities: Bool
         let showProtectionMethods: Bool
+        let showPositions: Bool
         let showSecurity: Bool
         
         enum CodingKeys: String, CodingKey {
             case showAppIconPicker = "show_app_icon_picker"
             case showActivities = "show_activities"
             case showProtectionMethods = "show_protection_methods"
+            case showPositions = "show_positions"
             case showSecurity = "show_security"
         }
     }

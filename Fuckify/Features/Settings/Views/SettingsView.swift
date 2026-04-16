@@ -59,13 +59,15 @@ struct SettingsView: View {
                             }
                         }
                         
-                        NavigationLink {
-                            PositionsSettingsView()
-                        } label: {
-                            HStack {
-                                Image(systemName: "arrow.up.arrow.down.circle.fill")
-                                    .foregroundColor(.orange)
-                                Text("Positions")
+                        if config.showPositions {
+                            NavigationLink {
+                                PositionsSettingsView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "arrow.up.arrow.down.circle.fill")
+                                        .foregroundColor(.orange)
+                                    Text("Positions")
+                                }
                             }
                         }
                         
