@@ -16,6 +16,8 @@ struct EncounterDetailView: View {
     @State private var partners: [SQLPartner] = []
     @State private var activityEntities: [SQLActivityTypeEntity] = []       // NEW: Entity-based
     @State private var protectionEntities: [SQLProtectionMethodEntity] = [] // NEW: Entity-based
+    @State private var partnerPositions: [UUID: SQLPositionType] = [:]
+    @State private var myPosition: SQLPositionType? = nil
     @State private var isLoading = true
     @State private var currentEncounter: SQLEncounter
     @State private var selectedPartner: SQLPartner?
@@ -55,17 +57,32 @@ struct EncounterDetailView: View {
                     }
                 }
 
+                if let myPos = myPosition {
+                    Section("My Position") {
+                        Label(myPos.name, systemImage: myPos.icon)
+                    }
+                }
+
                 // Partners Section
                 Section("Partners") {
                     if !partners.isEmpty {
                         FlowLayout(spacing: 8) {
                             ForEach(partners) { partner in
-                                Button {
-                                    selectedPartner = partner
-                                } label: {
-                                    EncounterDetailPartnerChip(partner: partner)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Button {
+                                        selectedPartner = partner
+                                    } label: {
+                                        EncounterDetailPartnerChip(partner: partner)
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    if let position = partnerPositions[partner.id] {
+                                        Label(position.name, systemImage: position.icon)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 4)
+                                    }
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                         .padding(4)
@@ -206,7 +223,27 @@ struct EncounterDetailView: View {
         } catch {
             logger.error("Failed to load encounter details for \(encounterId): \(error.localizedDescription)")
         }
-        
+
+        // Load partner positions
+        do {
+            let junctions = try service.fetchEncounterPartnerJunctions(for: encounterId)
+            let allPositionIDs = Set(junctions.compactMap { $0.positionTypeId })
+            if !allPositionIDs.isEmpty {
+                let posTypes = try PositionTypeService().fetchAll()
+                let posDict = Dictionary(uniqueKeysWithValues: posTypes.map { ($0.id, $0) })
+                for junction in junctions {
+                    if let posId = junction.positionTypeId, let pos = posDict[posId] {
+                        partnerPositions[junction.partnerId] = pos
+                    }
+                }
+            }
+            if let myPosId = currentEncounter.positionTypeId {
+                myPosition = try PositionTypeService().fetchAll().first { $0.id == myPosId }
+            }
+        } catch {
+            // Non-fatal — positions just won't show
+        }
+
         isLoading = false
     }
     
@@ -226,6 +263,26 @@ struct EncounterDetailView: View {
             partners = try service.fetchPartners(for: encounterId)
             activityEntities = try service.fetchActivityEntities(for: encounterId)              // NEW
             protectionEntities = try service.fetchProtectionMethodEntities(for: encounterId)   // NEW
+
+            // Reload positions
+            let junctions = try service.fetchEncounterPartnerJunctions(for: encounterId)
+            var newPartnerPositions: [UUID: SQLPositionType] = [:]
+            let allPositionIDs = Set(junctions.compactMap { $0.positionTypeId })
+            if !allPositionIDs.isEmpty {
+                let posTypes = try PositionTypeService().fetchAll()
+                let posDict = Dictionary(uniqueKeysWithValues: posTypes.map { ($0.id, $0) })
+                for junction in junctions {
+                    if let posId = junction.positionTypeId, let pos = posDict[posId] {
+                        newPartnerPositions[junction.partnerId] = pos
+                    }
+                }
+            }
+            partnerPositions = newPartnerPositions
+            if let myPosId = currentEncounter.positionTypeId {
+                myPosition = try PositionTypeService().fetchAll().first { $0.id == myPosId }
+            } else {
+                myPosition = nil
+            }
         } catch {
             logger.error("Failed to refresh encounter \(encounterId): \(error.localizedDescription)")
         }
