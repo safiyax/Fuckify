@@ -26,136 +26,138 @@ struct ParticipantsSection: View {
 
     var body: some View {
         Section("Participants") {
-            // Me row — always first
-            ParticipantRow(
-                id: meID,
+            // Me — header row
+            ParticipantHeaderRow(
                 avatarColor: Color("AccentColor"),
                 initials: profile.initials,
                 name: profile.name.isEmpty ? "Me" : profile.name,
-                availablePositions: availablePositions,
-                selectedPositionId: $myPositionTypeId,
-                hadOrgasm: $myReachedOrgasm,
                 isExpanded: expandedIDs.contains(meID),
                 onToggleExpand: { toggleExpand(meID) }
             )
+            // Me — expanded detail row
+            if expandedIDs.contains(meID) {
+                ParticipantDetailRow(
+                    availablePositions: availablePositions,
+                    selectedPositionId: $myPositionTypeId,
+                    hadOrgasm: $myReachedOrgasm
+                )
+                .transition(.opacity)
+            }
 
-            // Partner rows
+            // Partners
             ForEach(partners) { partner in
-                ParticipantRow(
-                    id: partner.id,
+                ParticipantHeaderRow(
                     avatarColor: partner.color,
                     initials: partner.initials,
                     name: partner.name,
-                    availablePositions: availablePositions,
-                    selectedPositionId: Binding(
-                        get: { partnerPositionTypeIDs[partner.id] ?? nil },
-                        set: { partnerPositionTypeIDs[partner.id] = $0 }
-                    ),
-                    hadOrgasm: Binding(
-                        get: { partnerOrgasms[partner.id] ?? false },
-                        set: { partnerOrgasms[partner.id] = $0 }
-                    ),
                     isExpanded: expandedIDs.contains(partner.id),
                     onToggleExpand: { toggleExpand(partner.id) }
                 )
+                if expandedIDs.contains(partner.id) {
+                    ParticipantDetailRow(
+                        availablePositions: availablePositions,
+                        selectedPositionId: Binding(
+                            get: { partnerPositionTypeIDs[partner.id] ?? nil },
+                            set: { partnerPositionTypeIDs[partner.id] = $0 }
+                        ),
+                        hadOrgasm: Binding(
+                            get: { partnerOrgasms[partner.id] ?? false },
+                            set: { partnerOrgasms[partner.id] = $0 }
+                        )
+                    )
+                    .transition(.opacity)
+                }
             }
         }
     }
 
     private func toggleExpand(_ id: UUID) {
-        if expandedIDs.contains(id) {
-            expandedIDs.remove(id)
-        } else {
-            expandedIDs.insert(id)
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if expandedIDs.contains(id) {
+                expandedIDs.remove(id)
+            } else {
+                expandedIDs.insert(id)
+            }
         }
     }
 }
 
-// MARK: - Participant Row
+// MARK: - Participant Header Row
 
-private struct ParticipantRow: View {
-    let id: UUID
+private struct ParticipantHeaderRow: View {
     let avatarColor: Color
     let initials: String
     let name: String
-    let availablePositions: [SQLPositionType]
-    @Binding var selectedPositionId: UUID?
-    @Binding var hadOrgasm: Bool
     let isExpanded: Bool
     let onToggleExpand: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header row — always visible, tap to expand/collapse
-            Button(action: onToggleExpand) {
-                HStack {
-                    // Avatar
-                    ZStack {
-                        Circle()
-                            .fill(avatarColor)
-                            .frame(width: 32, height: 32)
-                        Text(initials)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                    }
-
-                    Text(name)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
+        Button(action: onToggleExpand) {
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(avatarColor)
+                        .frame(width: 32, height: 32)
+                    Text(initials)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                        .foregroundStyle(.white)
                 }
-                .contentShape(Rectangle())
+
+                Text(name)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
 
-            // Expanded content
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider()
-                        .padding(.vertical, 8)
+// MARK: - Participant Detail Row (separate List row when expanded)
 
-                    // Position picker
-                    if !availablePositions.isEmpty {
-                        HStack {
-                            Label("Position", systemImage: "figure.stand")
-                                .foregroundStyle(.secondary)
-                                .font(.subheadline)
-                            Spacer()
-                            Picker("", selection: $selectedPositionId) {
-                                Label("None", systemImage: "minus.circle")
-                                    .tag(UUID?.none)
-                                ForEach(availablePositions) { position in
-                                    Label(position.name, systemImage: position.icon)
-                                        .tag(Optional(position.id))
-                                }
-                            }
-                            .pickerStyle(.menu)
+private struct ParticipantDetailRow: View {
+    let availablePositions: [SQLPositionType]
+    @Binding var selectedPositionId: UUID?
+    @Binding var hadOrgasm: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Position picker
+            if !availablePositions.isEmpty {
+                HStack {
+                    Label("Position", systemImage: "figure.stand")
+                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                    Spacer()
+                    Picker("", selection: $selectedPositionId) {
+                        Label("None", systemImage: "minus.circle")
+                            .tag(UUID?.none)
+                        ForEach(availablePositions) { position in
+                            Label(position.name, systemImage: position.icon)
+                                .tag(Optional(position.id))
                         }
-                        .padding(.bottom, 8)
                     }
-
-                    // Orgasm toggle
-                    Toggle(isOn: $hadOrgasm) {
-                        Label("Orgasm", systemImage: hadOrgasm ? "heart.fill" : "heart")
-                            .foregroundStyle(.secondary)
-                            .font(.subheadline)
-                    }
+                    .pickerStyle(.menu)
                 }
-                .padding(.leading, 48)  // indent to align with name
-                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Orgasm toggle
+            Toggle(isOn: $hadOrgasm) {
+                Label("Orgasm", systemImage: hadOrgasm ? "heart.fill" : "heart")
+                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-        .padding(.vertical, 4)
+        .padding(.leading, 48)
     }
 }
 

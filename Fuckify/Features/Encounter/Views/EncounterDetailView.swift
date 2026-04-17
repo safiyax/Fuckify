@@ -74,28 +74,16 @@ struct EncounterDetailView: View {
                     if !partners.isEmpty {
                         FlowLayout(spacing: 8) {
                             ForEach(partners) { partner in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Button {
-                                        selectedPartner = partner
-                                    } label: {
-                                        EncounterDetailPartnerChip(partner: partner)
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    HStack(spacing: 8) {
-                                        if let position = partnerPositions[partner.id] {
-                                            Label(position.name, systemImage: position.icon)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        if partnerOrgasms[partner.id] == true {
-                                            Label("Orgasm", systemImage: "heart.fill")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .padding(.leading, 4)
+                                Button {
+                                    selectedPartner = partner
+                                } label: {
+                                    EncounterDetailPartnerChip(
+                                        partner: partner,
+                                        position: partnerPositions[partner.id],
+                                        hadOrgasm: partnerOrgasms[partner.id] == true
+                                    )
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(4)
@@ -317,11 +305,13 @@ struct EncounterDetailView: View {
 
 struct EncounterDetailPartnerChip: View {
     let partner: SQLPartner
-    
+    var position: SQLPositionType? = nil
+    var hadOrgasm: Bool = false
+
     var partnerColor: Color {
         Color.fromPartnerColorName(partner.avatarColor)
     }
-    
+
     var body: some View {
         HStack(spacing: 6) {
             Text(partner.name)
@@ -329,13 +319,22 @@ struct EncounterDetailPartnerChip: View {
                 .fontWeight(.medium)
                 .lineLimit(1)
                 .foregroundColor(partnerColor)
+
+            if let pos = position {
+                Image(systemName: pos.icon)
+                    .font(.caption)
+                    .foregroundColor(partnerColor.opacity(0.8))
+            }
+
+            if hadOrgasm {
+                Image(systemName: "heart.fill")
+                    .font(.caption)
+                    .foregroundColor(partnerColor.opacity(0.8))
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(
-            partnerColor
-                .opacity(0.15)
-        )
+        .background(partnerColor.opacity(0.15))
         .cornerRadius(16)
     }
 }

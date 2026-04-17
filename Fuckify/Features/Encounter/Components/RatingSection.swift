@@ -13,8 +13,8 @@ struct RatingSection: View {
     var body: some View {
         Section("Experience") {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Rating")
-                    .font(.subheadline)
+//                Text("Rating")
+//                    .font(.subheadline)
                 HStack(spacing: 8) {
                     ForEach(1...5, id: \.self) { star in
                         Button(action: { rating = star }) {
