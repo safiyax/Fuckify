@@ -235,6 +235,11 @@ struct EncounterFormView: View {
             partnerOrgasms.removeValue(forKey: partnerID)
         } else {
             selectedPartnerIDs.insert(partnerID)
+            // Pre-fill default position if the partner has one set
+            if let partner = allPartners.first(where: { $0.id == partnerID }),
+               let defaultPositionId = partner.defaultPositionTypeId {
+                partnerPositionTypeIDs[partnerID] = defaultPositionId
+            }
         }
     }
 
