@@ -31,7 +31,9 @@ struct PartnerDetailView: View {
     @State private var editShowDateMetPicker: Bool = false
     @State private var editAvatarColor: String = ""
     @State private var editIsPinned: Bool = false
-    
+    @State private var editDefaultPositionTypeId: UUID? = nil
+    @State private var availablePositions: [SQLPositionType] = []
+
     // Custom attributes
     @State private var attributesWithValues: [PartnerAttributeWithValue] = []
     @State private var editAttributeValues: [UUID: String] = [:]
@@ -106,12 +108,32 @@ struct PartnerDetailView: View {
                         )
                         .datePickerStyle(.compact)
                     }
+
+                    if !availablePositions.isEmpty {
+                        Picker("Default Position", selection: $editDefaultPositionTypeId) {
+                            Text("None").tag(UUID?.none)
+                            ForEach(availablePositions) { position in
+                                Label(position.name, systemImage: position.icon)
+                                    .tag(Optional(position.id))
+                            }
+                        }
+                    }
                 } else {
                     if let dateMet = currentPartner.dateMet {
                         HStack {
                             Text("Date Met")
                             Spacer()
                             Text(dateMet.formatted(date: .abbreviated, time: .omitted))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if let posId = currentPartner.defaultPositionTypeId,
+                       let position = availablePositions.first(where: { $0.id == posId }) {
+                        HStack {
+                            Text("Default Position")
+                            Spacer()
+                            Label(position.name, systemImage: position.icon)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -212,6 +234,7 @@ struct PartnerDetailView: View {
             loadEditableFields()
             await loadEncounters()
             await loadCustomAttributes()
+            availablePositions = (try? PositionTypeService().fetchAll()) ?? []
         }
         .onChange(of: editMode?.wrappedValue) { oldValue, newValue in
             if oldValue?.isEditing == true && newValue?.isEditing == false {
@@ -239,6 +262,7 @@ struct PartnerDetailView: View {
         editShowDateMetPicker = currentPartner.dateMet != nil
         editAvatarColor = currentPartner.avatarColor
         editIsPinned = currentPartner.isPinned
+        editDefaultPositionTypeId = currentPartner.defaultPositionTypeId
     }
     
     private func loadEditableAttributeValues() {
@@ -259,7 +283,8 @@ struct PartnerDetailView: View {
         updatedPartner.dateMet = editShowDateMetPicker ? editDateMet : nil
         updatedPartner.avatarColor = editAvatarColor
         updatedPartner.isPinned = editIsPinned
-        
+        updatedPartner.defaultPositionTypeId = editDefaultPositionTypeId
+
         do {
             // Capture service before detached task to avoid actor isolation issues
             let service = partnerService
