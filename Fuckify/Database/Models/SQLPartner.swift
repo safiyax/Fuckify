@@ -30,6 +30,7 @@ struct SQLPartner: Identifiable, Hashable {
     var dateAdded: Date = Date()
     var lastEncounterDate: Date?
     var isPinned = false
+    var defaultPositionTypeId: UUID? = nil   // Pre-fills position when added to an encounter
     
     
     var color: Color {

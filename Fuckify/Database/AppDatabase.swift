@@ -109,6 +109,9 @@ func appDatabase() throws -> any DatabaseWriter {
     migrator.registerMigration("Add participant orgasm") { db in
         try AddParticipantOrgasm.migrate(db)
     }
+    migrator.registerMigration("Add partner default position") { db in
+        try AddPartnerDefaultPosition.migrate(db)
+    }
 
     // Note: SwiftData migration has been removed since all data has been migrated
     // If you need to re-migrate data, restore from git history:
