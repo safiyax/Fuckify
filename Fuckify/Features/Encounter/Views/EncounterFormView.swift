@@ -190,6 +190,16 @@ struct EncounterFormView: View {
             .task {
                 await loadData()
             }
+            .onChange(of: allPartners) { _, partners in
+                // When DB partners load, fill in any missing default positions
+                // for already-selected partners (handles @FetchAll race on first render)
+                for partner in partners where selectedPartnerIDs.contains(partner.id) {
+                    if partnerPositionTypeIDs[partner.id] == nil,
+                       let defaultPositionId = partner.defaultPositionTypeId {
+                        partnerPositionTypeIDs[partner.id] = defaultPositionId
+                    }
+                }
+            }
             .sheet(isPresented: $showingPartnerPicker) {
                 PartnerPickerSheet(
                     allPartners: allPartners,
@@ -221,9 +231,16 @@ struct EncounterFormView: View {
                 date = preselectedDate
             }
             
-            // Preselect partners if provided
+            // Preselect partners if provided and pre-fill their default positions
             if !preselectedPartners.isEmpty {
                 selectedPartnerIDs = Set(preselectedPartners.map(\.id))
+                for partner in preselectedPartners {
+                    // Prefer the live partner record from DB (has defaultPositionTypeId)
+                    let livePartner = allPartners.first(where: { $0.id == partner.id }) ?? partner
+                    if let defaultPositionId = livePartner.defaultPositionTypeId {
+                        partnerPositionTypeIDs[partner.id] = defaultPositionId
+                    }
+                }
             }
         }
     }
