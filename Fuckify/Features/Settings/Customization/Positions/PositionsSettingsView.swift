@@ -125,27 +125,18 @@ struct PositionsSettingsView: View {
 
 // MARK: - Position Row
 
-struct PositionRow: View {
+private struct PositionRow: View {
     let position: SQLPositionType
     let onToggle: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: position.icon)
-                .font(.title3)
-                .foregroundColor(position.isEnabled ? .orange : .gray)
-                .frame(width: 30)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(position.name)
-                    .foregroundColor(position.isEnabled ? .primary : .secondary)
-                if position.isBuiltIn {
-                    BuiltInBadge()
-                }
-            }
-            Spacer()
-            Toggle("", isOn: Binding(get: { position.isEnabled }, set: { _ in onToggle() }))
-                .labelsHidden()
-                .accessibilityLabel("\(position.name) enabled")
-        }
+        CustomizationItemRow(
+            icon: position.icon,
+            name: position.name,
+            isEnabled: position.isEnabled,
+            isBuiltIn: position.isBuiltIn,
+            accentColor: .orange,
+            onToggle: onToggle
+        )
     }
 }

@@ -171,47 +171,21 @@ struct PartnerAttributesSettingsView: View {
 
 // MARK: - Attribute Row
 
-struct AttributeRow: View {
+private struct AttributeRow: View {
     let attribute: SQLPartnerAttributeType
     let onToggle: () -> Void
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: attribute.icon)
-                .font(.title3)
-                .foregroundColor(attribute.isEnabled ? .accentColor : .gray)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(attribute.name)
-                    .font(.body)
-                    .foregroundColor(attribute.isEnabled ? .primary : .secondary)
-                
-                HStack(spacing: 4) {
-                    if attribute.isBuiltIn {
-                        BuiltInBadge()
-                    }
-                    
-                    Text(attribute.parsedFieldType.displayName)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(4)
-                }
-            }
-            
-            Spacer()
-            
-            Toggle("", isOn: Binding(
-                get: { attribute.isEnabled },
-                set: { _ in onToggle() }
-            ))
-            .labelsHidden()
-            .accessibilityLabel("\(attribute.name) enabled")
-        }
-        .padding(.vertical, 0)
+        CustomizationItemRow(
+            icon: attribute.icon,
+            name: attribute.name,
+            isEnabled: attribute.isEnabled,
+            isBuiltIn: attribute.isBuiltIn,
+            accentColor: .accentColor,
+            extraBadge: attribute.parsedFieldType.displayName,
+            extraBadgeColor: .purple,
+            onToggle: onToggle
+        )
     }
 }
 

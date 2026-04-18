@@ -145,36 +145,18 @@ struct ProtectionMethodsSettingsView: View {
 
 // MARK: - Protection Method Row
 
-struct ProtectionMethodRow: View {
+private struct ProtectionMethodRow: View {
     let method: SQLProtectionMethodEntity
     let onToggle: () -> Void
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: method.icon)
-                .font(.title3)
-                .foregroundColor(method.isEnabled ? .green : .gray)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(method.name)
-                    .font(.body)
-                    .foregroundColor(method.isEnabled ? .primary : .secondary)
-                
-                if method.isBuiltIn {
-                    BuiltInBadge()
-                }
-            }
-            
-            Spacer()
-            
-            Toggle("", isOn: Binding(
-                get: { method.isEnabled },
-                set: { _ in onToggle() }
-            ))
-            .labelsHidden()
-            .accessibilityLabel("\(method.name) enabled")
-        }
-        .padding(.vertical, !method.isBuiltIn ? 2 : 0)
+        CustomizationItemRow(
+            icon: method.icon,
+            name: method.name,
+            isEnabled: method.isEnabled,
+            isBuiltIn: method.isBuiltIn,
+            accentColor: .green,
+            onToggle: onToggle
+        )
     }
 }

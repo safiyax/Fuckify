@@ -145,36 +145,18 @@ struct ActivitiesSettingsView: View {
 
 // MARK: - Activity Row
 
-struct ActivityRow: View {
+private struct ActivityRow: View {
     let activity: SQLActivityTypeEntity
     let onToggle: () -> Void
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: activity.icon)
-                .font(.title3)
-                .foregroundColor(activity.isEnabled ? .purple : .gray)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(activity.name)
-                    .font(.body)
-                    .foregroundColor(activity.isEnabled ? .primary : .secondary)
-                
-                if activity.isBuiltIn {
-                    BuiltInBadge()
-                }
-            }
-            
-            Spacer()
-            
-            Toggle("", isOn: Binding(
-                get: { activity.isEnabled },
-                set: { _ in onToggle() }
-            ))
-            .labelsHidden()
-            .accessibilityLabel("\(activity.name) enabled")
-        }
-        .padding(.vertical, !activity.isBuiltIn ? 2 : 0)
+        CustomizationItemRow(
+            icon: activity.icon,
+            name: activity.name,
+            isEnabled: activity.isEnabled,
+            isBuiltIn: activity.isBuiltIn,
+            accentColor: .purple,
+            onToggle: onToggle
+        )
     }
 }
