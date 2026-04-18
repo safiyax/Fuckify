@@ -122,20 +122,8 @@ struct CustomizationService {
             if let entity = try SQLActivityTypeEntity.find(id).fetchOne(db) {
                 var updated = entity
                 updated.isEnabled.toggle()
-                
-                // Update directly in this transaction to avoid re-entrant error
-                if updated.isBuiltIn {
-                    try db.execute(
-                        sql: """
-                        UPDATE activityType 
-                        SET isEnabled = ?, sortOrder = ?
-                        WHERE id = ?
-                        """,
-                        arguments: [updated.isEnabled, updated.sortOrder, updated.id]
-                    )
-                } else {
-                    try SQLActivityTypeEntity.update(updated).execute(db)
-                }
+
+                try SQLActivityTypeEntity.update(updated).execute(db)
             }
         }
     }
@@ -246,20 +234,8 @@ struct CustomizationService {
             if let entity = try SQLProtectionMethodEntity.find(id).fetchOne(db) {
                 var updated = entity
                 updated.isEnabled.toggle()
-                
-                // Update directly in this transaction to avoid re-entrant error
-                if updated.isBuiltIn {
-                    try db.execute(
-                        sql: """
-                        UPDATE protectionMethodType 
-                        SET isEnabled = ?, sortOrder = ?
-                        WHERE id = ?
-                        """,
-                        arguments: [updated.isEnabled, updated.sortOrder, updated.id]
-                    )
-                } else {
-                    try SQLProtectionMethodEntity.update(updated).execute(db)
-                }
+
+                try SQLProtectionMethodEntity.update(updated).execute(db)
             }
         }
     }

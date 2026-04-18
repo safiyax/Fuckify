@@ -126,15 +126,7 @@ struct PositionTypeService {
             var updated = entity
             updated.isEnabled.toggle()
 
-            if updated.isBuiltIn {
-                // Use raw SQL for built-ins — matches CustomizationService pattern
-                try db.execute(
-                    sql: "UPDATE positionType SET isEnabled = ?, sortOrder = ? WHERE id = ?",
-                    arguments: [updated.isEnabled, updated.sortOrder, updated.id]
-                )
-            } else {
-                try SQLPositionType.update(updated).execute(db)
-            }
+            try SQLPositionType.update(updated).execute(db)
             logger.info("Toggled position type \(id): isEnabled=\(updated.isEnabled)")
         }
     }
