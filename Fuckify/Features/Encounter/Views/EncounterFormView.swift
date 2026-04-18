@@ -190,7 +190,7 @@ struct EncounterFormView: View {
             .task {
                 await loadData()
             }
-            .onChange(of: allPartners) { _, partners in
+            .onChange(of: selectedPartners) { _, partners in
                 // When DB partners load, fill in any missing default positions
                 // for already-selected partners (handles @FetchAll race on first render)
                 for partner in partners where selectedPartnerIDs.contains(partner.id) {
@@ -226,6 +226,10 @@ struct EncounterFormView: View {
         if let encounter = encounter {
             await loadEncounter(encounter)
         } else {
+            // Pre-fill "Me" position from profile default
+            if let defaultPositionId = profile.defaultPositionTypeId {
+                myPositionTypeId = defaultPositionId
+            }
             // Preselect date if provided
             if let preselectedDate = preselectedDate {
                 date = preselectedDate

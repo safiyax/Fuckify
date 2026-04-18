@@ -17,6 +17,8 @@ struct ProfileView: View {
     @State private var editDateOfBirth: Date?
     @State private var editShowDateOfBirth: Bool = false
     @State private var editNotes: String = ""
+    @State private var editDefaultPositionTypeId: UUID? = nil
+    @State private var availablePositions: [SQLPositionType] = []
 
     private var hasProfileData: Bool {
         !profile.name.isEmpty || profile.dateOfBirth != nil || !profile.notes.isEmpty
@@ -73,6 +75,27 @@ struct ProfileView: View {
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
+                        }
+                        if !availablePositions.isEmpty {
+                            Picker("Default Position", selection: $editDefaultPositionTypeId) {
+                                Text("None").tag(UUID?.none)
+                                ForEach(availablePositions) { position in
+                                    Label(position.name, systemImage: position.icon)
+                                        .tag(Optional(position.id))
+                                }
+                            }
+                        }
+                    }
+                } else if !profile.name.isEmpty || profile.dateOfBirth != nil || profile.defaultPositionTypeId != nil {
+                    Section("Basic Information") {
+                        if let posId = profile.defaultPositionTypeId,
+                           let position = availablePositions.first(where: { $0.id == posId }) {
+                            HStack {
+                                Text("Default Position")
+                                Spacer()
+                                Label(position.name, systemImage: position.icon)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -155,7 +178,10 @@ struct ProfileView: View {
             .sheet(isPresented: $showingSTIForm) {
                 STITestFormView().dismissOnAppLock()
             }
-            .onAppear { loadEditableFields() }
+            .onAppear {
+                loadEditableFields()
+                availablePositions = (try? PositionTypeService().fetchAll()) ?? []
+            }
             .onChange(of: isEditing) { oldValue, newValue in
                 if oldValue == true && newValue == false {
                     saveChanges()
@@ -171,12 +197,14 @@ struct ProfileView: View {
         editDateOfBirth = profile.dateOfBirth
         editShowDateOfBirth = profile.dateOfBirth != nil
         editNotes = profile.notes
+        editDefaultPositionTypeId = profile.defaultPositionTypeId
     }
 
     private func saveChanges() {
         profile.name = editName
         profile.dateOfBirth = editShowDateOfBirth ? editDateOfBirth : nil
         profile.notes = editNotes
+        profile.defaultPositionTypeId = editDefaultPositionTypeId
     }
 }
 

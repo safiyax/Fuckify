@@ -62,6 +62,17 @@ final class UserProfile {
         }
     }
 
+    /// Default position type for the user, pre-fills "Me" row in encounter form
+    var defaultPositionTypeId: UUID? {
+        didSet {
+            if let id = defaultPositionTypeId {
+                UserDefaults.standard.set(id.uuidString, forKey: "userDefaultPositionTypeId")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "userDefaultPositionTypeId")
+            }
+        }
+    }
+
     // MARK: - Initialization
 
     init() {
@@ -72,6 +83,11 @@ final class UserProfile {
         let interval = UserDefaults.standard.integer(forKey: "stiTestingIntervalDays")
         self.stiTestingIntervalDays = interval > 0 ? interval : 90
         self.stiRemindersEnabled = UserDefaults.standard.bool(forKey: "stiRemindersEnabled")
+        if let uuidString = UserDefaults.standard.string(forKey: "userDefaultPositionTypeId") {
+            self.defaultPositionTypeId = UUID(uuidString: uuidString)
+        } else {
+            self.defaultPositionTypeId = nil
+        }
     }
 
     // MARK: - Computed Properties
@@ -92,5 +108,6 @@ final class UserProfile {
         notes = ""
         stiTestingIntervalDays = 90
         stiRemindersEnabled = false
+        defaultPositionTypeId = nil
     }
 }
