@@ -47,28 +47,21 @@ struct CalendarEncounterRow: View {
                 // Activities and Protection
                 HStack(spacing: 8) {
                     if !activityEntities.isEmpty {
-                        HStack(spacing: 4) {
-                            ForEach(activityEntities.prefix(4)) { activity in
-                                Image(systemName: activity.icon)
-                                    .font(.subheadline)
-                                    .foregroundColor(.purple)
-                            }
-                            if activityEntities.count > 4 {
-                                Text("+\(activityEntities.count - 4)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
+                        EntityIconRow(
+                            entities: activityEntities.map { (icon: $0.icon, name: $0.name) },
+                            color: .purple,
+                            maxShown: 4,
+                            font: .subheadline
+                        )
                     }
                     Spacer()
                     if !protectionEntities.isEmpty {
-                        HStack(spacing: 4) {
-                            ForEach(protectionEntities) { protectionMethod in
-                                Image(systemName: protectionMethod.icon)
-                                    .font(.subheadline)
-                                    .foregroundColor(.green)
-                            }
-                        }
+                        EntityIconRow(
+                            entities: protectionEntities.map { (icon: $0.icon, name: $0.name) },
+                            color: .green,
+                            maxShown: protectionEntities.count,
+                            font: .subheadline
+                        )
                     }
                 }
             }

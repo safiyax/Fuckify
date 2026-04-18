@@ -167,31 +167,22 @@ struct EncounterRowView: View {
             // Activities and Protection
             HStack(spacing: 12) {
                 if !activityEntities.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(activityEntities.prefix(3)) { activity in
-                            Image(systemName: activity.icon)
-                                .foregroundColor(.purple)
-                                .font(.caption)
-                                .accessibilityLabel(activity.name)
-                        }
-                        if activityEntities.count > 3 {
-                            Text("+\(activityEntities.count - 3)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
+                    EntityIconRow(
+                        entities: activityEntities.map { (icon: $0.icon, name: $0.name) },
+                        color: .purple,
+                        maxShown: 3,
+                        font: .caption
+                    )
                     .accessibilityElement(children: .combine)
                 }
 
                 if !protectionEntities.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(protectionEntities.prefix(2)) { protection in
-                            Image(systemName: protection.icon)
-                                .foregroundColor(.green)
-                                .font(.caption)
-                                .accessibilityLabel(protection.name)
-                        }
-                    }
+                    EntityIconRow(
+                        entities: protectionEntities.map { (icon: $0.icon, name: $0.name) },
+                        color: .green,
+                        maxShown: 2,
+                        font: .caption
+                    )
                     .accessibilityElement(children: .combine)
                 }
             }
