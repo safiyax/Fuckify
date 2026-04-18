@@ -164,7 +164,10 @@ struct PartnerDetailView: View {
                     Section("Additional Information") {
                         ForEach(attributesWithValues, id: \.type.id) { attrWithValue in
                             if isEditing {
-                                customAttributeEditField(for: attrWithValue)
+                                PartnerAttributeEditField(
+                                    attribute: attrWithValue.type,
+                                    value: editValueBinding(for: attrWithValue.type)
+                                )
                             } else if attrWithValue.value != nil {
                                 // Only show in display mode if value is set
                                 customAttributeDisplayField(for: attrWithValue)
@@ -379,6 +382,19 @@ struct PartnerDetailView: View {
         // Reload attributes after saving
         await loadCustomAttributes()
     }
+
+    private func editValueBinding(for attribute: SQLPartnerAttributeType) -> Binding<String?> {
+        Binding(
+            get: { editAttributeValues[attribute.id] },
+            set: { newValue in
+                if attribute.parsedFieldType == .boolean && newValue == "false" {
+                    editAttributeValues[attribute.id] = nil
+                } else {
+                    editAttributeValues[attribute.id] = newValue
+                }
+            }
+        )
+    }
     
     @ViewBuilder
     private func customAttributeDisplayField(for attrWithValue: PartnerAttributeWithValue) -> some View {
@@ -415,86 +431,6 @@ struct PartnerDetailView: View {
             } else {
                 Text("Not set")
                     .foregroundColor(.secondary)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func customAttributeEditField(for attrWithValue: PartnerAttributeWithValue) -> some View {
-        switch attrWithValue.type.parsedFieldType {
-        case PartnerAttributeFieldType.text:
-            HStack {
-                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
-                TextField("", text: Binding(
-                    get: { editAttributeValues[attrWithValue.type.id] ?? "" },
-                    set: { editAttributeValues[attrWithValue.type.id] = $0 }
-                ))
-                .multilineTextAlignment(.trailing)
-            }
-            
-        case PartnerAttributeFieldType.boolean:
-            Toggle(isOn: Binding(
-                get: { editAttributeValues[attrWithValue.type.id] == "true" },
-                set: { isOn in
-                    if isOn {
-                        editAttributeValues[attrWithValue.type.id] = "true"
-                    } else {
-                        // When toggling off, remove the value (will delete from DB)
-                        editAttributeValues[attrWithValue.type.id] = nil
-                    }
-                }
-            )) {
-                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
-            }
-            
-        case PartnerAttributeFieldType.date:
-            let hasDate = editAttributeValues[attrWithValue.type.id] != nil && !editAttributeValues[attrWithValue.type.id]!.isEmpty
-            
-            Toggle(isOn: Binding(
-                get: { hasDate },
-                set: { isOn in
-                    if isOn {
-                        editAttributeValues[attrWithValue.type.id] = ISO8601DateFormatter().string(from: Date())
-                    } else {
-                        editAttributeValues[attrWithValue.type.id] = nil
-                    }
-                }
-            )) {
-                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
-            }
-            
-            if hasDate {
-                DatePicker(
-                    "Date",
-                    selection: Binding(
-                        get: {
-                            if let dateString = editAttributeValues[attrWithValue.type.id],
-                               let date = ISO8601DateFormatter().date(from: dateString) {
-                                return date
-                            }
-                            return Date()
-                        },
-                        set: { date in
-                            editAttributeValues[attrWithValue.type.id] = ISO8601DateFormatter().string(from: date)
-                        }
-                    ),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-            }
-            
-        case PartnerAttributeFieldType.enumType:
-            let choices = attrWithValue.type.parsedEnumChoices
-            Picker(selection: Binding(
-                get: { editAttributeValues[attrWithValue.type.id] ?? "" },
-                set: { editAttributeValues[attrWithValue.type.id] = $0 }
-            )) {
-                Text("Not set").tag("")
-                ForEach(choices, id: \.self) { choice in
-                    Text(choice).tag(choice)
-                }
-            } label: {
-                Label(attrWithValue.type.name, systemImage: attrWithValue.type.icon)
             }
         }
     }

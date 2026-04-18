@@ -103,7 +103,19 @@ struct PartnerFormView: View {
                 if !enabledAttributes.isEmpty {
                     Section("Additional Information") {
                         ForEach(enabledAttributes, id: \.id) { attribute in
-                            customAttributeField(for: attribute)
+                            PartnerAttributeEditField(
+                                attribute: attribute,
+                                value: Binding(
+                                    get: { attributeValues[attribute.id] },
+                                    set: { newValue in
+                                        if let newValue {
+                                            attributeValues[attribute.id] = newValue
+                                        } else {
+                                            attributeValues[attribute.id] = nil
+                                        }
+                                    }
+                                )
+                            )
                         }
                     }
                 }
@@ -212,78 +224,6 @@ struct PartnerFormView: View {
         }
     }
     
-    @ViewBuilder
-    private func customAttributeField(for attribute: SQLPartnerAttributeType) -> some View {
-        switch attribute.parsedFieldType {
-        case PartnerAttributeFieldType.text:
-            HStack {
-                Label(attribute.name, systemImage: attribute.icon)
-                TextField("", text: Binding(
-                    get: { attributeValues[attribute.id] ?? "" },
-                    set: { attributeValues[attribute.id] = $0 }
-                ))
-                .multilineTextAlignment(.trailing)
-            }
-            
-        case PartnerAttributeFieldType.boolean:
-            Toggle(isOn: Binding(
-                get: { attributeValues[attribute.id] == "true" },
-                set: { attributeValues[attribute.id] = $0 ? "true" : "false" }
-            )) {
-                Label(attribute.name, systemImage: attribute.icon)
-            }
-            
-        case PartnerAttributeFieldType.date:
-            let hasDate = attributeValues[attribute.id] != nil && !attributeValues[attribute.id]!.isEmpty
-            
-            Toggle(isOn: Binding(
-                get: { hasDate },
-                set: { isOn in
-                    if isOn {
-                        attributeValues[attribute.id] = ISO8601DateFormatter().string(from: Date())
-                    } else {
-                        attributeValues[attribute.id] = nil
-                    }
-                }
-            )) {
-                Label(attribute.name, systemImage: attribute.icon)
-            }
-            
-            if hasDate {
-                DatePicker(
-                    "Date",
-                    selection: Binding(
-                        get: {
-                            if let dateString = attributeValues[attribute.id],
-                               let date = ISO8601DateFormatter().date(from: dateString) {
-                                return date
-                            }
-                            return Date()
-                        },
-                        set: { date in
-                            attributeValues[attribute.id] = ISO8601DateFormatter().string(from: date)
-                        }
-                    ),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-            }
-            
-        case PartnerAttributeFieldType.enumType:
-            let choices = attribute.parsedEnumChoices
-            Picker(selection: Binding(
-                get: { attributeValues[attribute.id] ?? "" },
-                set: { attributeValues[attribute.id] = $0 }
-            )) {
-                Text("Not set").tag("")
-                ForEach(choices, id: \.self) { choice in
-                    Text(choice).tag(choice)
-                }
-            } label: {
-                Label(attribute.name, systemImage: attribute.icon)
-            }
-        }
-    }
 }
 
 #Preview("Add Partner") {
