@@ -413,7 +413,7 @@ struct ImportView: View {
             .alert("Import Successful", isPresented: $showingImportSuccess) {
                 Button("OK") { }
             } message: {
-                Text("Database imported successfully. Please close and reopen the app to see the imported data.")
+                Text("Database imported successfully.")
             }
             .task {
                 await loadData()
@@ -579,46 +579,26 @@ struct ImportView: View {
             showingImportError = true
             return
         }
-        
+
+        guard sourceURL.startAccessingSecurityScopedResource() else {
+            importError = "Unable to access the selected file"
+            showingImportError = true
+            return
+        }
+
+        defer {
+            sourceURL.stopAccessingSecurityScopedResource()
+        }
+
         do {
-            // Start accessing the security-scoped resource
-            guard sourceURL.startAccessingSecurityScopedResource() else {
-                importError = "Unable to access the selected file"
-                showingImportError = true
-                return
-            }
-            
-            defer {
-                sourceURL.stopAccessingSecurityScopedResource()
-            }
-            
-            // Copy the imported database to a persistent location (Application Support)
-            let persistentDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            let tempURL = persistentDir.appendingPathComponent("pending_import.db")
-            
-            // Remove existing temp file if present
-            if FileManager.default.fileExists(atPath: tempURL.path) {
-                try FileManager.default.removeItem(at: tempURL)
-            }
-            
-            // Read the database file data
-            let databaseData = try Data(contentsOf: sourceURL)
-            logger.info("Read database file: \(databaseData.count) bytes")
-            
-            // Store the database data in UserDefaults
-            UserDefaults.standard.set(databaseData, forKey: "pendingDatabaseImport")
-            UserDefaults.standard.synchronize()
-            
-            logger.info("Database data staged for import on next launch")
-            
-            // Clear the selected URL
+            try databaseService.importDatabase(from: sourceURL)
+            logger.info("Database imported successfully from: \(sourceURL.path)")
+
             selectedDatabaseURL = nil
-            
-            // Show success alert instructing user to restart
+
             await MainActor.run {
                 showingImportSuccess = true
             }
-            
         } catch {
             importError = "Failed to import database: \(error.localizedDescription)"
             showingImportError = true

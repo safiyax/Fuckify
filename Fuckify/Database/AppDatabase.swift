@@ -67,6 +67,21 @@ func appDatabase() throws -> any DatabaseWriter {
 
     let database = try defaultDatabase(configuration: configuration)
     logger.info("Database opened at: \(database.path)")
+
+    // Note: SwiftData migration has been removed since all data has been migrated
+    // If you need to re-migrate data, restore from git history:
+    // - Fuckify/Database/Migrations/SwiftDataTransfer.swift
+    // - Partner.swift, Encounter.swift, Item.swift
+
+    try appMigrator().migrate(database)
+    return database
+}
+
+/// Returns a fully-registered migrator containing every app migration in order.
+///
+/// Extracted so that `importDatabase(from:)` can run the same migrations against
+/// an imported (potentially older-schema) database before copying it into the live pool.
+func appMigrator() -> DatabaseMigrator {
     var migrator = DatabaseMigrator()
 
 #if DEBUG
@@ -113,11 +128,5 @@ func appDatabase() throws -> any DatabaseWriter {
         try AddPartnerDefaultPosition.migrate(db)
     }
 
-    // Note: SwiftData migration has been removed since all data has been migrated
-    // If you need to re-migrate data, restore from git history:
-    // - Fuckify/Database/Migrations/SwiftDataTransfer.swift
-    // - Partner.swift, Encounter.swift, Item.swift
-
-    try migrator.migrate(database)
-    return database
+    return migrator
 }

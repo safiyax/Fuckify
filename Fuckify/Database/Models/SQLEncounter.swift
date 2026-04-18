@@ -45,6 +45,7 @@ struct SQLEncounter: Identifiable {
     }
 }
 
+extension SQLEncounter: Equatable {}
 
 // MARK: - Activity Type Entity (Customizable)
 

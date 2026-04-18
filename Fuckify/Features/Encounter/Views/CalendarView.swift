@@ -87,7 +87,7 @@ struct CalendarView: View {
             .task {
                 await loadEncountersAnimated()
             }
-            .onChange(of: encounters.count) { _, _ in
+            .onChange(of: encounters) { _, _ in
                 Task {
                     await loadEncountersAnimated()
                 }
