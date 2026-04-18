@@ -25,62 +25,14 @@ struct PartnerImportView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 if importedPartners.isEmpty {
-                    // Instructions
-                    VStack(spacing: 16) {
-                        Image(systemName: "doc.text.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.blue)
-
-                        Text("Import Partners from CSV")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("Select a CSV file with partner information to import.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("CSV Format:")
-                                .font(.headline)
-
-                            Text("name,phoneNumber,notes,relationshipType,dateMet")
-                                .font(.system(.caption, design: .monospaced))
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-
-                            Text("Example:")
-                                .font(.headline)
-                                .padding(.top, 8)
-
-                            Text("John Doe,555-0123,Met at gym,Regular,2024-01-15")
-                                .font(.system(.caption, design: .monospaced))
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-
-                            Text("• Name is required\n• Other fields are optional\n• relationshipType: Casual, Regular, Committed, One-Time, Other\n• dateMet: YYYY-MM-DD format")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                        }
-                        .padding()
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-
-                        Button(action: { showingFilePicker = true }) {
-                            Label("Select CSV File", systemImage: "doc.badge.plus")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.blue)
-                                .cornerRadius(12)
-                        }
-                        .padding(.horizontal)
+                    CSVImportInstructionsView(
+                        title: "Import Partners from CSV",
+                        color: .blue,
+                        format: "name,phoneNumber,notes,relationshipType,dateMet",
+                        example: "John Doe,555-0123,Met at gym,Regular,2024-01-15",
+                        notes: "• Name is required\n• Other fields are optional\n• relationshipType: Casual, Regular, Committed, One-Time, Other\n• dateMet: YYYY-MM-DD format"
+                    ) {
+                        showingFilePicker = true
                     }
                 } else {
                     // Preview imported data

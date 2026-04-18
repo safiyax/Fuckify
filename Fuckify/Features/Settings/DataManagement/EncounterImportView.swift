@@ -28,63 +28,15 @@ struct EncounterImportView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 if importedEncounters.isEmpty {
-                    // Instructions
                     ScrollView {
-                        VStack(spacing: 16) {
-                            Image(systemName: "doc.text.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.pink)
-
-                            Text("Import Encounters from CSV")
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            Text("Select a CSV file with encounter information to import.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("CSV Format:")
-                                    .font(.headline)
-
-                                Text("date,duration,activities,protectionMethods,location,notes,rating,reachedOrgasm,partnerNames")
-                                    .font(.system(.caption, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
-
-                                Text("Example:")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-
-                                Text("2024-01-15,30,\"Oral, Kissing\",Condom,Home,Great time,5,true,John Doe")
-                                    .font(.system(.caption, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
-
-                                Text("• Date: YYYY-MM-DD format (required)\n• Duration: minutes (optional)\n• Activities: comma-separated in quotes (Oral, Vaginal, Anal, Manual, Kissing, Other)\n• Protection: comma-separated in quotes (Condom, PrEP, Pull Out, None, Other)\n• Location: text (optional)\n• Notes: text (optional)\n• Rating: 1-5 (optional)\n• Orgasm: true or false (optional)\n• Partners: comma-separated names in quotes matching existing partners")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 4)
-                            }
-                            .padding()
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-
-                            Button(action: { showingFilePicker = true }) {
-                                Label("Select CSV File", systemImage: "doc.badge.plus")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.pink)
-                                    .cornerRadius(12)
-                            }
-                            .padding(.horizontal)
+                        CSVImportInstructionsView(
+                            title: "Import Encounters from CSV",
+                            color: .pink,
+                            format: "date,duration,activities,protectionMethods,location,notes,rating,reachedOrgasm,partnerNames",
+                            example: "2024-01-15,30,\"Oral, Kissing\",Condom,Home,Great time,5,true,John Doe",
+                            notes: "• Date: YYYY-MM-DD format (required)\n• Duration: minutes (optional)\n• Activities: comma-separated in quotes (Oral, Vaginal, Anal, Manual, Kissing, Other)\n• Protection: comma-separated in quotes (Condom, PrEP, Pull Out, None, Other)\n• Location: text (optional)\n• Notes: text (optional)\n• Rating: 1-5 (optional)\n• Orgasm: true or false (optional)\n• Partners: comma-separated names in quotes matching existing partners"
+                        ) {
+                            showingFilePicker = true
                         }
                         .padding(.vertical)
                     }
