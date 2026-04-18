@@ -44,24 +44,12 @@ struct PositionFormView: View {
                 }
 
                 Section("Icon") {
-                    Button {
-                        if !isBuiltIn { showingIconPicker = true }
-                    } label: {
-                        HStack {
-                            Image(systemName: selectedIcon)
-                                .foregroundColor(.orange)
-                                .font(.title2)
-                                .frame(width: 40, height: 40)
-                                .background(Color.orange.opacity(0.1))
-                                .cornerRadius(8)
-                            Text("Choose Icon")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .disabled(isBuiltIn)
+                    IconPickerRow(
+                        selectedIcon: $selectedIcon,
+                        accentColor: .orange,
+                        isDisabled: isBuiltIn,
+                        onTap: { showingIconPicker = true }
+                    )
 
                     if isBuiltIn {
                         Text("Built-in position icons cannot be changed")

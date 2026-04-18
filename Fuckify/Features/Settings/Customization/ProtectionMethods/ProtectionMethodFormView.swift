@@ -59,29 +59,12 @@ struct ProtectionMethodFormView: View {
                 }
                 
                 Section("Icon") {
-                    Button {
-                        if !isBuiltIn {
-                            showingIconPicker = true
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: selectedIcon)
-                                .foregroundColor(.green)
-                                .font(.title2)
-                                .frame(width: 40, height: 40)
-                                .background(Color.green.opacity(0.1))
-                                .cornerRadius(8)
-                            
-                            Text("Choose Icon")
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .disabled(isBuiltIn)
+                    IconPickerRow(
+                        selectedIcon: $selectedIcon,
+                        accentColor: .green,
+                        isDisabled: isBuiltIn,
+                        onTap: { showingIconPicker = true }
+                    )
                     
                     if isBuiltIn {
                         Text("Built-in protection method icons cannot be changed")
