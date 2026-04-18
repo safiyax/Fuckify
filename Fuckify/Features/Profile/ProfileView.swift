@@ -248,41 +248,11 @@ private struct STITestingCard: View {
             // Summary card with navigation link to history
             NavigationLink(destination: STIHistoryView()) {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Last test row
-                    HStack {
-                        Label("Last STI Test", systemImage: stiManager.statusIcon)
-                        Spacer()
-                        if let days = stiManager.daysSinceLastTest,
-                           let latest = stiManager.latestTest {
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(latest.date.formatted(date: .abbreviated, time: .omitted))
-                                    .fontWeight(.medium)
-                                Text("\(days) days ago")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .foregroundStyle(stiManager.statusColor)
-
-                    // Next test due row
-                    if let nextDate = stiManager.nextTestDueDate,
-                       let daysUntil = stiManager.daysUntilNextTest,
-                       daysUntil > 0 {
-                        Divider()
-                        HStack {
-                            Label("Next Test Due", systemImage: "bell.badge")
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(nextDate.formatted(date: .abbreviated, time: .omitted))
-                                    .fontWeight(.medium)
-                                Text("in \(daysUntil) days")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .foregroundStyle(.orange)
-                        }
-                    }
+                    STISummaryRows(
+                        manager: stiManager,
+                        lastTestTitle: "Last STI Test",
+                        colorEntireLastTestRow: true
+                    )
                 }
                 .padding(.vertical, 8)
             }

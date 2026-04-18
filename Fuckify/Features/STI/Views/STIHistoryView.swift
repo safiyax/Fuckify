@@ -61,37 +61,8 @@ struct STIHistoryView: View {
     private var summaryHeaderSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
-                if let latest = stiManager.latestTest {
-                    HStack {
-                        Label("Last Test", systemImage: stiManager.statusIcon)
-                            .foregroundStyle(stiManager.statusColor)
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(latest.date.formatted(date: .abbreviated, time: .omitted))
-                                .fontWeight(.medium)
-                            if let days = stiManager.daysSinceLastTest {
-                                Text("\(days) days ago")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
-                    if let nextDate = stiManager.nextTestDueDate, let daysUntil = stiManager.daysUntilNextTest {
-                        Divider()
-                        HStack {
-                            Label("Next Test Due", systemImage: "bell.badge")
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(nextDate.formatted(date: .abbreviated, time: .omitted))
-                                    .fontWeight(.medium)
-                                Text("in \(daysUntil) days")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .foregroundStyle(.orange)
-                        }
-                    }
+                if stiManager.latestTest != nil {
+                    STISummaryRows(manager: stiManager)
                 } else {
                     HStack {
                         Label("No tests logged yet", systemImage: "exclamationmark.triangle.fill")
