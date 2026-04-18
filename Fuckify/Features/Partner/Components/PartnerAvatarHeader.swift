@@ -27,16 +27,7 @@ struct PartnerAvatarHeader: View {
             HStack {
                 Spacer()
                 VStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(displayColor)
-                            .frame(width: 100, height: 100)
-
-                        Text(displayInitials)
-                            .font(.system(.largeTitle, weight: .bold))
-                            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                            .foregroundColor(.white)
-                    }
+                    PartnerAvatar(color: displayColor, initials: displayInitials, size: 100)
                     .accessibilityLabel("\(partner.name) avatar")
                     .accessibilityValue("Color: \(isEditing ? editAvatarColor : partner.avatarColor)")
 

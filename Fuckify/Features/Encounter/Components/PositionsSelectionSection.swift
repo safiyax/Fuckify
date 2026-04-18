@@ -94,15 +94,7 @@ private struct ParticipantHeaderRow: View {
     var body: some View {
         Button(action: onToggleExpand) {
             HStack {
-                ZStack {
-                    Circle()
-                        .fill(avatarColor)
-                        .frame(width: 32, height: 32)
-                    Text(initials)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                }
+                PartnerAvatar(color: avatarColor, initials: initials, size: 32)
 
                 Text(name)
                     .font(.body)

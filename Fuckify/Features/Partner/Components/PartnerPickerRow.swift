@@ -16,16 +16,11 @@ struct PartnerPickerRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Color avatar
-                Circle()
-                    .fill(Color.fromPartnerColorName(partner.avatarColor))
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(partner.name.prefix(1).uppercased())
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                    .accessibilityHidden(true)
+                PartnerAvatar(
+                    color: Color.fromPartnerColorName(partner.avatarColor),
+                    initials: partner.name.prefix(1).uppercased(),
+                    size: 40
+                )
                 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {

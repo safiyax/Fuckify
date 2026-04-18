@@ -157,16 +157,7 @@ struct PinnedPartnerView: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            ZStack {
-                Circle()
-                    .fill(partner.color)
-                    .frame(width: 96, height: 96)
-
-                Text(partner.initials)
-                    .font(.title)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-            }
+            PartnerAvatar(color: partner.color, initials: partner.initials, size: 96)
             .compatibleGlassEffect()
             .overlay(alignment: .bottomTrailing) {
                 // Pin indicator
@@ -201,17 +192,7 @@ struct PartnerRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Initials Avatar
-            ZStack {
-                Circle()
-                    .fill(partner.color)
-                    .frame(width: 50, height: 50)
-
-                Text(partner.initials)
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            .accessibilityHidden(true)
+            PartnerAvatar(color: partner.color, initials: partner.initials, size: 50)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(partner.name)

@@ -213,16 +213,7 @@ struct PartnerDisplayChip: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            // Avatar circle
-            Circle()
-                .fill(partner.color)
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Text(partner.initials)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
+            PartnerAvatar(color: partner.color, initials: partner.initials, size: 32)
             
             Text(partner.name)
                 .font(.body)

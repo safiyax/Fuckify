@@ -416,15 +416,7 @@ struct TopPartnersSection: View {
             VStack(spacing: 8) {
                 ForEach(Array(partners.enumerated()), id: \.element.partner.id) { index, item in
                     HStack {
-                        ZStack {
-                            Circle()
-                                .fill(item.partner.color)
-                                .frame(width: 50, height: 50)
-
-                            Text(item.partner.initials)
-                                .font(.headline)
-                                .foregroundColor(.white)
-                        }
+                        PartnerAvatar(color: item.partner.color, initials: item.partner.initials, size: 50)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.partner.name)
