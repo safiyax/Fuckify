@@ -83,7 +83,10 @@ struct ActiveEncounterView: View {
                             
                             FlowLayout(spacing: 8) {
                                 ForEach(partners) { partner in
-                                    PartnerDisplayChip(partner: partner)
+                                    PartnerChip(
+                                        partner: sqlPartner(from: partner),
+                                        mode: .display
+                                    )
                                 }
                             }
                             .padding(.horizontal)
@@ -204,26 +207,20 @@ struct ActiveEncounterView: View {
             return "\(minutes.formatted(.number.precision(.integerLength(2)))):\(seconds.formatted(.number.precision(.integerLength(2))))"
         }
     }
-}
 
-// MARK: - Partner Display Chip
-
-struct PartnerDisplayChip: View {
-    let partner: PartnerData
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            PartnerAvatar(color: partner.color, initials: partner.initials, size: 32)
-            
-            Text(partner.name)
-                .font(.body)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(partner.color.opacity(0.15))
-        .cornerRadius(20)
+    private func sqlPartner(from partner: PartnerData) -> SQLPartner {
+        SQLPartner(
+            id: partner.id,
+            name: partner.name,
+            notes: "",
+            phoneNumber: "",
+            relationshipType: .casual,
+            dateMet: nil,
+            avatarColor: partner.avatarColor,
+            dateAdded: Date(),
+            lastEncounterDate: nil,
+            isPinned: false
+        )
     }
 }
 

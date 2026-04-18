@@ -80,7 +80,7 @@ struct EncounterFormView: View {
                         ForEach(selectedPartners) { partner in
                             PartnerChip(
                                 partner: partner,
-                                onRemove: { togglePartner(partner.id) }
+                                mode: .removable(onRemove: { togglePartner(partner.id) })
                             )
                         }
                         

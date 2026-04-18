@@ -8,22 +8,116 @@
 import SwiftUI
 import SQLiteData
 
+enum PartnerChipMode {
+    case removable(onRemove: () -> Void)
+    case detail(positionIcon: String?, hadOrgasm: Bool)
+    case display
+}
+
 struct PartnerChip: View {
     let partner: SQLPartner
-    let onRemove: () -> Void
-    
-    var partnerColor: Color {
+    let mode: PartnerChipMode
+
+    init(partner: SQLPartner, mode: PartnerChipMode) {
+        self.partner = partner
+        self.mode = mode
+    }
+
+    init(partner: SQLPartner, onRemove: @escaping () -> Void) {
+        self.partner = partner
+        self.mode = .removable(onRemove: onRemove)
+    }
+
+    private var partnerColor: Color {
         Color.fromPartnerColorName(partner.avatarColor)
     }
-    
+
+    private var spacing: CGFloat {
+        switch mode {
+        case .display:
+            8
+        case .removable, .detail:
+            6
+        }
+    }
+
+    private var verticalPadding: CGFloat {
+        switch mode {
+        case .display:
+            8
+        case .removable, .detail:
+            6
+        }
+    }
+
+    private var cornerRadius: CGFloat {
+        switch mode {
+        case .display:
+            20
+        case .removable, .detail:
+            16
+        }
+    }
+
+    private var nameFont: Font {
+        switch mode {
+        case .display:
+            .body
+        case .removable, .detail:
+            .subheadline
+        }
+    }
+
+    private var nameColor: Color {
+        switch mode {
+        case .display:
+            .primary
+        case .removable, .detail:
+            partnerColor
+        }
+    }
+
     var body: some View {
-        HStack(spacing: 6) {
-            Text(partner.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .foregroundColor(partnerColor)
-            
+        HStack(spacing: spacing) {
+            leadingContent
+            nameText
+            trailingContent
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, verticalPadding)
+        .background(partnerColor.opacity(0.15))
+        .cornerRadius(cornerRadius)
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var leadingContent: some View {
+        switch mode {
+        case .display:
+            PartnerAvatar(color: partnerColor, initials: partner.initials, size: 32)
+        case .detail(let positionIcon, _):
+            if let icon = positionIcon {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(partnerColor.opacity(0.8))
+            }
+        case .removable:
+            EmptyView()
+        }
+    }
+
+    private var nameText: some View {
+        Text(partner.name)
+            .font(nameFont)
+            .fontWeight(.medium)
+            .lineLimit(1)
+            .foregroundColor(nameColor)
+    }
+
+    @ViewBuilder
+    private var trailingContent: some View {
+        switch mode {
+        case .removable(let onRemove):
             Button {
                 onRemove()
             } label: {
@@ -34,15 +128,15 @@ struct PartnerChip: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Remove \(partner.name)")
             .accessibilityHint("Removes this partner from the encounter")
+        case .detail(_, let hadOrgasm):
+            if hadOrgasm {
+                Image(systemName: "heart.fill")
+                    .font(.caption)
+                    .foregroundColor(partnerColor.opacity(0.8))
+            }
+        case .display:
+            EmptyView()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            partnerColor
-                .opacity(0.15)
-        )
-        .cornerRadius(16)
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -60,6 +154,11 @@ struct PartnerChip: View {
         isPinned: false
     )
     
-    PartnerChip(partner: partner, onRemove: {})
-        .padding()
+    VStack(spacing: 12) {
+        PartnerChip(partner: partner, mode: .removable(onRemove: {}))
+        PartnerChip(partner: partner, mode: .detail(positionIcon: "figure.stand", hadOrgasm: true))
+        PartnerChip(partner: partner, mode: .detail(positionIcon: nil, hadOrgasm: false))
+        PartnerChip(partner: partner, mode: .display)
+    }
+    .padding()
 }

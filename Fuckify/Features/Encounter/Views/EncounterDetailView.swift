@@ -77,10 +77,12 @@ struct EncounterDetailView: View {
                                 Button {
                                     selectedPartner = partner
                                 } label: {
-                                    EncounterDetailPartnerChip(
+                                    PartnerChip(
                                         partner: partner,
-                                        position: partnerPositions[partner.id],
-                                        hadOrgasm: partnerOrgasms[partner.id] == true
+                                        mode: .detail(
+                                            positionIcon: partnerPositions[partner.id]?.icon,
+                                            hadOrgasm: partnerOrgasms[partner.id] == true
+                                        )
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -300,46 +302,6 @@ struct EncounterDetailView: View {
         }
     }
 }
-
-// MARK: - Encounter Detail Partner Chip
-
-struct EncounterDetailPartnerChip: View {
-    let partner: SQLPartner
-    var position: SQLPositionType? = nil
-    var hadOrgasm: Bool = false
-
-    var partnerColor: Color {
-        Color.fromPartnerColorName(partner.avatarColor)
-    }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(partner.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .foregroundColor(partnerColor)
-
-            if let pos = position {
-                Image(systemName: pos.icon)
-                    .font(.caption)
-                    .foregroundColor(partnerColor.opacity(0.8))
-            }
-
-            if hadOrgasm {
-                Image(systemName: "heart.fill")
-                    .font(.caption)
-                    .foregroundColor(partnerColor.opacity(0.8))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(partnerColor.opacity(0.15))
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Chip Container for Detail View
 
 #Preview {
     let _ = prepareDependencies {
