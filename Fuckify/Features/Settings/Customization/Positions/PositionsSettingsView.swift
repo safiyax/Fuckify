@@ -7,95 +7,34 @@ import SwiftUI
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PositionsSettings")
 
+extension SQLPositionType: CustomizableItem {}
+
 struct PositionsSettingsView: View {
     @State private var positions: [SQLPositionType] = []
-    @State private var positionToEdit: SQLPositionType?
-    @State private var positionToDelete: SQLPositionType?
-    @State private var showingAddPosition = false
-    @State private var showingDeleteAlert = false
     @State private var deleteError: String?
     @State private var showingDeleteError = false
 
     private let service = PositionTypeService()
     private let accentColor = Color.orange
 
-    var builtInPositions: [SQLPositionType] { positions.filter { $0.isBuiltIn } }
-    var customPositions: [SQLPositionType] { positions.filter { !$0.isBuiltIn } }
-
     var body: some View {
-        List {
-            Section {
-                Text("Manage positions for logging encounters. Built-in positions can be enabled/disabled. Custom positions can be edited or deleted.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+        CustomizationSettingsView(
+            navigationTitle: "Positions",
+            itemTypeName: "Position",
+            descriptionText: "Manage positions for logging encounters. Built-in positions can be enabled/disabled. Custom positions can be edited or deleted.",
+            accentColor: accentColor,
+            items: positions,
+            onToggle: toggle,
+            onDelete: deletePosition,
+            addSheet: { PositionFormView(onSave: load) },
+            editSheet: { position in
+                PositionFormView(position: position, onSave: load)
+            },
+            itemRow: { position, toggleAction in
+                PositionRow(position: position, onToggle: toggleAction)
             }
-
-            if !builtInPositions.isEmpty {
-                Section("Built-in Positions") {
-                    ForEach(builtInPositions) { position in
-                        PositionRow(position: position, onToggle: { toggle(position) })
-                    }
-                }
-            }
-
-            Section {
-                ForEach(customPositions) { position in
-                    PositionRow(position: position, onToggle: { toggle(position) })
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                positionToDelete = position
-                                showingDeleteAlert = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            Button {
-                                positionToEdit = position
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
-                }
-                Button {
-                    showingAddPosition = true
-                } label: {
-                    Label("Add Custom Position", systemImage: "plus.circle.fill")
-                        .foregroundColor(.accentColor)
-                }
-            } header: {
-                Text("Custom Positions")
-            } footer: {
-                if customPositions.isEmpty {
-                    Text("Tap + to add your own custom positions")
-                        .font(.caption)
-                }
-            }
-        }
-        .tint(accentColor)
-        .navigationTitle("Positions")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showingAddPosition = true } label: {
-                    Label("Add", systemImage: "plus")
-                }
-            }
-        }
+        )
         .onAppear { load() }
-        .sheet(isPresented: $showingAddPosition) {
-            PositionFormView(onSave: { load() }).tint(accentColor)
-        }
-        .sheet(item: $positionToEdit) { position in
-            PositionFormView(position: position, onSave: { load() }).tint(accentColor)
-        }
-        .alert("Delete Position", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                if let p = positionToDelete { deletePosition(p) }
-            }
-        } message: {
-            Text("Are you sure you want to delete this custom position?")
-        }
         .alert("Cannot Delete", isPresented: $showingDeleteError) {
             Button("OK", role: .cancel) {}
         } message: {

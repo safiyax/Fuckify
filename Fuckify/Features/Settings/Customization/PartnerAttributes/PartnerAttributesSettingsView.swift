@@ -10,131 +10,47 @@ import Dependencies
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "PartnerAttributesSettings")
 
+extension SQLPartnerAttributeType: CustomizableItem {}
+
 struct PartnerAttributesSettingsView: View {
     @Dependency(\.partnerAttributeService) private var attributeService
     
     @State private var attributes: [SQLPartnerAttributeType] = []
-    @State private var showingAddAttribute = false
     @State private var errorMessage: String?
-    @State private var attributeToDelete: SQLPartnerAttributeType?
-    @State private var showingDeleteAlert = false
-    @State private var attributeToEdit: SQLPartnerAttributeType?
     
     private let accentColor = Color.accentColor
     
-    var builtInAttributes: [SQLPartnerAttributeType] {
-        attributes.filter { $0.isBuiltIn }
-    }
-    
-    var customAttributes: [SQLPartnerAttributeType] {
-        attributes.filter { !$0.isBuiltIn }
-    }
-    
     var body: some View {
-        List {
-            Section {
-                Text("Manage custom fields for partner profiles. Built-in fields can be enabled/disabled. Custom fields can be edited or deleted.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Built-in Attributes
-            if !builtInAttributes.isEmpty {
-                Section("Built-in Attributes") {
-                    ForEach(builtInAttributes) { attribute in
-                        AttributeRow(
-                            attribute: attribute,
-                            onToggle: { toggleAttribute(attribute) }
-                        )
+        CustomizationSettingsView(
+            navigationTitle: "Partner Attributes",
+            itemTypeName: "Attribute",
+            descriptionText: "Manage custom fields for partner profiles. Built-in fields can be enabled/disabled. Custom fields can be edited or deleted.",
+            accentColor: accentColor,
+            items: attributes,
+            emptyCustomFooterText: "Tap + to add your own custom fields for partners",
+            deleteConfirmationMessage: "Are you sure you want to delete this custom attribute? All values for this attribute will be removed from partners.",
+            onToggle: toggleAttribute,
+            onDelete: deleteAttribute,
+            addSheet: {
+                PartnerAttributeFormView(onSave: loadAttributes)
+            },
+            editSheet: { attribute in
+                PartnerAttributeFormView(attribute: attribute, onSave: loadAttributes)
+            },
+            itemRow: { attribute, toggleAction in
+                AttributeRow(attribute: attribute, onToggle: toggleAction)
+            },
+            additionalSections: {
+                if let error = errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
                     }
                 }
             }
-            
-            // Custom Attributes
-            Section {
-                ForEach(customAttributes) { attribute in
-                    AttributeRow(
-                        attribute: attribute,
-                        onToggle: { toggleAttribute(attribute) }
-                    )
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            attributeToDelete = attribute
-                            showingDeleteAlert = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .tint(.red)
-                        
-                        Button {
-                            attributeToEdit = attribute
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .tint(.blue)
-                    }
-                }
-                
-                Button {
-                    showingAddAttribute = true
-                } label: {
-                    Label("Add Custom Attribute", systemImage: "plus.circle.fill")
-                        .foregroundColor(.accentColor)
-                }
-            } header: {
-                Text("Custom Attributes")
-            } footer: {
-                if customAttributes.isEmpty {
-                    Text("Tap + to add your own custom fields for partners")
-                        .font(.caption)
-                }
-            }
-            
-            if let error = errorMessage {
-                Section {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
-            }
-        }
-        .tint(accentColor)
-        .navigationTitle("Partner Attributes")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingAddAttribute = true
-                } label: {
-                    Label("Add", systemImage: "plus")
-                }
-            }
-        }
-        .sheet(isPresented: $showingAddAttribute) {
-            PartnerAttributeFormView {
-                loadAttributes()
-            }
-            .tint(accentColor)
-        }
-        .sheet(item: $attributeToEdit) { attribute in
-            PartnerAttributeFormView(attribute: attribute) {
-                loadAttributes()
-            }
-            .tint(accentColor)
-        }
-        .alert("Delete Attribute", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                if let attribute = attributeToDelete {
-                    deleteAttribute(attribute)
-                }
-            }
-        } message: {
-            Text("Are you sure you want to delete this custom attribute? All values for this attribute will be removed from partners.")
-        }
-        .task {
-            loadAttributes()
-        }
+        )
+        .task { loadAttributes() }
     }
     
     private func loadAttributes() {

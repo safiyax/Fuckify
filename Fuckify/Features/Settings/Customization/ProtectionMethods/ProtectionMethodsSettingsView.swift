@@ -9,121 +9,32 @@ import SwiftUI
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ProtectionMethodsSettings")
 
+extension SQLProtectionMethodEntity: CustomizableItem {}
+
 struct ProtectionMethodsSettingsView: View {
     @Environment(UserSettings.self) private var settings
     @State private var protectionMethods: [SQLProtectionMethodEntity] = []
-    @State private var methodToEdit: SQLProtectionMethodEntity?
-    @State private var methodToDelete: SQLProtectionMethodEntity?
-    @State private var showingAddMethod = false
-    @State private var showingDeleteAlert = false
     
     private let accentColor = Color.green
     
-    var builtInMethods: [SQLProtectionMethodEntity] {
-        protectionMethods.filter { $0.isBuiltIn }
-    }
-    
-    var customMethods: [SQLProtectionMethodEntity] {
-        protectionMethods.filter { !$0.isBuiltIn }
-    }
-
     var body: some View {
-        List {
-            Section {
-                Text("Manage protection methods for logging encounters. Built-in methods can be enabled/disabled. Custom methods can be edited or deleted.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+        CustomizationSettingsView(
+            navigationTitle: "Protection Methods",
+            itemTypeName: "Protection Method",
+            descriptionText: "Manage protection methods for logging encounters. Built-in methods can be enabled/disabled. Custom methods can be edited or deleted.",
+            accentColor: accentColor,
+            items: protectionMethods,
+            onToggle: toggleMethod,
+            onDelete: deleteMethod,
+            addSheet: { ProtectionMethodFormView(onSave: loadProtectionMethods) },
+            editSheet: { method in
+                ProtectionMethodFormView(method: method, onSave: loadProtectionMethods)
+            },
+            itemRow: { method, toggle in
+                ProtectionMethodRow(method: method, onToggle: toggle)
             }
-            
-            // Built-in Protection Methods
-            if !builtInMethods.isEmpty {
-                Section("Built-in Methods") {
-                    ForEach(builtInMethods) { method in
-                        ProtectionMethodRow(
-                            method: method,
-                            onToggle: { toggleMethod(method) }
-                        )
-                    }
-                }
-            }
-
-            // Custom Protection Methods
-            Section {
-                ForEach(customMethods) { method in
-                    ProtectionMethodRow(
-                        method: method,
-                        onToggle: { toggleMethod(method) }
-                    )
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            methodToDelete = method
-                            showingDeleteAlert = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .tint(.red)
-                        
-                        Button {
-                            methodToEdit = method
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .tint(.blue)
-                    }
-                }
-                
-                Button {
-                    showingAddMethod = true
-                } label: {
-                    Label("Add Custom Protection Method", systemImage: "plus.circle.fill")
-                        .foregroundColor(.accentColor)
-                }
-            } header: {
-                Text("Custom Methods")
-            } footer: {
-                if customMethods.isEmpty {
-                    Text("Tap + to add your own custom protection methods")
-                        .font(.caption)
-                }
-            }
-        }
-        .tint(accentColor)
-        .navigationTitle("Protection Methods")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingAddMethod = true
-                } label: {
-                    Label("Add", systemImage: "plus")
-                }
-            }
-        }
-        .onAppear {
-            loadProtectionMethods()
-        }
-        .sheet(isPresented: $showingAddMethod) {
-            ProtectionMethodFormView(onSave: {
-                loadProtectionMethods()
-            })
-            .tint(accentColor)
-        }
-        .sheet(item: $methodToEdit) { method in
-            ProtectionMethodFormView(method: method, onSave: {
-                loadProtectionMethods()
-            })
-            .tint(accentColor)
-        }
-        .alert("Delete Protection Method", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                if let method = methodToDelete {
-                    deleteMethod(method)
-                }
-            }
-        } message: {
-            Text("Are you sure you want to delete this custom protection method?")
-        }
+        )
+        .onAppear { loadProtectionMethods() }
     }
     
     private func loadProtectionMethods() {
