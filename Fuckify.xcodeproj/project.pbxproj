@@ -11,8 +11,8 @@
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
 		89B3DE8A2F93F35C0043AD7E /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 89B3DE892F93F35C0043AD7E /* SFSafeSymbols */; };
+		89B3DEA72F9436890043AD7E /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B3DEA62F9436890043AD7E /* StoreKit.framework */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
-		89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C228592F2996EB00B9A0DF /* StoreKit.framework */; };
 		89C229CA2F2FE4C000B9A0DF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */; };
 		89C229CC2F2FE4C000B9A0DF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */; };
 		89C229DD2F2FE4C200B9A0DF /* EncounterActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -45,7 +45,7 @@
 
 /* Begin PBXFileReference section */
 		893C5D2E2EBF711200981CDC /* Fuckify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuckify.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		89C228592F2996EB00B9A0DF /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		89B3DEA62F9436890043AD7E /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		89C229C82F2FE4C000B9A0DF /* EncounterActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EncounterActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -118,8 +118,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
+				89B3DEA72F9436890043AD7E /* StoreKit.framework in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
-				89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */,
 				89B3DE8A2F93F35C0043AD7E /* SFSafeSymbols in Frameworks */,
 				89EB92D92F3D1BA40040C86C /* PostHog in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
@@ -162,7 +162,7 @@
 		89C228582F2996EB00B9A0DF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				89C228592F2996EB00B9A0DF /* StoreKit.framework */,
+				89B3DEA62F9436890043AD7E /* StoreKit.framework */,
 				89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */,
 				89C229CB2F2FE4C000B9A0DF /* SwiftUI.framework */,
 			);
@@ -322,7 +322,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -368,7 +368,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Fuckify/Fuckify.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -533,7 +533,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;
@@ -567,7 +567,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = EncounterActivityWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 8ZAQVXT82R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EncounterActivityWidget/Info.plist;

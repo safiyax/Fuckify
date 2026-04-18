@@ -56,62 +56,7 @@ struct SupportView: View {
                     .padding(.top, 20)
                     
                     // Coffee Options
-                    VStack(spacing: 16) {
-                        if let product = store.product {
-                            // Coffee Button
-                            Button {
-                                Task { await store.purchase() }
-                            } label: {
-                                HStack(spacing: 16) {
-                                    Image(systemName: store.purchaseSuccess ? "checkmark.circle.fill" : "cup.and.saucer.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(store.purchaseSuccess ? "Thank You!" : product.displayName)
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                        
-                                        Text(store.purchaseSuccess ? "You're amazing!" : product.description)
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.8))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Text(store.purchaseSuccess ? "❤️" : product.displayPrice)
-                                        .font(.title3)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    LinearGradient(
-                                        colors: store.purchaseSuccess ? [.green, .green.opacity(0.8)] : [.accentColor, .purple],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(16)
-                            }
-                            .disabled(store.purchaseSuccess)
-                            .buttonStyle(.plain)
-                            .padding(.horizontal)
-                            .animation(.easeInOut, value: store.purchaseSuccess)
-                        } else {
-                            // Loading state
-                            VStack(spacing: 12) {
-                                ProgressView()
-                                    .controlSize(.large)
-                                Text("Loading store...")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        }
-                    }
+                    coffeeSection
                     
                     // Info Section
                     VStack(spacing: 20) {
@@ -239,6 +184,93 @@ struct SupportView: View {
             iapState.isIAPInProgress = newValue  // Update shared state
         }
     }
+
+    @ViewBuilder
+    private var coffeeSection: some View {
+        VStack(spacing: 16) {
+            if let product = store.product {
+                Button {
+                    Task { await store.purchase() }
+                } label: {
+                    HStack(spacing: 16) {
+                        Image(systemName: store.purchaseSuccess ? "checkmark.circle.fill" : "cup.and.saucer.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(store.purchaseSuccess ? "Thank You!" : product.displayName)
+                                .font(.headline)
+                                .foregroundColor(.white)
+
+                            Text(store.purchaseSuccess ? "You're amazing!" : product.description)
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+
+                        Spacer()
+
+                        Text(store.purchaseSuccess ? "❤️" : product.displayPrice)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: store.purchaseSuccess ? [.green, .green.opacity(0.8)] : [.accentColor, .purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(16)
+                }
+                .disabled(store.purchaseSuccess)
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+                .animation(.easeInOut, value: store.purchaseSuccess)
+            } else if let message = store.loadErrorMessage {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+
+                    Text("Store Unavailable")
+                        .font(.headline)
+
+                    Text(message)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    HStack(spacing: 10) {
+                        Button("Retry") {
+                            Task { await store.loadProduct() }
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("Restore") {
+                            Task { await store.syncAppStore() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+            } else {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("Loading store...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            }
+        }
+    }
 }
 
 // MARK: - Feature Row Component
@@ -273,11 +305,17 @@ struct FeatureRow: View {
 
 @MainActor
 final class SupportViewModel: ObservableObject {
+    enum LoadState: Equatable {
+        case loading
+        case loaded
+        case failed(String)
+    }
+
     // Product IDs to try (in order of preference)
     // Try both with and without bundle ID prefix
     private let productIdentifiers = [
         "baby.safi.Fuckify.buymeacoffee",  // With bundle ID prefix (recommended)
-        "buymeacoffee"                      // Without prefix (fallback)
+//        "buymeacoffee"                       Without prefix (fallback)
     ]
     
     private var productIdentifier: String {
@@ -288,6 +326,14 @@ final class SupportViewModel: ObservableObject {
     @Published var purchaseSuccess = false
     @Published var coffeeCount = 0
     @Published var isPurchasing = false
+    @Published var loadState: LoadState = .loading
+
+    var loadErrorMessage: String? {
+        if case .failed(let message) = loadState {
+            return message
+        }
+        return nil
+    }
     
     init() {
         Task {
@@ -300,22 +346,26 @@ final class SupportViewModel: ObservableObject {
     }
     
     func loadProduct() async {
+        loadState = .loading
         logger.info("Attempting to load IAP products...")
         logger.info("Trying product IDs: \(self.productIdentifiers.joined(separator: ", "))")
+        logger.info("App bundle identifier: \(Bundle.main.bundleIdentifier ?? "unknown")")
         
         do {
-            // Try to load all possible product IDs
-            let products = try await Product.products(for: productIdentifiers)
+            let products = try await productsWithTimeout(seconds: 20)
             logger.info("Product.products() returned \(products.count) products")
             
             if let loaded = products.first {
                 product = loaded
+                loadState = .loaded
                 logger.info("✅ Product loaded successfully!")
                 logger.info("  ID: \(loaded.id)")
                 logger.info("  Name: \(loaded.displayName)")
                 logger.info("  Price: \(loaded.displayPrice)")
                 logger.info("  Description: \(loaded.description)")
             } else {
+                product = nil
+                loadState = .failed("No products returned from App Store Connect for configured product IDs.")
                 logger.warning("⚠️ No products found for any of the following IDs:")
                 for id in self.productIdentifiers {
                     logger.warning("  - \(id)")
@@ -329,6 +379,8 @@ final class SupportViewModel: ObservableObject {
                 logger.warning("  5. Try using local StoreKit config file for testing first")
             }
         } catch {
+            product = nil
+            loadState = .failed(error.localizedDescription)
             logger.error("❌ Failed to load products from App Store Connect")
             logger.error("Error: \(error.localizedDescription)")
             logger.error("Error type: \(String(describing: type(of: error)))")
@@ -339,6 +391,17 @@ final class SupportViewModel: ObservableObject {
                 logger.error("   Xcode → Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration")
             }
         }
+    }
+
+    func syncAppStore() async {
+        do {
+            try await AppStore.sync()
+            logger.info("AppStore.sync() completed")
+        } catch {
+            logger.error("AppStore.sync() failed: \(error.localizedDescription)")
+        }
+
+        await loadProduct()
     }
     
     func loadCoffeeCount() async {
@@ -407,6 +470,23 @@ final class SupportViewModel: ObservableObject {
                     await handleTransaction(transaction)
                 }
             }
+        }
+    }
+
+    private func productsWithTimeout(seconds: Double) async throws -> [Product] {
+        try await withThrowingTaskGroup(of: [Product].self) { group in
+            group.addTask {
+                try await Product.products(for: self.productIdentifiers)
+            }
+
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw URLError(.timedOut)
+            }
+
+            let result = try await group.next() ?? []
+            group.cancelAll()
+            return result
         }
     }
 }

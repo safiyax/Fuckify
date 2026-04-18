@@ -55,7 +55,7 @@ class SettingsConfig {
         ),
         more: .init(
             showAbout: true,
-            showSupport: false,
+            showSupport: true,
             showExperiments: false
         )
     )

@@ -15,11 +15,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Text("Customize which activities and protection methods appear when logging encounters.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+//                Section {
+//                    Text("Customize which activities and protection methods appear when logging encounters.")
+//                        .font(.subheadline)
+//                        .foregroundColor(.secondary)
+//                }
 
                 if config.showPersonalizationSection {
                     Section("Personalization") {
