@@ -315,13 +315,7 @@ struct OverviewSection: View {
     let recentCount: Int
     
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Overview")
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-
+        StatSectionContainer(title: "Overview") {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 StatCard(
                     title: "Total Encounters",
@@ -360,13 +354,7 @@ struct TopActivitiesSection: View {
     let activities: [(activity: SQLActivityType, count: Int)]
     
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Top Activities")
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-
+        StatSectionContainer(title: "Top Activities") {
             VStack(spacing: 8) {
                 ForEach(Array(activities.enumerated()), id: \.element.activity) { index, item in
                     HStack {
@@ -406,13 +394,7 @@ struct TopPartnersSection: View {
     let partners: [(partner: SQLPartner, count: Int)]
     
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Most Active Partners")
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-
+        StatSectionContainer(title: "Most Active Partners") {
             VStack(spacing: 8) {
                 ForEach(Array(partners.enumerated()), id: \.element.partner.id) { index, item in
                     HStack {
@@ -448,13 +430,7 @@ struct ProtectionSection: View {
     let count: Int
     
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Protection")
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-
+        StatSectionContainer(title: "Protection") {
             HStack {
                 Image(systemName: protectionMethod.icon)
                     .font(.title)
@@ -485,13 +461,7 @@ struct AverageRatingSection: View {
     let rating: Double
     
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Average Rating")
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-
+        StatSectionContainer(title: "Average Rating") {
             HStack {
                 HStack(spacing: 4) {
                     ForEach(1...5, id: \.self) { star in
@@ -573,6 +543,28 @@ struct StatCard: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+    }
+}
+
+private struct StatSectionContainer<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            content
+        }
     }
 }
 
