@@ -154,6 +154,63 @@ struct SecurityView: View {
 
 // MARK: - PIN Setup View
 
+private struct PINDots: View {
+    let count: Int
+    let accentColor: Color
+    let total: Int
+
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(0..<total, id: \.self) { index in
+                Circle()
+                    .fill(count > index ? accentColor : .gray.opacity(0.3))
+                    .frame(width: 20, height: 20)
+            }
+        }
+        .padding(.vertical)
+    }
+}
+
+private struct PINNumberPad: View {
+    let onDigit: (String) -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ForEach(0..<3) { row in
+                HStack(spacing: 16) {
+                    ForEach(1..<4) { col in
+                        let number = row * 3 + col
+                        NumberButton(number: "\(number)") {
+                            onDigit("\(number)")
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 16) {
+                Color.clear
+                    .frame(width: 80, height: 80)
+
+                NumberButton(number: "0") {
+                    onDigit("0")
+                }
+
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "delete.left.fill")
+                        .font(.title2)
+                        .foregroundColor(.red)
+                        .frame(width: 80, height: 80)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(40)
+                }
+            }
+        }
+    }
+}
+
 struct PINSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SecuritySettings.self) private var securitySettings
@@ -188,48 +245,10 @@ struct PINSetupView: View {
                 .padding(.top, 40)
                 
                 // PIN Display
-                HStack(spacing: 20) {
-                    ForEach(0..<4, id: \.self) { index in
-                        Circle()
-                            .fill(getCurrentPIN().count > index ? Color.blue : Color.gray.opacity(0.3))
-                            .frame(width: 20, height: 20)
-                    }
-                }
-                .padding(.vertical)
+                PINDots(count: getCurrentPIN().count, accentColor: .blue, total: 4)
                 
                 // Number Pad
-                VStack(spacing: 16) {
-                    ForEach(0..<3) { row in
-                        HStack(spacing: 16) {
-                            ForEach(1..<4) { col in
-                                let number = row * 3 + col
-                                NumberButton(number: "\(number)") {
-                                    addDigit("\(number)")
-                                }
-                            }
-                        }
-                    }
-                    
-                    HStack(spacing: 16) {
-                        Color.clear
-                            .frame(width: 80, height: 80)
-                        
-                        NumberButton(number: "0") {
-                            addDigit("0")
-                        }
-                        
-                        Button {
-                            deleteDigit()
-                        } label: {
-                            Image(systemName: "delete.left.fill")
-                                .font(.title2)
-                                .foregroundColor(.red)
-                                .frame(width: 80, height: 80)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(40)
-                        }
-                    }
-                }
+                PINNumberPad(onDigit: { addDigit($0) }, onDelete: { deleteDigit() })
                 
                 Spacer()
             }
@@ -334,48 +353,10 @@ struct PINRemovalView: View {
                 .padding(.top, 40)
                 
                 // PIN Display
-                HStack(spacing: 20) {
-                    ForEach(0..<4, id: \.self) { index in
-                        Circle()
-                            .fill(pin.count > index ? Color.red : Color.gray.opacity(0.3))
-                            .frame(width: 20, height: 20)
-                    }
-                }
-                .padding(.vertical)
+                PINDots(count: pin.count, accentColor: .red, total: 4)
                 
                 // Number Pad
-                VStack(spacing: 16) {
-                    ForEach(0..<3) { row in
-                        HStack(spacing: 16) {
-                            ForEach(1..<4) { col in
-                                let number = row * 3 + col
-                                NumberButton(number: "\(number)") {
-                                    addDigit("\(number)")
-                                }
-                            }
-                        }
-                    }
-                    
-                    HStack(spacing: 16) {
-                        Color.clear
-                            .frame(width: 80, height: 80)
-                        
-                        NumberButton(number: "0") {
-                            addDigit("0")
-                        }
-                        
-                        Button {
-                            deleteDigit()
-                        } label: {
-                            Image(systemName: "delete.left.fill")
-                                .font(.title2)
-                                .foregroundColor(.red)
-                                .frame(width: 80, height: 80)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(40)
-                        }
-                    }
-                }
+                PINNumberPad(onDigit: { addDigit($0) }, onDelete: { deleteDigit() })
                 
                 Spacer()
             }
