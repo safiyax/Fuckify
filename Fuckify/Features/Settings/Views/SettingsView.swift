@@ -27,11 +27,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 AppIconSettingsView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "app.fill")
-                                        .foregroundColor(.pink)
-                                    Text("App Icon")
-                                }
+                                SettingsRow(icon: "app.fill", color: .pink, label: "App Icon")
                             }
                         }
 
@@ -39,11 +35,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 ActivitiesSettingsView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "heart.circle.fill")
-                                        .foregroundColor(.purple)
-                                    Text("Activities")
-                                }
+                                SettingsRow(icon: "heart.circle.fill", color: .purple, label: "Activities")
                             }
                         }
 
@@ -51,11 +43,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 ProtectionMethodsSettingsView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "shield.fill")
-                                        .foregroundColor(.green)
-                                    Text("Protection Methods")
-                                }
+                                SettingsRow(icon: "shield.fill", color: .green, label: "Protection Methods")
                             }
                         }
                         
@@ -63,33 +51,21 @@ struct SettingsView: View {
                             NavigationLink {
                                 PositionsSettingsView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "arrow.up.arrow.down.circle.fill")
-                                        .foregroundColor(.orange)
-                                    Text("Positions")
-                                }
+                                SettingsRow(icon: "arrow.up.arrow.down.circle.fill", color: .orange, label: "Positions")
                             }
                         }
                         
                         NavigationLink {
                             PartnerAttributesSettingsView()
                         } label: {
-                            HStack {
-                                Image(systemName: "person.crop.circle.badge.ellipsis")
-                                    .foregroundColor(.accentColor)
-                                Text("Partner Attributes")
-                            }
+                            SettingsRow(icon: "person.crop.circle.badge.ellipsis", color: .accentColor, label: "Partner Attributes")
                         }
                         
                         if config.showSecurity {
                             NavigationLink {
                                 SecurityView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "lock.fill")
-                                        .foregroundColor(.orange)
-                                    Text("Security")
-                                }
+                                SettingsRow(icon: "lock.fill", color: .orange, label: "Security")
                             }
                         }
                     }
@@ -101,12 +77,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 ImportView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "arrow.up.arrow.down")
-                                        .foregroundColor(.blue)
-                                    Text("Import & Export")
-                                        .foregroundColor(.primary)
-                                }
+                                SettingsRow(icon: "arrow.up.arrow.down", color: .blue, label: "Import & Export")
                             }
                         }
 
@@ -114,11 +85,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 DeleteDataView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "trash.fill")
-                                        .foregroundColor(.red)
-                                    Text("Delete Data")
-                                }
+                                SettingsRow(icon: "trash.fill", color: .red, label: "Delete Data")
                             }
                         }
                     }
@@ -130,11 +97,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 AboutView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "info.circle.fill")
-                                        .foregroundColor(.blue)
-                                    Text("About")
-                                }
+                                SettingsRow(icon: "info.circle.fill", color: .blue, label: "About")
                             }
                         }
                         
@@ -142,11 +105,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 SupportView()
                             } label: {
-                                HStack {
-                                    Image(systemName: "heart.fill")
-                                        .foregroundColor(.pink)
-                                    Text("Support the App")
-                                }
+                                SettingsRow(icon: "heart.fill", color: .pink, label: "Support the App")
                             }
                         }
                         
@@ -156,11 +115,7 @@ struct SettingsView: View {
                                     .navigationTitle("Experiments")
 
                             } label: {
-                                HStack {
-                                    Image(systemName: "gear.badge.questionmark")
-                                        .foregroundColor(.green)
-                                    Text("Experiments")
-                                }
+                                SettingsRow(icon: "gear.badge.questionmark", color: .green, label: "Experiments")
                             }
                         }
                         
@@ -168,13 +123,9 @@ struct SettingsView: View {
                         Button {
                             hasCompletedOnboarding = false
                         } label: {
-                            HStack {
-                                Image(systemName: "arrow.clockwise.circle.fill")
-                                    .foregroundColor(.purple)
-                                Text("View Onboarding")
-                                    .foregroundColor(.primary)
-                            }
+                            SettingsRow(icon: "arrow.clockwise.circle.fill", color: .purple, label: "View Onboarding")
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 
@@ -184,12 +135,7 @@ struct SettingsView: View {
                         Button {
                             showingDebugMenu = true
                         } label: {
-                            HStack {
-                                Image(systemName: "ladybug.fill")
-                                    .foregroundColor(.red)
-                                Text("Debug Menu")
-                                    .foregroundColor(.primary)
-                            }
+                            SettingsRow(icon: "ladybug.fill", color: .red, label: "Debug Menu")
                         }
                     }
                 }

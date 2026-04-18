@@ -36,10 +36,7 @@ struct DeleteDataView: View {
                 Section("Delete Specific Data") {
                     Button(action: { showingDeletePartnersAlert = true }) {
                         HStack {
-                            Image(systemName: "person.2.fill")
-                                .foregroundColor(.red)
-                            Text("Delete All Partners")
-                                .foregroundColor(.primary)
+                            SettingsRow(icon: "person.2.fill", color: .red, label: "Delete All Partners")
                             Spacer()
                             Text("\(allPartners.count)")
                                 .foregroundColor(.secondary)
@@ -49,10 +46,7 @@ struct DeleteDataView: View {
 
                     Button(action: { showingDeleteEncountersAlert = true }) {
                         HStack {
-                            Image(systemName: "heart.fill")
-                                .foregroundColor(.red)
-                            Text("Delete All Encounters")
-                                .foregroundColor(.primary)
+                            SettingsRow(icon: "heart.fill", color: .red, label: "Delete All Encounters")
                             Spacer()
                             Text("\(allEncounters.count)")
                                 .foregroundColor(.secondary)
@@ -61,25 +55,16 @@ struct DeleteDataView: View {
                     .disabled(allEncounters.isEmpty)
 
                     Button(action: { showingDeleteProfileAlert = true }) {
-                        HStack {
-                            Image(systemName: "person.crop.circle.fill")
-                                .foregroundColor(.red)
-                            Text("Delete Profile Data")
-                                .foregroundColor(.primary)
-                        }
+                        SettingsRow(icon: "person.crop.circle.fill", color: .red, label: "Delete Profile Data")
                     }
                     .disabled(!userProfile.hasProfile)
                 }
 
                 Section("Delete Everything") {
                     Button(action: { showingDeleteAllAlert = true }) {
-                        HStack {
-                            Image(systemName: "trash.fill")
-                                .foregroundColor(.red)
-                            Text("Delete All Data")
-                                .foregroundColor(.red)
-                                .fontWeight(.semibold)
-                        }
+                        SettingsRow(icon: "trash.fill", color: .red, label: "Delete All Data")
+                            .fontWeight(.semibold)
+                            .foregroundColor(.red)
                     }
                     .disabled(allPartners.isEmpty && allEncounters.isEmpty && !userProfile.hasProfile)
                 }
