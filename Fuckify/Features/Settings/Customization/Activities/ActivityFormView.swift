@@ -6,33 +6,25 @@
 //
 
 import SwiftUI
-import Dependencies
 
-private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "ActivityForm")
+enum CustomizationFormError: LocalizedError {
+    case duplicateName(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .duplicateName(let message):
+            return message
+        }
+    }
+}
 
 struct ActivityFormView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Dependency(\.defaultDatabase) private var database
-    
-    @State private var name: String
-    @State private var selectedIcon: String
-    @State private var showingIconPicker = false
-    @State private var errorMessage: String?
-    
     let existingActivity: SQLActivityTypeEntity?
     let onSave: () -> Void
     
     init(activity: SQLActivityTypeEntity? = nil, onSave: @escaping () -> Void) {
         self.existingActivity = activity
         self.onSave = onSave
-        
-        if let activity = activity {
-            _name = State(initialValue: activity.name)
-            _selectedIcon = State(initialValue: activity.icon)
-        } else {
-            _name = State(initialValue: "")
-            _selectedIcon = State(initialValue: "heart.fill")
-        }
     }
     
     var isEditing: Bool {
@@ -42,109 +34,38 @@ struct ActivityFormView: View {
     var isBuiltIn: Bool {
         existingActivity?.isBuiltIn ?? false
     }
-    
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Activity Name", text: $name)
-                        .autocapitalization(.words)
-                        .disabled(isBuiltIn)
-                } footer: {
-                    if isBuiltIn {
-                        Text("Built-in activities cannot be renamed")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Section("Icon") {
-                    IconPickerRow(
-                        selectedIcon: $selectedIcon,
-                        accentColor: .purple,
-                        isDisabled: isBuiltIn,
-                        onTap: { showingIconPicker = true }
-                    )
-                    
-                    if isBuiltIn {
-                        Text("Built-in activity icons cannot be changed")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
-                }
-            }
-            .navigationTitle(isEditing ? "Edit Activity" : "Add Activity")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveActivity()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .sheet(isPresented: $showingIconPicker) {
-                SFSymbolPickerView(selectedIcon: $selectedIcon)
-            }
+        CustomizationItemFormView(
+            itemType: "Activity",
+            defaultIcon: "heart.fill",
+            accentColor: .purple,
+            existingName: existingActivity?.name,
+            existingIcon: existingActivity?.icon,
+            isBuiltIn: isBuiltIn
+        ) { name, icon in
+            try saveActivity(name: name, icon: icon)
         }
     }
-    
-    private func saveActivity() {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        
-        guard !trimmedName.isEmpty else {
-            errorMessage = "Please enter a name"
-            return
-        }
-        
+
+    private func saveActivity(name: String, icon: String) throws {
         let customizationService = CustomizationService()
-        
-        do {
-            if let existing = existingActivity {
-                // Update existing activity
-                if isBuiltIn {
-                    // Built-in activities cannot be modified
-                    dismiss()
-                    return
-                }
-                
-                var updated = existing
-                updated.name = trimmedName
-                updated.icon = selectedIcon
-                
-                try customizationService.updateActivityType(updated)
-            } else {
-                // Create new activity - check for duplicates
-                let existing = (try? customizationService.fetchAllActivityTypes()) ?? []
-                if existing.contains(where: { $0.name.lowercased() == trimmedName.lowercased() }) {
-                    errorMessage = "An activity with this name already exists"
-                    return
-                }
-                
-                _ = try customizationService.createActivityType(name: trimmedName, icon: selectedIcon)
+
+        if let existing = existingActivity {
+            var updated = existing
+            updated.name = name
+            updated.icon = icon
+            try customizationService.updateActivityType(updated)
+        } else {
+            let existing = (try? customizationService.fetchAllActivityTypes()) ?? []
+            if existing.contains(where: { $0.name.lowercased() == name.lowercased() }) {
+                throw CustomizationFormError.duplicateName("An activity with this name already exists")
             }
-            
-            logger.info("\(isEditing ? "Updated" : "Created") activity type")
-            onSave()
-            dismiss()
-        } catch {
-            logger.error("Failed to save activity type: \(error.localizedDescription)")
-            errorMessage = "Failed to save: \(error.localizedDescription)"
+
+            _ = try customizationService.createActivityType(name: name, icon: icon)
         }
+
+        onSave()
     }
 }
 
