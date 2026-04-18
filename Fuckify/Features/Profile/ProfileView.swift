@@ -216,34 +216,14 @@ private struct STITestingCard: View {
 
     var body: some View {
         if stiManager.tests.isEmpty {
-            // Empty state
-            VStack(spacing: 12) {
-                Image(systemName: "cross.case")
-                    .font(.system(size: 40))
-                    .foregroundStyle(.blue.opacity(0.5))
-                Text("Track Your STI Tests")
-                    .font(.headline)
-                Text("Log your test dates and results to stay on top of your sexual health.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Button {
-                    showingAddForm = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text("Log First Test")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .padding(.top, 4)
-            }
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
+            EmptyStateView(
+                icon: "cross.case",
+                iconColor: .blue.opacity(0.5),
+                title: "Track Your STI Tests",
+                description: "Log your test dates and results to stay on top of your sexual health.",
+                actionLabel: "Log First Test",
+                action: { showingAddForm = true }
+            )
         } else {
             // Summary card with navigation link to history
             NavigationLink(destination: STIHistoryView()) {

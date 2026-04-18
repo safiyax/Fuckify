@@ -176,32 +176,14 @@ struct STIHistoryView: View {
 
     private var emptyStateSection: some View {
         Section {
-            VStack(spacing: 16) {
-                Image(systemName: "cross.case")
-                    .font(.system(size: 44))
-                    .foregroundStyle(.blue.opacity(0.5))
-                Text("No tests logged yet")
-                    .font(.headline)
-                Text("Log your STI tests to track your sexual health history.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Button {
-                    showingAddForm = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text("Log First Test")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
+            EmptyStateView(
+                icon: "cross.case",
+                iconColor: .blue.opacity(0.5),
+                title: "No tests logged yet",
+                description: "Log your STI tests to track your sexual health history.",
+                actionLabel: "Log First Test",
+                action: { showingAddForm = true }
+            )
         }
         .listRowBackground(Color.clear)
     }

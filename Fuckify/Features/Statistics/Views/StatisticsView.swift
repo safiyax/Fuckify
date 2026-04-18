@@ -497,20 +497,14 @@ struct ChartsSection: View {
             EncountersByMonthChartView(selectedYear: selectedYear)
             EncountersByDayChartView(selectedYear: selectedYear)
         } else {
-            VStack(spacing: 16) {
-                Image(systemName: "chart.bar.xaxis")
-                    .font(.system(size: 60))
-                    .foregroundColor(.secondary)
-                Text("No Data Yet")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                Text("Start logging encounters to see your statistics")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
+            EmptyStateView(
+                icon: "chart.bar.xaxis",
+                iconColor: .secondary,
+                title: "No Data Yet",
+                description: "Start logging encounters to see your statistics",
+                actionLabel: nil,
+                action: nil
+            )
             .padding(.top, 60)
         }
     }
