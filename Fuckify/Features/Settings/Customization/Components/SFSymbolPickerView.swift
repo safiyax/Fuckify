@@ -7,72 +7,112 @@
 
 import SwiftUI
 import Dependencies
+import SFSafeSymbols
 
 // MARK: - SF Symbol Picker
 
 /// Curated list of relevant SF Symbols for activities, protection methods, and partner attributes
-private let curatedSymbols = [
-    // General
-    "heart.fill", "star.fill", "circle.fill", "square.fill", "triangle.fill",
-    "person.text.rectangle", "person.crop.circle", "heart.text.square",
-    // Body/People
-    "figure.2", "figure.arms.open", "hands.and.sparkles.fill", "hand.raised.fill",
-    "mouth", "face.smiling", "face.dashed.fill",
-    // Actions
-    "bolt.fill", "flame.fill", "drop.fill", "leaf.fill", "moon.stars.fill",
-    // Medical/Health
-    "pills.fill", "cross.fill", "bandage.fill", "medical.thermometer.fill",
-    "pills.circle.fill", "stethoscope", "syringe", "medical.thermometer",
-    "calendar.badge.clock",
-    // Protection
-    "shield.fill", "lock.fill", "checkmark.shield.fill", "exclamationmark.shield.fill",
-    // Dates/Time
-    "calendar", "clock", "hourglass", "timer",
-    // Status/Info
-    "info.circle", "checkmark.circle", "xmark.circle", "exclamationmark.circle",
-    "flag.fill", "bookmark.fill",
+private let curatedSymbols: [SFSymbol] = [
+    // Hearts & Romance
+    .heartFill, .heartCircle, .heartCircleFill, .heartTextSquare,
+    .heartSlashFill, .suitHeartFill,
+
+    // People & Bodies
+    .personFill, .person2Fill, .personCropCircle, .personCropCircleFill,
+    .personTextRectangle, .figure2, .figureArmsOpen,
+    .figureWalk, .figureStand, .figure2ArmsOpen,
+
+    // Hands & Touch
+    .handRaisedFill, .handsAndSparklesFill, .handThumbsupFill,
+    .handThumbsdownFill, .handPointUpLeftFill, .handWave,
+
+    // Face & Expressions
+    .mouth, .faceSmiling, .faceSmilingInverse, .faceDashedFill,
+    .eyeFill, .eye, .eyeSlashFill,
+
+    // Activities & Energy
+    .boltFill, .bolt, .flameFill, .flame,
+    .dropFill, .drop, .leafFill, .leaf,
+    .moonStarsFill, .moonFill, .sunMaxFill, .sparkles,
+    .starFill, .star,
+
+    // Positions & Movement
+    .arrowUpCircleFill, .arrowDownCircleFill, .arrowUpArrowDownCircleFill,
+    .arrowLeftArrowRightCircleFill,
+    .rotate3d, .rotateLeft, .rotateRight,
+
+    // Medical & Health
+    .pillsFill, .pillsCircleFill, .crossFill, .crossCircleFill,
+    .bandageFill, .staroflifeFill, .staroflife,
+    .stethoscope, .syringe, .medicalThermometer, .medicalThermometerFill,
+    .waveformPathEcg,
+
+    // Protection & Safety
+    .shieldFill, .shield, .lockFill, .lock,
+    .checkmarkShieldFill, .exclamationmarkShieldFill,
+    .keyFill, .key,
+
+    // Calendar & Time
+    .calendar, .calendarBadgeClock, .calendarCircleFill,
+    .clock, .clockFill, .hourglass, .timer,
+    .alarmFill, .stopwatchFill,
+
+    // Location & Places
+    .locationFill, .location, .mapFill, .map,
+    .houseFill, .house, .buildingFill, .building2Fill,
+    .carFill,
+
+    // Status & Ratings
+    .checkmarkCircleFill, .checkmarkCircle, .xmarkCircleFill, .xmarkCircle,
+    .exclamationmarkCircleFill, .exclamationmarkCircle,
+    .flagFill, .flag, .bookmarkFill, .bookmark,
+    .tagFill, .tag, .sealFill,
+
     // Communication
-    "phone.fill", "message.fill", "envelope.fill",
-    // Relationships
-    "heart.circle", "sparkles",
-    // Other
-    "wand.and.stars", "arrow.uturn.backward",
-    "ellipsis.circle", "questionmark.circle.fill", "plus.circle.fill",
-    "globe", "house.fill", "briefcase.fill", "graduationcap.fill",
-    "guidepoint.vertical.numbers"
+    .phoneFill, .messageFill, .envelopeFill,
+    .bubbleLeftFill, .bubbleRightFill, .bubbleLeftAndBubbleRightFill,
+
+    // Emotions & Moods
+    .moonZzzFill, .zzz,
+
+    // Misc / Customization
+    .wandAndSparkles,
+    .circleFill, .circle, .squareFill, .triangleFill,
+    .ellipsisCircle, .questionmarkCircleFill, .plusCircleFill,
+    .minusCircle, .infoCircle,
+    .globe, .briefcaseFill, .graduationcapFill,
+    .musicNote, .musicMicrophone, .wineglass,
 ]
 
 struct SFSymbolPickerView: View {
     @Binding var selectedIcon: String
     @Environment(\.dismiss) private var dismiss
-    
+
     let columns = [
         GridItem(.adaptive(minimum: 60))
     ]
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(curatedSymbols, id: \.self) { symbol in
+                    ForEach(curatedSymbols, id: \.rawValue) { symbol in
                         Button {
-                            selectedIcon = symbol
+                            selectedIcon = symbol.rawValue
                             dismiss()
                         } label: {
-                            VStack {
-                                Image(systemName: symbol)
-                                    .font(.largeTitle)
-                                    .foregroundColor(selectedIcon == symbol ? .accentColor : .primary)
-                                    .frame(width: 60, height: 60)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(selectedIcon == symbol ? Color.accentColor.opacity(0.1) : Color.clear)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(selectedIcon == symbol ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: 2)
-                                    )
-                            }
+                            Image(systemSymbol: symbol)
+                                .font(.largeTitle)
+                                .foregroundColor(selectedIcon == symbol.rawValue ? .accentColor : .primary)
+                                .frame(width: 60, height: 60)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(selectedIcon == symbol.rawValue ? Color.accentColor.opacity(0.1) : Color.clear)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(selectedIcon == symbol.rawValue ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: 2)
+                                )
                         }
                     }
                 }

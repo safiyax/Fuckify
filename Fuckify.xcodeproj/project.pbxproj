@@ -10,6 +10,7 @@
 		890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97532F1ED08200FC58E8 /* LiquidGlassKit */; };
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
+		89B3DE8A2F93F35C0043AD7E /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 89B3DE892F93F35C0043AD7E /* SFSafeSymbols */; };
 		89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 89BA72072F0C9BC10017A928 /* SQLiteData */; };
 		89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C228592F2996EB00B9A0DF /* StoreKit.framework */; };
 		89C229CA2F2FE4C000B9A0DF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89C229C92F2FE4C000B9A0DF /* WidgetKit.framework */; };
@@ -119,6 +120,7 @@
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
 				89C2285A2F2996EB00B9A0DF /* StoreKit.framework in Frameworks */,
+				89B3DE8A2F93F35C0043AD7E /* SFSafeSymbols in Frameworks */,
 				89EB92D92F3D1BA40040C86C /* PostHog in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
 				89BA72082F0C9BC10017A928 /* SQLiteData in Frameworks */,
@@ -194,6 +196,7 @@
 				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
 				890C97632F205DBB00FC58E8 /* AcknowList */,
 				89EB92D82F3D1BA40040C86C /* PostHog */,
+				89B3DE892F93F35C0043AD7E /* SFSafeSymbols */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -254,6 +257,7 @@
 				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
 				890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */,
 				89EB92D72F3D1BA40040C86C /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				89B3DE882F93F35C0043AD7E /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -647,6 +651,14 @@
 				minimumVersion = 3.4.0;
 			};
 		};
+		89B3DE882F93F35C0043AD7E /* XCRemoteSwiftPackageReference "SFSafeSymbols" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SFSafeSymbols/SFSafeSymbols.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.0.0;
+			};
+		};
 		89BA72062F0C9BC10017A928 /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
@@ -680,6 +692,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */;
 			productName = AcknowList;
+		};
+		89B3DE892F93F35C0043AD7E /* SFSafeSymbols */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 89B3DE882F93F35C0043AD7E /* XCRemoteSwiftPackageReference "SFSafeSymbols" */;
+			productName = SFSafeSymbols;
 		};
 		89BA72072F0C9BC10017A928 /* SQLiteData */ = {
 			isa = XCSwiftPackageProductDependency;
