@@ -9,7 +9,7 @@ private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Featur
 
 // MARK: - Internal Key Enum (not exposed to views)
 
-private enum FeatureFlagKey: String {
+private enum FeatureFlagKey: String, CaseIterable {
     // settings.personalization
     case settingsPersonalizationAppIconPicker         = "settings.personalization.appIconPicker"
     case settingsPersonalizationActivities            = "settings.personalization.activities"
@@ -125,6 +125,7 @@ final class FeatureFlagsProvider {
 
     // Called by DebugMenuView which works with raw key strings directly
     func setOverrideRaw(_ rawKey: String, value: Bool) {
+        assert(FeatureFlagKey(rawValue: rawKey) != nil, "setOverrideRaw called with unknown flag key: \(rawKey)")
         overrides[rawKey] = value
         persistOverrides()
     }
@@ -149,6 +150,7 @@ final class FeatureFlagsProvider {
 
 // MARK: - SettingsFlags
 
+@MainActor
 struct SettingsFlags {
     let provider: FeatureFlagsProvider
 
@@ -172,6 +174,7 @@ struct SettingsFlags {
 
 // MARK: - AppIconPickerFlags
 
+@MainActor
 struct AppIconPickerFlags {
     let provider: FeatureFlagsProvider
     var showSpicyIcons: Bool { provider.isEnabled(.settingsPersonalizationAppIconPickerSpicyIcons) }
@@ -179,6 +182,7 @@ struct AppIconPickerFlags {
 
 // MARK: - SettingsDataFlags
 
+@MainActor
 struct SettingsDataFlags {
     let provider: FeatureFlagsProvider
     var showImportExport: Bool { provider.isEnabled(.settingsDataImportExport) }
@@ -188,6 +192,7 @@ struct SettingsDataFlags {
 
 // MARK: - ImportExportFlags
 
+@MainActor
 struct ImportExportFlags {
     let provider: FeatureFlagsProvider
     var showCsvImportPartners: Bool   { provider.isEnabled(.settingsDataImportExportCsvImportPartners) }
@@ -204,6 +209,7 @@ struct ImportExportFlags {
 
 // MARK: - SettingsMoreFlags
 
+@MainActor
 struct SettingsMoreFlags {
     let provider: FeatureFlagsProvider
     var showAbout: Bool       { provider.isEnabled(.settingsMoreAbout) }
