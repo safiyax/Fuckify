@@ -2,122 +2,134 @@
 //  DebugMenuView.swift
 //  Fuckify
 //
-//  Debug menu for internal testing - controlled by CCDebugMenu feature flag
+//  Debug menu — only visible when settings.more.debugMenu flag is enabled.
+//  Flags are organized by their dot-path hierarchy.
+//  Local overrides persist across launches (DEBUG builds only).
 //
 
 import SwiftUI
-import PostHog
 
 struct DebugMenuView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var config = SettingsConfig.shared
-    @State private var flagsManager = FeatureFlagsManager.shared
+    @Environment(FeatureFlagsProvider.self) private var featureFlags
     @State private var isRefreshing = false
-    
+    @State private var lastFetched: Date? = nil
+
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: Info
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("This menu is only visible when the **CCDebugMenu** feature flag is enabled in PostHog.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("When debug mode is active, settings flags are checked on **every app launch**. In production, they're only checked when the app version changes.")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
+                    Text("Toggles here set **local overrides** that take precedence over API values. Orange dot = override active. Overrides persist across launches.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                
-                Section("Feature Flags") {
+
+                // MARK: Actions
+                Section("Actions") {
                     Button {
                         Task {
                             isRefreshing = true
-                            await flagsManager.forceReloadFlags()
-                            config.refreshFromFlags()
+                            await featureFlags.forceRefresh()
+                            lastFetched = await featureFlags.lastFetchedDate()
                             isRefreshing = false
                         }
                     } label: {
                         HStack {
                             Image(systemName: "arrow.clockwise")
-                            Text("Reload Flags from PostHog")
+                            Text("Reload Flags Now")
                             Spacer()
-                            if isRefreshing {
-                                ProgressView()
-                            }
+                            if isRefreshing { ProgressView() }
                         }
                     }
                     .disabled(isRefreshing)
-                }
-                
-                Section("Feature Flags") {
-                    NavigationLink {
-                        SettingsFlagsDetailView()
+
+                    Button(role: .destructive) {
+                        featureFlags.clearAllOverrides()
                     } label: {
                         HStack {
-                            Image(systemName: "gearshape.fill")
-                                .foregroundColor(.blue)
-                            Text("CCSettingsFlags")
-                            Spacer()
-                            Text("\(getSettingsFlagsCount()) flags")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    NavigationLink {
-                        ImportExportFlagsDetailView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.up.arrow.down.circle.fill")
-                                .foregroundColor(.green)
-                            Text("CCImportExportFlags")
-                            Spacer()
-                            Text("\(getImportExportFlagsCount()) flags")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    NavigationLink {
-                        DebugMenuFlagDetailView()
-                    } label: {
-                        HStack {
-                            Image(systemName: "ladybug.fill")
-                                .foregroundColor(.red)
-                            Text("CCDebugMenu")
-                            Spacer()
-                            Text("1 flag")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Image(systemName: "slider.horizontal.3")
+                            Text("Clear All Overrides")
                         }
                     }
                 }
-                
+
+                // MARK: settings.personalization
+                Section("settings.personalization") {
+                    flagRow("appIconPicker",
+                            key: "settings.personalization.appIconPicker",
+                            current: featureFlags.settings.showAppIconPicker)
+                    flagRow("activities",
+                            key: "settings.personalization.activities",
+                            current: featureFlags.settings.showActivities)
+                    flagRow("protectionMethods",
+                            key: "settings.personalization.protectionMethods",
+                            current: featureFlags.settings.showProtectionMethods)
+                    flagRow("positions",
+                            key: "settings.personalization.positions",
+                            current: featureFlags.settings.showPositions)
+                    flagRow("security",
+                            key: "settings.personalization.security",
+                            current: featureFlags.settings.showSecurity)
+                    flagRow("  appIconPicker.spicyIcons",
+                            key: "settings.personalization.appIconPicker.spicyIcons",
+                            current: featureFlags.settings.appIconPicker.showSpicyIcons)
+                }
+
+                // MARK: settings.data
+                Section("settings.data") {
+                    flagRow("importExport",
+                            key: "settings.data.importExport",
+                            current: featureFlags.settings.data.showImportExport)
+                    flagRow("deleteData",
+                            key: "settings.data.deleteData",
+                            current: featureFlags.settings.data.showDeleteData)
+                    flagRow("  importExport.csvImportPartners",
+                            key: "settings.data.importExport.csvImportPartners",
+                            current: featureFlags.settings.data.importExport.showCsvImportPartners)
+                    flagRow("  importExport.csvImportEncounters",
+                            key: "settings.data.importExport.csvImportEncounters",
+                            current: featureFlags.settings.data.importExport.showCsvImportEncounters)
+                    flagRow("  importExport.csvExportPartners",
+                            key: "settings.data.importExport.csvExportPartners",
+                            current: featureFlags.settings.data.importExport.showCsvExportPartners)
+                    flagRow("  importExport.csvExportEncounters",
+                            key: "settings.data.importExport.csvExportEncounters",
+                            current: featureFlags.settings.data.importExport.showCsvExportEncounters)
+                    flagRow("  importExport.importDatabase",
+                            key: "settings.data.importExport.importDatabase",
+                            current: featureFlags.settings.data.importExport.showImportDatabase)
+                    flagRow("  importExport.exportDatabase",
+                            key: "settings.data.importExport.exportDatabase",
+                            current: featureFlags.settings.data.importExport.showExportDatabase)
+                }
+
+                // MARK: settings.more
+                Section("settings.more") {
+                    flagRow("about",
+                            key: "settings.more.about",
+                            current: featureFlags.settings.more.showAbout)
+                    flagRow("supportApp",
+                            key: "settings.more.supportApp",
+                            current: featureFlags.settings.more.showSupportApp)
+                    flagRow("experiments",
+                            key: "settings.more.experiments",
+                            current: featureFlags.settings.more.showExperiments)
+                    flagRow("debugMenu",
+                            key: "settings.more.debugMenu",
+                            current: featureFlags.settings.more.showDebugMenu)
+                }
+
+                // MARK: App Info
                 Section("App Info") {
-                    LabeledContent("Version", value: getCurrentAppVersion())
-                    LabeledContent("PostHog Distinct ID", value: PostHogSDK.shared.getDistinctId())
-                    LabeledContent("Last Flags Version", value: flagsManager.getLastFlagsVersion() ?? "Never loaded")
-                }
-                
-                Section("Actions") {
-                    Button {
-                        flagsManager.clearVersionCache()
+                    LabeledContent("Version", value: appVersion())
+                    LabeledContent("Last Fetched", value: lastFetched.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "Never")
+                    Button(role: .destructive) {
+                        Task { await featureFlags.clearFlagCache() }
                     } label: {
                         HStack {
                             Image(systemName: "trash")
-                                .foregroundColor(.red)
-                            Text("Clear Version Cache")
-                        }
-                    }
-                    
-                    Button {
-                        PostHogSDK.shared.reset()
-                    } label: {
-                        HStack {
-                            Image(systemName: "person.crop.circle.badge.xmark")
-                                .foregroundColor(.orange)
-                            Text("Reset PostHog Identity")
+                            Text("Clear Flag Cache")
                         }
                     }
                 }
@@ -126,29 +138,35 @@ struct DebugMenuView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(action: { dismiss() }) {
-                        Label("Close", systemImage: "xmark")
-                    }
+                    Button { dismiss() } label: { Label("Close", systemImage: "xmark") }
                 }
+            }
+            .task {
+                lastFetched = await featureFlags.lastFetchedDate()
             }
         }
     }
-    
-    private func getCurrentAppVersion() -> String {
+
+    // MARK: - Helpers
+
+    @MainActor
+    private func flagRow(_ label: String, key: String, current: Bool) -> some View {
+        let isOverridden = featureFlags.overrides[key] != nil
+        let binding = Binding<Bool>(
+            get: { current },
+            set: { newValue in featureFlags.setOverrideRaw(key, value: newValue) }
+        )
+        return DebugFlagRow(label: label, value: binding, isOverridden: isOverridden)
+    }
+
+    private func appVersion() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
-    }
-    
-    private func getSettingsFlagsCount() -> Int {
-        return 10 // showAppIconPicker, showActivities, showProtectionMethods, showPositions, showSecurity, showImportExport, showDeleteData, showAbout, showSupport, showExperiments
-    }
-    
-    private func getImportExportFlagsCount() -> Int {
-        return 6 // showImportPartners, showImportEncounters, showExportPartners, showExportEncounters, showImportDatabase, showExportDatabase
     }
 }
 
 #Preview {
     DebugMenuView()
+        .environment(FeatureFlagsProvider())
 }
