@@ -25,7 +25,10 @@ actor FeatureFlagsService {
             URLQueryItem(name: "platform", value: "ios")
         ]
 
-        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        guard let url = components.url else {
+            throw FeatureFlagsError.invalidURL
+        }
+        let (data, response) = try await URLSession.shared.data(from: url)
 
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
@@ -70,4 +73,5 @@ actor FeatureFlagsService {
 
 enum FeatureFlagsError: Error {
     case badResponse(Int)
+    case invalidURL
 }
