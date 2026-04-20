@@ -28,7 +28,11 @@ struct AppIconSettingsView: View {
     }
 }
 
+/// Alternate icon names that require the spicy icons flag to be visible.
+private let spicyIconNames: Set<String> = ["AppIcon", "AppIcon-Pink"]
+
 struct AppIconPicker: View {
+    @Environment(FeatureFlagsProvider.self) private var featureFlags
     @State private var selectedIcon: String?
     
     private let columns = [
@@ -39,8 +43,10 @@ struct AppIconPicker: View {
     ]
     
     private var allIcons: [(name: String?, displayName: String)] {
+        let showSpicy = featureFlags.settings.appIconPickerFlags.spicyIcons
         var icons: [(String?, String)] = [(nil, "Default")]
-        icons.append(contentsOf: AppIconManager.availableIcons.map { ($0, $0.capitalized) })
+        let alternates = AppIconManager.availableIcons.filter { showSpicy || !spicyIconNames.contains($0) }
+        icons.append(contentsOf: alternates.map { ($0, $0.capitalized) })
         return icons
     }
     
@@ -71,7 +77,7 @@ struct AppIconPicker: View {
             
             // Footer text
             VStack(alignment: .leading, spacing: 8) {
-                Text("The app name \"Fuckify\" will be visible on the Home Screen, in notifications and in the App Library.")
+                Text("The app name \"Coital Comrade\" will be visible on the Home Screen, in notifications and in the App Library.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 

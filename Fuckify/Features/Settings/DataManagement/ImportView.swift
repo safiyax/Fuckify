@@ -44,7 +44,7 @@ struct ImportView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     // Import Section
-                    if featureFlags.settings.data.importExport.showImportCSVSection {
+                    if featureFlags.settings.data.importExportFlags.importCSVSection {
                         VStack(spacing: 16) {
                             HStack {
                                 Image(systemName: "square.and.arrow.down")
@@ -121,7 +121,7 @@ struct ImportView: View {
                     }
 
                     // Export Section
-                    if featureFlags.settings.data.importExport.showExportCSVSection {
+                    if featureFlags.settings.data.importExportFlags.exportCSVSection {
                         VStack(spacing: 16) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")

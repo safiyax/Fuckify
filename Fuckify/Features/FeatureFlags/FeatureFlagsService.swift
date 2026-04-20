@@ -28,7 +28,15 @@ actor FeatureFlagsService {
         guard let url = components.url else {
             throw FeatureFlagsError.invalidURL
         }
+
+        #if DEBUG
+        // Bypass TLS validation in DEBUG so staging Let's Encrypt certs work.
+        // Never runs in release builds.
+        let session = URLSession(configuration: .default, delegate: TrustAllCertsDelegate(), delegateQueue: nil)
+        let (data, response) = try await session.data(from: url)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
 
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
@@ -75,3 +83,24 @@ enum FeatureFlagsError: Error {
     case badResponse(Int)
     case invalidURL
 }
+
+// MARK: - Debug TLS bypass
+
+#if DEBUG
+/// Bypasses TLS certificate validation in DEBUG builds only.
+/// Used while the staging Let's Encrypt cert is active. Remove once prod cert is issued.
+private final class TrustAllCertsDelegate: NSObject, URLSessionDelegate {
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
+    }
+}
+#endif

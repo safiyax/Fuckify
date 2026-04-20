@@ -21,9 +21,9 @@ struct SettingsView: View {
 //                        .foregroundColor(.secondary)
 //                }
 
-                if featureFlags.settings.showPersonalizationSection {
+                if featureFlags.settings.personalizationSection {
                     Section("Personalization") {
-                        if featureFlags.settings.showAppIconPicker {
+                        if featureFlags.settings.appIconPicker {
                             NavigationLink {
                                 AppIconSettingsView()
                             } label: {
@@ -31,7 +31,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if featureFlags.settings.showActivities {
+                        if featureFlags.settings.activities {
                             NavigationLink {
                                 ActivitiesSettingsView()
                             } label: {
@@ -39,7 +39,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if featureFlags.settings.showProtectionMethods {
+                        if featureFlags.settings.protectionMethods {
                             NavigationLink {
                                 ProtectionMethodsSettingsView()
                             } label: {
@@ -47,7 +47,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if featureFlags.settings.showPositions {
+                        if featureFlags.settings.positions {
                             NavigationLink {
                                 PositionsSettingsView()
                             } label: {
@@ -61,7 +61,7 @@ struct SettingsView: View {
                             SettingsRow(icon: "person.crop.circle.badge.ellipsis", color: .accentColor, label: "Partner Attributes")
                         }
                         
-                        if featureFlags.settings.showSecurity {
+                        if featureFlags.settings.security {
                             NavigationLink {
                                 SecurityView()
                             } label: {
@@ -71,9 +71,9 @@ struct SettingsView: View {
                     }
                 }
 
-                if featureFlags.settings.showDataSection {
+                if featureFlags.settings.dataSection {
                     Section("Data") {
-                        if featureFlags.settings.data.showImportExport {
+                        if featureFlags.settings.data.importExport {
                             NavigationLink {
                                 ImportView()
                             } label: {
@@ -81,7 +81,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if featureFlags.settings.data.showDeleteData {
+                        if featureFlags.settings.data.deleteData {
                             NavigationLink {
                                 DeleteDataView()
                             } label: {
@@ -91,9 +91,9 @@ struct SettingsView: View {
                     }
                 }
 
-                if featureFlags.settings.showMoreSection {
+                if featureFlags.settings.moreSection {
                     Section("More") {
-                        if featureFlags.settings.more.showAbout {
+                        if featureFlags.settings.more.about {
                             NavigationLink {
                                 AboutView()
                             } label: {
@@ -101,7 +101,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if featureFlags.settings.more.showSupportApp {
+                        if featureFlags.settings.more.supportApp {
                             NavigationLink {
                                 SupportView()
                             } label: {
@@ -109,7 +109,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if featureFlags.settings.more.showExperiments {
+                        if featureFlags.settings.more.experiments {
                             NavigationLink {
                                 ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
                                     .navigationTitle("Experiments")
@@ -130,7 +130,7 @@ struct SettingsView: View {
                 }
                 
                 // Debug Menu (only visible when CCDebugMenu flag is enabled)
-                if featureFlags.settings.more.showDebugMenu {
+                if featureFlags.settings.more.debugMenu {
                     Section("Developer") {
                         Button {
                             showingDebugMenu = true

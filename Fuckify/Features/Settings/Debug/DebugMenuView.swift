@@ -58,66 +58,66 @@ struct DebugMenuView: View {
                 Section("settings.personalization") {
                     flagRow("appIconPicker",
                             key: "settings.personalization.appIconPicker",
-                            current: featureFlags.settings.showAppIconPicker)
+                            current: featureFlags.settings.appIconPicker)
                     flagRow("activities",
                             key: "settings.personalization.activities",
-                            current: featureFlags.settings.showActivities)
+                            current: featureFlags.settings.activities)
                     flagRow("protectionMethods",
                             key: "settings.personalization.protectionMethods",
-                            current: featureFlags.settings.showProtectionMethods)
+                            current: featureFlags.settings.protectionMethods)
                     flagRow("positions",
                             key: "settings.personalization.positions",
-                            current: featureFlags.settings.showPositions)
+                            current: featureFlags.settings.positions)
                     flagRow("security",
                             key: "settings.personalization.security",
-                            current: featureFlags.settings.showSecurity)
+                            current: featureFlags.settings.security)
                     flagRow("  appIconPicker.spicyIcons",
                             key: "settings.personalization.appIconPicker.spicyIcons",
-                            current: featureFlags.settings.appIconPicker.showSpicyIcons)
+                            current: featureFlags.settings.appIconPickerFlags.spicyIcons)
                 }
 
                 // MARK: settings.data
                 Section("settings.data") {
                     flagRow("importExport",
                             key: "settings.data.importExport",
-                            current: featureFlags.settings.data.showImportExport)
+                            current: featureFlags.settings.data.importExport)
                     flagRow("deleteData",
                             key: "settings.data.deleteData",
-                            current: featureFlags.settings.data.showDeleteData)
+                            current: featureFlags.settings.data.deleteData)
                     flagRow("  importExport.csvImportPartners",
                             key: "settings.data.importExport.csvImportPartners",
-                            current: featureFlags.settings.data.importExport.showCsvImportPartners)
+                            current: featureFlags.settings.data.importExportFlags.csvImportPartners)
                     flagRow("  importExport.csvImportEncounters",
                             key: "settings.data.importExport.csvImportEncounters",
-                            current: featureFlags.settings.data.importExport.showCsvImportEncounters)
+                            current: featureFlags.settings.data.importExportFlags.csvImportEncounters)
                     flagRow("  importExport.csvExportPartners",
                             key: "settings.data.importExport.csvExportPartners",
-                            current: featureFlags.settings.data.importExport.showCsvExportPartners)
+                            current: featureFlags.settings.data.importExportFlags.csvExportPartners)
                     flagRow("  importExport.csvExportEncounters",
                             key: "settings.data.importExport.csvExportEncounters",
-                            current: featureFlags.settings.data.importExport.showCsvExportEncounters)
+                            current: featureFlags.settings.data.importExportFlags.csvExportEncounters)
                     flagRow("  importExport.importDatabase",
                             key: "settings.data.importExport.importDatabase",
-                            current: featureFlags.settings.data.importExport.showImportDatabase)
+                            current: featureFlags.settings.data.importExportFlags.importDatabase)
                     flagRow("  importExport.exportDatabase",
                             key: "settings.data.importExport.exportDatabase",
-                            current: featureFlags.settings.data.importExport.showExportDatabase)
+                            current: featureFlags.settings.data.importExportFlags.exportDatabase)
                 }
 
                 // MARK: settings.more
                 Section("settings.more") {
                     flagRow("about",
                             key: "settings.more.about",
-                            current: featureFlags.settings.more.showAbout)
+                            current: featureFlags.settings.more.about)
                     flagRow("supportApp",
                             key: "settings.more.supportApp",
-                            current: featureFlags.settings.more.showSupportApp)
+                            current: featureFlags.settings.more.supportApp)
                     flagRow("experiments",
                             key: "settings.more.experiments",
-                            current: featureFlags.settings.more.showExperiments)
+                            current: featureFlags.settings.more.experiments)
                     flagRow("debugMenu",
                             key: "settings.more.debugMenu",
-                            current: featureFlags.settings.more.showDebugMenu)
+                            current: featureFlags.settings.more.debugMenu)
                 }
 
                 // MARK: App Info

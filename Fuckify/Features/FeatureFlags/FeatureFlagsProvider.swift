@@ -154,22 +154,23 @@ final class FeatureFlagsProvider {
 struct SettingsFlags {
     let provider: FeatureFlagsProvider
 
-    var showAppIconPicker: Bool     { provider.isEnabled(.settingsPersonalizationAppIconPicker) }
-    var showActivities: Bool        { provider.isEnabled(.settingsPersonalizationActivities) }
-    var showProtectionMethods: Bool { provider.isEnabled(.settingsPersonalizationProtectionMethods) }
-    var showPositions: Bool         { provider.isEnabled(.settingsPersonalizationPositions) }
-    var showSecurity: Bool          { provider.isEnabled(.settingsPersonalizationSecurity) }
+    var appIconPicker: Bool         { provider.isEnabled(.settingsPersonalizationAppIconPicker) }
+    var activities: Bool            { provider.isEnabled(.settingsPersonalizationActivities) }
+    var protectionMethods: Bool     { provider.isEnabled(.settingsPersonalizationProtectionMethods) }
+    var positions: Bool             { provider.isEnabled(.settingsPersonalizationPositions) }
+    var security: Bool              { provider.isEnabled(.settingsPersonalizationSecurity) }
 
-    var appIconPicker: AppIconPickerFlags { AppIconPickerFlags(provider: provider) }
-    var data: SettingsDataFlags           { SettingsDataFlags(provider: provider) }
-    var more: SettingsMoreFlags           { SettingsMoreFlags(provider: provider) }
+    var appIconPickerFlags: AppIconPickerFlags { AppIconPickerFlags(provider: provider) }
+    var data: SettingsDataFlags               { SettingsDataFlags(provider: provider) }
+    var more: SettingsMoreFlags               { SettingsMoreFlags(provider: provider) }
 
     // Section-level helpers
-    var showPersonalizationSection: Bool {
-        showAppIconPicker || showActivities || showProtectionMethods || showPositions || showSecurity
+    var personalizationSection: Bool {
+        appIconPicker || activities || protectionMethods || positions || security
     }
-    var showDataSection: Bool { data.showImportExport || data.showDeleteData }
-    var showMoreSection: Bool { more.showAbout || more.showSupportApp || more.showExperiments }
+    var dataSection: Bool { data.importExport || data.deleteData }
+
+    var moreSection: Bool { more.about || more.supportApp || more.experiments }
 }
 
 // MARK: - AppIconPickerFlags
@@ -177,7 +178,7 @@ struct SettingsFlags {
 @MainActor
 struct AppIconPickerFlags {
     let provider: FeatureFlagsProvider
-    var showSpicyIcons: Bool { provider.isEnabled(.settingsPersonalizationAppIconPickerSpicyIcons) }
+    var spicyIcons: Bool { provider.isEnabled(.settingsPersonalizationAppIconPickerSpicyIcons) }
 }
 
 // MARK: - SettingsDataFlags
@@ -185,9 +186,9 @@ struct AppIconPickerFlags {
 @MainActor
 struct SettingsDataFlags {
     let provider: FeatureFlagsProvider
-    var showImportExport: Bool { provider.isEnabled(.settingsDataImportExport) }
-    var showDeleteData: Bool   { provider.isEnabled(.settingsDataDeleteData) }
-    var importExport: ImportExportFlags { ImportExportFlags(provider: provider) }
+    var importExport: Bool { provider.isEnabled(.settingsDataImportExport) }
+    var deleteData: Bool   { provider.isEnabled(.settingsDataDeleteData) }
+    var importExportFlags: ImportExportFlags { ImportExportFlags(provider: provider) }
 }
 
 // MARK: - ImportExportFlags
@@ -195,16 +196,16 @@ struct SettingsDataFlags {
 @MainActor
 struct ImportExportFlags {
     let provider: FeatureFlagsProvider
-    var showCsvImportPartners: Bool   { provider.isEnabled(.settingsDataImportExportCsvImportPartners) }
-    var showCsvImportEncounters: Bool { provider.isEnabled(.settingsDataImportExportCsvImportEncounters) }
-    var showCsvExportPartners: Bool   { provider.isEnabled(.settingsDataImportExportCsvExportPartners) }
-    var showCsvExportEncounters: Bool { provider.isEnabled(.settingsDataImportExportCsvExportEncounters) }
-    var showImportDatabase: Bool      { provider.isEnabled(.settingsDataImportExportImportDatabase) }
-    var showExportDatabase: Bool      { provider.isEnabled(.settingsDataImportExportExportDatabase) }
+    var csvImportPartners: Bool   { provider.isEnabled(.settingsDataImportExportCsvImportPartners) }
+    var csvImportEncounters: Bool { provider.isEnabled(.settingsDataImportExportCsvImportEncounters) }
+    var csvExportPartners: Bool   { provider.isEnabled(.settingsDataImportExportCsvExportPartners) }
+    var csvExportEncounters: Bool { provider.isEnabled(.settingsDataImportExportCsvExportEncounters) }
+    var importDatabase: Bool      { provider.isEnabled(.settingsDataImportExportImportDatabase) }
+    var exportDatabase: Bool      { provider.isEnabled(.settingsDataImportExportExportDatabase) }
 
     // Section-level helpers (used by ImportView)
-    var showImportCSVSection: Bool { showCsvImportPartners || showCsvImportEncounters }
-    var showExportCSVSection: Bool { showCsvExportPartners || showCsvExportEncounters }
+    var importCSVSection: Bool { csvImportPartners || csvImportEncounters }
+    var exportCSVSection: Bool { csvExportPartners || csvExportEncounters }
 }
 
 // MARK: - SettingsMoreFlags
@@ -212,8 +213,8 @@ struct ImportExportFlags {
 @MainActor
 struct SettingsMoreFlags {
     let provider: FeatureFlagsProvider
-    var showAbout: Bool       { provider.isEnabled(.settingsMoreAbout) }
-    var showSupportApp: Bool  { provider.isEnabled(.settingsMoreSupportApp) }
-    var showExperiments: Bool { provider.isEnabled(.settingsMoreExperiments) }
-    var showDebugMenu: Bool   { provider.isEnabled(.settingsMoreDebugMenu) }
+    var about: Bool       { provider.isEnabled(.settingsMoreAbout) }
+    var supportApp: Bool  { provider.isEnabled(.settingsMoreSupportApp) }
+    var experiments: Bool { provider.isEnabled(.settingsMoreExperiments) }
+    var debugMenu: Bool   { provider.isEnabled(.settingsMoreDebugMenu) }
 }
