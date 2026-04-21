@@ -20,10 +20,10 @@ extension UTType {
 
 struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(FeatureFlagsProvider.self) private var featureFlags
     @Dependency(\.partnerService) private var partnerService
     @Dependency(\.encounterService) private var encounterService
     @Dependency(\.databaseService) private var databaseService
-    private let config = ImportExportConfig.shared
     
     @State private var allPartners: [SQLPartner] = []
     @State private var allEncounters: [SQLEncounter] = []
@@ -44,7 +44,7 @@ struct ImportView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     // Import Section
-                    if config.showImportCSVSection {
+                    if featureFlags.settings.data.importExportFlags.importCSVSection {
                         VStack(spacing: 16) {
                             HStack {
                                 Image(systemName: "square.and.arrow.down")
@@ -121,7 +121,7 @@ struct ImportView: View {
                     }
 
                     // Export Section
-                    if config.showExportCSVSection {
+                    if featureFlags.settings.data.importExportFlags.exportCSVSection {
                         VStack(spacing: 16) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")

@@ -9,7 +9,6 @@ import SwiftUI
 import SQLiteData
 import UIKit
 import UserNotifications
-import PostHog
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "App")
 
@@ -91,6 +90,7 @@ struct FuckifyApp: App {
     @State private var userSettings = UserSettings()
     @State private var liveActivityManager = LiveActivityManager()
     @State private var stiManager = STIManager()
+    @State private var featureFlags = FeatureFlagsProvider()
     
     @StateObject private var iapState = IAPStateManager.shared
     @State private var wasInactive = false
@@ -113,26 +113,6 @@ struct FuckifyApp: App {
             try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
         }
         
-        let POSTHOG_API_KEY = "phc_3B4gzM4mmgBj8lOIT6cKjQIqdFF3Dwnsca2ekWF0FYV"
-        let POSTHOG_HOST = "https://us.i.posthog.com"
-        let config = PostHogConfig(apiKey: POSTHOG_API_KEY, host: POSTHOG_HOST)
-        config.captureScreenViews = false
-        config.captureElementInteractions = false
-        config.sessionReplay = false
-        config.surveys = false
-        config.enableSwizzling = false
-//        config.optOut = false
-        
-        PostHogSDK.shared.setup(config)
-
-        var properties: [String : Any] = [
-            "$app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown",
-            "$app_build": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown",
-        ]
-        #if DEBUG
-        properties["is_internal_user"] = true
-        #endif
-        PostHogSDK.shared.setPersonPropertiesForFlags(properties, reloadFeatureFlags: true)
     }
 
     var body: some Scene {
@@ -150,9 +130,11 @@ struct FuckifyApp: App {
                     .environment(userSettings)
                     .environment(liveActivityManager)
                     .environment(stiManager)
+                    .environment(featureFlags)
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
                     .task {
                         await stiManager.load()
+                        await featureFlags.load()
                     }
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked

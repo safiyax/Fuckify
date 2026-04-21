@@ -9,7 +9,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = true
-    @State private var config = SettingsConfig.shared
+    @Environment(FeatureFlagsProvider.self) private var featureFlags
     @State private var showingDebugMenu = false
 
     var body: some View {
@@ -21,9 +21,9 @@ struct SettingsView: View {
 //                        .foregroundColor(.secondary)
 //                }
 
-                if config.showPersonalizationSection {
+                if featureFlags.settings.personalizationSection {
                     Section("Personalization") {
-                        if config.showAppIconPicker {
+                        if featureFlags.settings.appIconPicker {
                             NavigationLink {
                                 AppIconSettingsView()
                             } label: {
@@ -31,7 +31,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if config.showActivities {
+                        if featureFlags.settings.activities {
                             NavigationLink {
                                 ActivitiesSettingsView()
                             } label: {
@@ -39,7 +39,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if config.showProtectionMethods {
+                        if featureFlags.settings.protectionMethods {
                             NavigationLink {
                                 ProtectionMethodsSettingsView()
                             } label: {
@@ -47,7 +47,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if config.showPositions {
+                        if featureFlags.settings.positions {
                             NavigationLink {
                                 PositionsSettingsView()
                             } label: {
@@ -61,7 +61,7 @@ struct SettingsView: View {
                             SettingsRow(icon: "person.crop.circle.badge.ellipsis", color: .accentColor, label: "Partner Attributes")
                         }
                         
-                        if config.showSecurity {
+                        if featureFlags.settings.security {
                             NavigationLink {
                                 SecurityView()
                             } label: {
@@ -71,9 +71,9 @@ struct SettingsView: View {
                     }
                 }
 
-                if config.showDataSection {
+                if featureFlags.settings.dataSection {
                     Section("Data") {
-                        if config.showImportExport {
+                        if featureFlags.settings.data.importExport {
                             NavigationLink {
                                 ImportView()
                             } label: {
@@ -81,7 +81,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        if config.showDeleteData {
+                        if featureFlags.settings.data.deleteData {
                             NavigationLink {
                                 DeleteDataView()
                             } label: {
@@ -91,9 +91,9 @@ struct SettingsView: View {
                     }
                 }
 
-                if config.showMoreSection {
+                if featureFlags.settings.moreSection {
                     Section("More") {
-                        if config.showAbout {
+                        if featureFlags.settings.more.about {
                             NavigationLink {
                                 AboutView()
                             } label: {
@@ -101,7 +101,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if config.showSupport {
+                        if featureFlags.settings.more.supportApp {
                             NavigationLink {
                                 SupportView()
                             } label: {
@@ -109,7 +109,7 @@ struct SettingsView: View {
                             }
                         }
                         
-                        if config.showExperiments {
+                        if featureFlags.settings.more.experiments {
                             NavigationLink {
                                 ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
                                     .navigationTitle("Experiments")
@@ -130,7 +130,7 @@ struct SettingsView: View {
                 }
                 
                 // Debug Menu (only visible when CCDebugMenu flag is enabled)
-                if config.showDebugMenu {
+                if featureFlags.settings.more.debugMenu {
                     Section("Developer") {
                         Button {
                             showingDebugMenu = true
