@@ -29,7 +29,7 @@ struct AppIconSettingsView: View {
 }
 
 /// Alternate icon names that require the spicy icons flag to be visible.
-private let spicyIconNames: Set<String> = ["AppIcon", "AppIcon-Pink"]
+private let spicyIconNames: Set<String> = ["AppIcon", "AppIcon-Pink", "AppIcon-Red", "AppIcon-Orange", "AppIcon-Yellow", "AppIcon-Green", "AppIcon-Blue", "AppIcon-Purple"]
 
 struct AppIconPicker: View {
     @Environment(FeatureFlagsProvider.self) private var featureFlags
