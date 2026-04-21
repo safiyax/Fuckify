@@ -45,10 +45,8 @@ final class FeatureFlagsProvider {
     private(set) var flags: [String: Bool] = [:]
     private(set) var isLoaded: Bool = false
 
-    #if DEBUG
     private(set) var overrides: [String: Bool] = [:]
     private let overridesKey = "feature_flags_overrides"
-    #endif
 
     private let service = FeatureFlagsService()
 
@@ -61,9 +59,7 @@ final class FeatureFlagsProvider {
         isLoaded = true
         logger.debug("Loaded \(cached.count) flags from cache")
 
-        #if DEBUG
         loadOverrides()
-        #endif
 
         // 2. Fetch fresh in background
         do {
@@ -78,17 +74,14 @@ final class FeatureFlagsProvider {
     // MARK: - Flag Resolution
 
     fileprivate func isEnabled(_ key: FeatureFlagKey) -> Bool {
-        #if DEBUG
         if let override = overrides[key.rawValue] {
             return override
         }
-        #endif
         return flags[key.rawValue] ?? false
     }
 
     // MARK: - Debug Overrides
 
-    #if DEBUG
     fileprivate func setOverride(_ key: FeatureFlagKey, value: Bool?) {
         if let value {
             overrides[key.rawValue] = value
@@ -141,7 +134,6 @@ final class FeatureFlagsProvider {
         guard let data = try? JSONEncoder().encode(overrides) else { return }
         UserDefaults.standard.set(data, forKey: overridesKey)
     }
-    #endif
 
     // MARK: - Domain Views
 
