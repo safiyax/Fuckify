@@ -17,11 +17,11 @@ private enum FeatureFlagKey: String, CaseIterable {
     case settingsPersonalizationPositions             = "settings.personalization.positions"
     case settingsPersonalizationSecurity              = "settings.personalization.security"
     case settingsPersonalizationAppIconPickerSpicyIcons = "settings.personalization.appIconPicker.spicyIcons"
-
+    
     // settings.data
     case settingsDataImportExport                     = "settings.data.importExport"
     case settingsDataDeleteData                       = "settings.data.deleteData"
-
+    
     // settings.data.importExport
     case settingsDataImportExportCsvImportPartners    = "settings.data.importExport.csvImportPartners"
     case settingsDataImportExportCsvImportEncounters  = "settings.data.importExport.csvImportEncounters"
@@ -29,12 +29,15 @@ private enum FeatureFlagKey: String, CaseIterable {
     case settingsDataImportExportCsvExportEncounters  = "settings.data.importExport.csvExportEncounters"
     case settingsDataImportExportImportDatabase       = "settings.data.importExport.importDatabase"
     case settingsDataImportExportExportDatabase       = "settings.data.importExport.exportDatabase"
-
+    
     // settings.more
     case settingsMoreAbout                            = "settings.more.about"
     case settingsMoreSupportApp                       = "settings.more.supportApp"
     case settingsMoreExperiments                      = "settings.more.experiments"
     case settingsMoreDebugMenu                        = "settings.more.debugMenu"
+    
+    // settings.more.experiments
+    case settingsMoreExperimentsUserRegistration    = "settings.more.experiments.userRegistration"
 }
 
 // MARK: - Provider
@@ -209,4 +212,13 @@ struct SettingsMoreFlags {
     var supportApp: Bool  { provider.isEnabled(.settingsMoreSupportApp) }
     var experiments: Bool { provider.isEnabled(.settingsMoreExperiments) }
     var debugMenu: Bool   { provider.isEnabled(.settingsMoreDebugMenu) }
+    var experimentsFlags: ExperimentsFlags { ExperimentsFlags(provider: provider) }
+}
+
+// MARK: - ExperimentsFlags
+
+@MainActor
+struct ExperimentsFlags {
+    let provider: FeatureFlagsProvider
+    var userRegistration: Bool { provider.isEnabled(.settingsMoreExperimentsUserRegistration) }
 }

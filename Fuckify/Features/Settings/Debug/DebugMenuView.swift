@@ -120,6 +120,13 @@ struct DebugMenuView: View {
                             current: featureFlags.settings.more.debugMenu)
                 }
 
+                // MARK: settings.more.experiments
+                Section("settings.more.experiments") {
+                    flagRow("  userRegistration",
+                            key: "settings.more.experiments.userRegistration",
+                            current: featureFlags.settings.more.experimentsFlags.userRegistration)
+                }
+
                 // MARK: App Info
                 Section("App Info") {
                     LabeledContent("Version", value: appVersion())
