@@ -17,10 +17,12 @@ Build the phone-number-to-username registration flow, surfaced under Settings > 
 **In scope:**
 - `POST /api/auth/send-code` — phone entry
 - `POST /api/auth/verify-code` — code verification + token receipt
-- `POST /api/auth/complete` — username + display name + crypto key generation + encrypted profile upload
+- `POST /api/auth/complete` — username + display name + crypto key generation + encrypted profile upload (new users)
+- `POST /api/auth/reset-identity` — fresh key generation + profile re-encryption for returning users on a new device
 - `GET /api/auth/check-username` — live availability check on the username screen
 - Session persistence: token in Keychain, username in UserDefaults
 - Already-registered state detection and display
+- New-device re-registration flow with user-facing explanation
 - Feature flag wiring for `settings.more.experiments.userRegistration`
 - Debug menu row for the new flag
 
@@ -53,7 +55,8 @@ Fuckify/
 │       ├── RegistrationContainerView.swift — NavigationStack driven by coordinator step
 │       ├── PhoneEntryView.swift
 │       ├── CodeVerifyView.swift
-│       └── UsernameView.swift
+│       ├── UsernameView.swift
+│       └── NewDeviceView.swift
 ```
 
 **Existing files modified:**
@@ -98,6 +101,7 @@ These will be updated to use the app's bundle ID (`baby.safi.Fuckify`) in a futu
   - `verifyCode(phone:code:)` → `VerifyResp` — `POST /api/auth/verify-code`
   - `checkUsername(_:)` → `Bool` — `GET /api/auth/check-username?username=`
   - `completeRegistration(body:)` — `POST /api/auth/complete`
+  - `resetIdentity(body:)` — `POST /api/auth/reset-identity`
 
 **Error model:** on non-2xx, decode PocketBase error shape `{ status, message, data }` and throw a typed `APIError.server(status: Int, message: String)`. Fall back to `APIError.network(URLError)` on transport failures.
 
@@ -135,6 +139,7 @@ final class RegistrationService {
     func sendCode(phone: String) async throws
     func verifyCode(phone: String, code: String) async throws -> VerifyResp
     func completeRegistration(username: String, displayName: String) async throws
+    func resetIdentity(displayName: String) async throws
 }
 ```
 
@@ -146,6 +151,13 @@ final class RegistrationService {
 5. Writes `username` to `UserDefaults.standard` under key `"cc.username"`
 6. Does NOT store the token — the coordinator handles that after `verifyCode`
 
+`resetIdentity` does exactly:
+1. `E2EEKeyManager.shared.installAndBuildRegistrationBundle(opkCount: 100)` — generates a completely fresh key bundle, overwriting any existing Keychain keys
+2. `ProfileKeyManager.shared.profileKey()` — generates a new profile key (old one is gone since Keychain doesn't transfer between devices)
+3. `ProfileCrypto.encrypt(PlaintextProfile(displayName:), key:)` — re-encrypts profile with new profile key
+4. `POST /api/auth/reset-identity` — same body shape as `complete` minus `username`
+5. Does NOT write to `UserDefaults` — username is preserved on the server and was already read from Keychain/UserDefaults by the coordinator during `verifyCode`
+
 **Token storage:** `RegistrationService.verifyCode` returns `VerifyResp`. The coordinator writes `resp.token` to Keychain (service `"baby.safi.Fuckify.auth"`, account `"bearerToken"`) and sets `APIClient.shared.authToken = resp.token`.
 
 ---
@@ -156,7 +168,8 @@ final class RegistrationService {
 enum RegistrationStep: Equatable {
     case phone
     case code(phone: String)
-    case username(phone: String, token: String, userID: String)
+    case username(phone: String, token: String, userID: String)  // new user
+    case newDevice(token: String, username: String)               // returning user, no local keys
     case registered(username: String)
 }
 
@@ -171,7 +184,7 @@ final class RegistrationCoordinator {
     private let tokenStore = KeychainStore(service: "baby.safi.Fuckify.auth")
 
     init() {
-        // Detect existing session
+        // Detect existing session on this device
         if let username = UserDefaults.standard.string(forKey: "cc.username") {
             step = .registered(username: username)
         } else {
@@ -182,6 +195,7 @@ final class RegistrationCoordinator {
     func sendCode(phone: String) async
     func verifyCode(phone: String, code: String) async
     func completeRegistration(username: String, displayName: String) async
+    func resetIdentity(displayName: String) async
 }
 ```
 
@@ -189,9 +203,12 @@ final class RegistrationCoordinator {
 - `sendCode` → `.code(phone:)` on success
 - `verifyCode`:
   - `isNewUser == true` → `.username(phone:token:userID:)`
-  - `isNewUser == false` and UserDefaults `"cc.username"` exists → `.registered(username:)`
-  - `isNewUser == false` and UserDefaults `"cc.username"` is nil → show error "Account exists on server but this device has no username stored. Re-registration on a fresh device is out of scope for this experiment." (stays on `.phone` step)
+  - `isNewUser == false`:
+    - Check `E2EEKeyManager` for existing identity signing key in Keychain
+    - Keys present → `.registered(username:)` (username read from UserDefaults; if somehow nil, set `errorMessage` and stay on `.phone`)
+    - Keys absent (new device) → `.newDevice(token:username:)`. Username comes from UserDefaults `"cc.username"` if present; if also absent (truly fresh install with an existing server account and no prior app data), set `errorMessage = "Account found but username not stored on this device."` and stay on `.phone` — this edge case is not handled in this experiment.
 - `completeRegistration` → `.registered(username:)`
+- `resetIdentity` → `.registered(username:)` (username was already in the `.newDevice` step payload)
 
 **Token write** happens inside `verifyCode` in the coordinator, immediately after receiving `VerifyResp`:
 ```swift
@@ -211,14 +228,15 @@ Owns `@State private var coordinator = RegistrationCoordinator()`. Passes it via
 
 ```swift
 switch coordinator.step {
-case .phone:                  PhoneEntryView()
-case .code(let phone):        CodeVerifyView(phone: phone)
-case .username(_, _, _):      UsernameView()
-case .registered(let u):      RegisteredView(username: u)
+case .phone:                         PhoneEntryView()
+case .code(let phone):               CodeVerifyView(phone: phone)
+case .username(_, _, _):             UsernameView()
+case .newDevice(_, let username):    NewDeviceView(username: username)
+case .registered(let u):             RegisteredView(username: u)
 }
 ```
 
-`RegisteredView` is a simple inline view (not a separate file): `ContentUnavailableView`-style layout showing "Registered as @\(username)" with a person.crop.circle.fill SF symbol.
+`RegisteredView` is a simple inline view (not a separate file): `ContentUnavailableView`-style layout showing "Registered as @\(username)" with a `person.crop.circle.fill` SF symbol.
 
 ### `PhoneEntryView`
 
@@ -238,6 +256,19 @@ case .registered(let u):      RegisteredView(username: u)
 - "Verify" `Button` → `await coordinator.verifyCode(phone: phone, code: code)`
 - "Resend code" `Button` → `await coordinator.sendCode(phone: phone)` (same phone)
 - Disabled + spinner while loading, alert on error
+
+### `NewDeviceView`
+
+Shown when `isNewUser == false` but no local Keychain keys exist. Explains the situation to the user before performing the reset.
+
+- Receives `username: String` from the step enum (init param)
+- Non-scrolling layout with:
+  - Heading: "Welcome back, @\(username)"
+  - Body text: "Your account was found on the server, but your encryption keys aren't on this device. This happens when you get a new phone — your keys never leave your device and can't be transferred. Tap below to generate new keys and re-link your account. Your username is preserved. Your partners will need to re-sync with you after this."
+  - `@State private var displayName = ""` text field — required to re-encrypt the profile blob
+  - "Set Up New Device" primary button → `await coordinator.resetIdentity(displayName: displayName)`, disabled while loading or displayName is empty
+- Spinner while `coordinator.isLoading`
+- Alert on `coordinator.errorMessage`
 
 ### `UsernameView`
 
@@ -341,6 +372,8 @@ private let baseURL = "https://api.dev.coitalcomrade.safiya.sh/api/feature-flags
 | Bad/expired SMS code | Server 400, message shown | Re-enter or resend |
 | Username taken | Server 400, shown in alert | Choose different username |
 | Username already registered | Server 400 "already registered" | Coordinator checks UserDefaults first, so this should not occur in practice |
+| New device, username not in UserDefaults | `errorMessage` set, stays on `.phone` | Edge case; out of scope for this experiment |
+| `reset-identity` SPK signature invalid | Server 400, shown in alert | Retry (fresh key generation on retry) |
 | Network failure | `URLError` localised description | Retry button (same action) |
 | Keychain write failure | Silent — registration still succeeds; token just not persisted across launches | Next launch will prompt registration again |
 
