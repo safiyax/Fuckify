@@ -111,9 +111,7 @@ struct SettingsView: View {
                         
                         if featureFlags.settings.more.experiments {
                             NavigationLink {
-                                ContentUnavailableView("Nothing to see here.", systemImage: "hourglass")
-                                    .navigationTitle("Experiments")
-
+                                ExperimentsView()
                             } label: {
                                 SettingsRow(icon: "gear.badge.questionmark", color: .green, label: "Experiments")
                             }
