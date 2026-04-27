@@ -12,9 +12,11 @@ import SwiftUI
 struct DebugMenuView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(FeatureFlagsProvider.self) private var featureFlags
+    @Environment(PremiumManager.self) private var premiumManager
     @State private var isRefreshing = false
     @State private var lastFetched: Date? = nil
     @State private var showResetLoginConfirm = false
+    @State private var showResetPremiumConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -65,6 +67,15 @@ struct DebugMenuView: View {
                             Text("Reset Login State")
                         }
                     }
+
+                    Button(role: .destructive) {
+                        showResetPremiumConfirm = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "crown.slash")
+                            Text("Reset Premium State")
+                        }
+                    }
                 } header: {
                     Text("Registration")
                 } footer: {
@@ -79,6 +90,16 @@ struct DebugMenuView: View {
                     Button("Cancel", role: .cancel) {}
                 } message: {
                     Text("This clears your local keys and session. You will be asked to verify your phone number again.")
+                }
+                .confirmationDialog(
+                    "Reset Premium State?",
+                    isPresented: $showResetPremiumConfirm,
+                    titleVisibility: .visible
+                ) {
+                    Button("Reset", role: .destructive) { resetPremiumState() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Forces a fresh entitlement check. Use this to simulate a non-subscriber in the simulator.")
                 }
 
                 // MARK: settings.personalization
@@ -152,6 +173,9 @@ struct DebugMenuView: View {
                     flagRow("  userRegistration",
                             key: "settings.more.experiments.userRegistration",
                             current: featureFlags.settings.more.experimentsFlags.userRegistration)
+                    flagRow("  paywall",
+                            key: "settings.more.experiments.paywall",
+                            current: featureFlags.settings.more.experimentsFlags.paywall)
                 }
 
                 // MARK: App Info
@@ -206,6 +230,10 @@ struct DebugMenuView: View {
         UserDefaults.standard.removeObject(forKey: "cc.username")
     }
 
+    private func resetPremiumState() {
+        Task { await premiumManager.load() }
+    }
+
     private func appVersion() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
@@ -216,4 +244,5 @@ struct DebugMenuView: View {
 #Preview {
     DebugMenuView()
         .environment(FeatureFlagsProvider())
+        .environment(PremiumManager.shared)
 }
