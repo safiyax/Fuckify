@@ -171,7 +171,7 @@ Modified files:
 
 ## StoreKit Testing
 
-Uses the existing StoreKit configuration pattern in the project. `.storekit` config file entries for both `baby.safi.Fuckify.premium.monthly` and `baby.safi.Fuckify.premium.annual` must be added for simulator testing. The `DebugMenuView` "Reset Login State" pattern is the model for any debug-only purchase reset tooling needed — a "Reset Premium" debug button should be added to clear the local entitlement cache and force a re-check.
+Download the `.storekit` configuration file from App Store Connect and add it to the scheme manually (**Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration**). The `DebugMenuView` "Reset Login State" pattern is the model for any debug-only purchase reset tooling needed — a "Reset Premium" debug button re-calls `PremiumManager.load()` to force a fresh entitlement check.
 
 ---
 

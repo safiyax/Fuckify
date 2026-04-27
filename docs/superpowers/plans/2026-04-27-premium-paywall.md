@@ -18,7 +18,6 @@
 | `Fuckify/Features/Premium/PremiumFeatureRow.swift` | **Create** | Shared subview: icon + title + optional description |
 | `Fuckify/Features/Premium/PaywallView.swift` | **Create** | Full-screen paywall: hero, feature list, plan picker, CTA |
 | `Fuckify/Features/Premium/PremiumManagementView.swift` | **Create** | `.medium` sheet for active subscribers |
-| `Fuckify/Fuckify.storekit` | **Create** | Local StoreKit config for simulator testing |
 | `Fuckify/Features/FeatureFlags/FeatureFlagsProvider.swift` | **Modify** | Add `settingsMoreExperimentsPaywall` key + `ExperimentsFlags.paywall` |
 | `Fuckify/Features/Experiments/ExperimentsView.swift` | **Modify** | Add Paywall row, inject `PremiumManager` from environment |
 | `Fuckify/Features/Settings/Debug/DebugMenuView.swift` | **Modify** | Add `settings.more.experiments.paywall` flag row + "Reset Premium" debug button |
@@ -27,85 +26,7 @@
 
 ---
 
-## Task 1: StoreKit configuration file
-
-**Files:**
-- Create: `Fuckify/Fuckify.storekit`
-
-- [ ] **Step 1: Create the StoreKit config file**
-
-Create `Fuckify/Fuckify.storekit` with the following content (valid StoreKit 2 JSON config):
-
-```json
-{
-  "identifier" : "Fuckify Premium",
-  "nonConsumableProducts" : [],
-  "consumableProducts" : [],
-  "autoRenewableSubscriptions" : [
-    {
-      "familyShareable" : false,
-      "groupIdentifier" : "premium",
-      "internalID" : "premium_monthly",
-      "localizations" : [
-        {
-          "description" : "Full access to all Coital Comrade premium features.",
-          "displayName" : "Coital Comrade Premium (Monthly)",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "baby.safi.Fuckify.premium.monthly",
-      "recurringSubscriptionPeriod" : "P1M",
-      "referenceName" : "Premium Monthly",
-      "subscriptionGroupID" : "premium",
-      "introductoryOffer" : null,
-      "price" : "2.99",
-      "type" : "RecurringSubscription"
-    },
-    {
-      "familyShareable" : false,
-      "groupIdentifier" : "premium",
-      "internalID" : "premium_annual",
-      "localizations" : [
-        {
-          "description" : "Full access to all Coital Comrade premium features.",
-          "displayName" : "Coital Comrade Premium (Annual)",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "baby.safi.Fuckify.premium.annual",
-      "recurringSubscriptionPeriod" : "P1Y",
-      "referenceName" : "Premium Annual",
-      "subscriptionGroupID" : "premium",
-      "introductoryOffer" : null,
-      "price" : "19.99",
-      "type" : "RecurringSubscription"
-    }
-  ],
-  "nonRenewingSubscriptions" : [],
-  "settings" : {
-    "_storeKitErrors" : []
-  },
-  "version" : {
-    "major" : 3,
-    "minor" : 0
-  }
-}
-```
-
-- [ ] **Step 2: Add the .storekit file to the Xcode project**
-
-Open `Fuckify.xcodeproj` in Xcode. Drag `Fuckify/Fuckify.storekit` into the Fuckify target group. Make sure it is added to the Fuckify target (not the widget extension). Then go to **Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration** and select `Fuckify.storekit`.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add Fuckify/Fuckify.storekit
-git commit -m "feat: add StoreKit config for premium monthly and annual products"
-```
-
----
-
-## Task 2: `PremiumManager`
+## Task 1: `PremiumManager`
 
 **Files:**
 - Create: `Fuckify/Core/Store/PremiumManager.swift`
@@ -287,7 +208,7 @@ git commit -m "feat: add PremiumManager with StoreKit 2 product loading, purchas
 
 ---
 
-## Task 3: Inject `PremiumManager` into the environment
+## Task 2: Inject `PremiumManager` into the environment
 
 **Files:**
 - Modify: `Fuckify/FuckifyApp.swift`
@@ -333,7 +254,7 @@ git commit -m "feat: inject PremiumManager into SwiftUI environment"
 
 ---
 
-## Task 4: Feature flag wiring
+## Task 3: Feature flag wiring
 
 **Files:**
 - Modify: `Fuckify/Features/FeatureFlags/FeatureFlagsProvider.swift`
@@ -371,7 +292,7 @@ git commit -m "feat: add settings.more.experiments.paywall feature flag"
 
 ---
 
-## Task 5: `PremiumFeatureRow` shared subview
+## Task 4: `PremiumFeatureRow` shared subview
 
 **Files:**
 - Create: `Fuckify/Features/Premium/PremiumFeatureRow.swift`
@@ -434,7 +355,7 @@ git commit -m "feat: add PremiumFeatureRow shared subview"
 
 ---
 
-## Task 6: `PaywallView`
+## Task 5: `PaywallView`
 
 **Files:**
 - Create: `Fuckify/Features/Premium/PaywallView.swift`
@@ -710,7 +631,7 @@ git commit -m "feat: add PaywallView with plan picker and aspirational copy"
 
 ---
 
-## Task 7: `PremiumManagementView`
+## Task 6: `PremiumManagementView`
 
 **Files:**
 - Create: `Fuckify/Features/Premium/PremiumManagementView.swift`
@@ -836,7 +757,7 @@ git commit -m "feat: add PremiumManagementView subscriber management sheet"
 
 ---
 
-## Task 8: Wire into `ExperimentsView`
+## Task 7: Wire into `ExperimentsView`
 
 **Files:**
 - Modify: `Fuckify/Features/Experiments/ExperimentsView.swift`
@@ -931,7 +852,7 @@ git commit -m "feat: add Premium row to ExperimentsView"
 
 ---
 
-## Task 9: Debug menu additions
+## Task 8: Debug menu additions
 
 **Files:**
 - Modify: `Fuckify/Features/Settings/Debug/DebugMenuView.swift`
@@ -1013,7 +934,7 @@ git commit -m "feat: add paywall flag row and Reset Premium button to debug menu
 
 ---
 
-## Task 10: Update `SupportView` privacy copy
+## Task 9: Update `SupportView` privacy copy
 
 **Files:**
 - Modify: `Fuckify/Features/Settings/Store/SupportView.swift`
