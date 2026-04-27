@@ -14,6 +14,7 @@ struct DebugMenuView: View {
     @Environment(FeatureFlagsProvider.self) private var featureFlags
     @State private var isRefreshing = false
     @State private var lastFetched: Date? = nil
+    @State private var showResetLoginConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -52,6 +53,32 @@ struct DebugMenuView: View {
                             Text("Clear All Overrides")
                         }
                     }
+                }
+
+                // MARK: Registration
+                Section {
+                    Button(role: .destructive) {
+                        showResetLoginConfirm = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "person.badge.minus")
+                            Text("Reset Login State")
+                        }
+                    }
+                } header: {
+                    Text("Registration")
+                } footer: {
+                    Text("Clears the auth token, local identity keys, and cached username. The account remains on the server. Use this to test the new-device flow with the same phone number.")
+                }
+                .confirmationDialog(
+                    "Reset Login State?",
+                    isPresented: $showResetLoginConfirm,
+                    titleVisibility: .visible
+                ) {
+                    Button("Reset", role: .destructive) { resetLoginState() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This clears your local keys and session. You will be asked to verify your phone number again.")
                 }
 
                 // MARK: settings.personalization
@@ -164,6 +191,19 @@ struct DebugMenuView: View {
             set: { newValue in featureFlags.setOverrideRaw(key, value: newValue) }
         )
         return DebugFlagRow(label: label, value: binding, isOverridden: isOverridden)
+    }
+
+    private func resetLoginState() {
+        // Clear auth token from Keychain
+        let authStore = KeychainStore(service: "baby.safi.Fuckify.auth")
+        try? authStore.delete(account: "bearerToken")
+        APIClient.shared.authToken = nil
+
+        // Clear identity keys from Keychain
+        E2EEKeyManager.shared.clearIdentityKeys()
+
+        // Clear cached username
+        UserDefaults.standard.removeObject(forKey: "cc.username")
     }
 
     private func appVersion() -> String {

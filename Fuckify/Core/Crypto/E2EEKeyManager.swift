@@ -84,6 +84,13 @@ final class E2EEKeyManager {
         (try? store.get(account: K.identitySign)) != nil
     }
 
+    /// Deletes identity keys from the Keychain so `installAndBuildRegistrationBundle`
+    /// will generate a completely fresh bundle. Call before `resetIdentity` only.
+    func clearIdentityKeys() {
+        try? store.delete(account: K.identitySign)
+        try? store.delete(account: K.identityAgree)
+    }
+
     func signedPrekey(id: UInt32) throws -> Curve25519.KeyAgreement.PrivateKey {
         try .init(rawRepresentation: store.get(account: K.spk(id)))
     }

@@ -65,22 +65,15 @@ final class RegistrationCoordinator {
                 step = .username(phone: phone, token: resp.token, userID: resp.userID)
             } else {
                 // Returning user — check if keys are on this device
-                if E2EEKeyManager.shared.hasIdentityKeys() {
-                    // Keys present — already set up on this device
-                    let username = UserDefaults.standard.string(forKey: "cc.username") ?? ""
-                    if username.isEmpty {
-                        errorMessage = "Account found but username not stored on this device."
-                    } else {
-                        step = .registered(username: username)
-                    }
+                let cachedUsername = UserDefaults.standard.string(forKey: "cc.username") ?? ""
+                if E2EEKeyManager.shared.hasIdentityKeys() && !cachedUsername.isEmpty {
+                    // Keys + username present — fully set up on this device
+                    step = .registered(username: cachedUsername)
                 } else {
-                    // New device — no local keys
-                    let username = UserDefaults.standard.string(forKey: "cc.username") ?? ""
-                    if username.isEmpty {
-                        errorMessage = "Account found but username not stored on this device. Re-registration on a fresh device without prior app data is not supported in this experiment."
-                    } else {
-                        step = .newDevice(token: resp.token, username: username)
-                    }
+                    // No keys or no cached username — treat as new device setup.
+                    // clearIdentityKeys() is called inside RegistrationService.resetIdentity
+                    // so any partial state is cleaned up at the point of commitment.
+                    step = .newDevice(token: resp.token, username: cachedUsername)
                 }
             }
         } catch {

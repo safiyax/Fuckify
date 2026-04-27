@@ -32,7 +32,7 @@ final class RegistrationService {
             key: profileKey
         )
         let opks = bundle.oneTimePrekeys.map {
-            ["prekey_id": String($0.id), "public_key": $0.publicKey]
+            APIClient.OneTimePrekey(prekey_id: $0.id, public_key: $0.publicKey)
         }
         try await api.completeRegistration(
             username:            username,
@@ -50,7 +50,8 @@ final class RegistrationService {
     // MARK: - Step 3b: Reset identity (returning user on new device)
 
     func resetIdentity(displayName: String) async throws {
-        // Generate completely fresh keys — overwrites any existing Keychain entries
+        // Clear any stale keys first so installAndBuildRegistrationBundle generates fresh ones
+        km.clearIdentityKeys()
         let bundle = try km.installAndBuildRegistrationBundle(opkCount: 100)
         let profileKey = try ProfileKeyManager.shared.profileKey()
         let blob = try ProfileCrypto.encrypt(
@@ -58,7 +59,7 @@ final class RegistrationService {
             key: profileKey
         )
         let opks = bundle.oneTimePrekeys.map {
-            ["prekey_id": String($0.id), "public_key": $0.publicKey]
+            APIClient.OneTimePrekey(prekey_id: $0.id, public_key: $0.publicKey)
         }
         try await api.resetIdentity(
             encryptedBlob:        blob,

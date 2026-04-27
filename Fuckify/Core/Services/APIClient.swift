@@ -64,8 +64,16 @@ final class APIClient {
     }
 
     func checkUsername(_ username: String) async throws -> Bool {
-        let r: AvailableResp = try await get("/api/auth/check-username?username=\(username)")
+        let r: AvailableResp = try await get("/api/auth/check-username",
+                                             query: [.init(name: "username", value: username)])
         return r.available
+    }
+
+    // MARK: - One-time prekey struct (matches server JSON schema)
+
+    struct OneTimePrekey: Encodable {
+        let prekey_id: UInt32
+        let public_key: String
     }
 
     func completeRegistration(
@@ -76,7 +84,7 @@ final class APIClient {
         signedPrekeyId: UInt32,
         signedPrekeyPub: String,
         signedPrekeySig: String,
-        oneTimePrekeys: [[String: String]]
+        oneTimePrekeys: [OneTimePrekey]
     ) async throws {
         struct Body: Encodable {
             let username: String
@@ -86,7 +94,7 @@ final class APIClient {
             let signed_prekey_id: UInt32
             let signed_prekey_pub: String
             let signed_prekey_sig: String
-            let one_time_prekeys: [[String: String]]
+            let one_time_prekeys: [OneTimePrekey]
         }
         let _: OKResp = try await post("/api/auth/complete", body: Body(
             username:               username,
@@ -107,7 +115,7 @@ final class APIClient {
         signedPrekeyId: UInt32,
         signedPrekeyPub: String,
         signedPrekeySig: String,
-        oneTimePrekeys: [[String: String]]
+        oneTimePrekeys: [OneTimePrekey]
     ) async throws {
         struct Body: Encodable {
             let encrypted_blob: String
@@ -116,7 +124,7 @@ final class APIClient {
             let signed_prekey_id: UInt32
             let signed_prekey_pub: String
             let signed_prekey_sig: String
-            let one_time_prekeys: [[String: String]]
+            let one_time_prekeys: [OneTimePrekey]
         }
         let _: OKResp = try await post("/api/auth/reset-identity", body: Body(
             encrypted_blob:         encryptedBlob,
@@ -135,14 +143,23 @@ final class APIClient {
         try await req("POST", path, body: body)
     }
 
-    func get<T: Decodable>(_ path: String) async throws -> T {
-        try await req("GET", path)
+    func get<T: Decodable>(_ path: String, query: [URLQueryItem]? = nil) async throws -> T {
+        try await req("GET", path, query: query)
     }
 
     private func req<T: Decodable>(_ method: String, _ path: String,
+                                    query: [URLQueryItem]? = nil,
                                     body: Encodable? = nil) async throws -> T
     {
-        var r = URLRequest(url: baseURL.appendingPathComponent(path))
+        let url: URL
+        let base = baseURL.appendingPathComponent(path)
+        if let query = query, var comps = URLComponents(url: base, resolvingAgainstBaseURL: true) {
+            comps.queryItems = query
+            url = comps.url ?? base
+        } else {
+            url = base
+        }
+        var r = URLRequest(url: url)
         r.httpMethod = method
         r.addValue("application/json", forHTTPHeaderField: "Content-Type")
         if let t = authToken {
