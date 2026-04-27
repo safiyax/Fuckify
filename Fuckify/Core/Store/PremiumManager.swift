@@ -8,8 +8,9 @@ import StoreKit
 
 private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Premium")
 
-private let monthlyProductID = "baby.safi.Fuckify.premium.monthly"
-private let annualProductID  = "baby.safi.Fuckify.premium.annual"
+private let monthlyProductID  = "baby.safi.Fuckify.premium.monthly"
+private let annualProductID   = "baby.safi.Fuckify.premium.annual"
+private let lifetimeProductID = "baby.safi.Fuckify.premium.lifetime"
 
 @Observable
 @MainActor
@@ -23,10 +24,12 @@ final class PremiumManager {
     private(set) var isPremium = false
     private(set) var monthlyProduct: Product? = nil
     private(set) var annualProduct: Product? = nil
+    private(set) var lifetimeProduct: Product? = nil
     private(set) var loadError: String? = nil
     private(set) var expirationDate: Date? = nil
 
     /// Which product the user has selected in the paywall. Annual is preselected (better value).
+    /// Lifetime is a separate one-time purchase and does not participate in the default selection.
     var selectedProduct: Product? {
         get { _selectedProduct ?? annualProduct ?? monthlyProduct }
         set { _selectedProduct = newValue }
@@ -46,11 +49,12 @@ final class PremiumManager {
         defer { isLoading = false }
 
         do {
-            let products = try await Product.products(for: [monthlyProductID, annualProductID])
+            let products = try await Product.products(for: [monthlyProductID, annualProductID, lifetimeProductID])
             for product in products {
                 switch product.id {
-                case monthlyProductID: monthlyProduct = product
-                case annualProductID:  annualProduct  = product
+                case monthlyProductID:  monthlyProduct  = product
+                case annualProductID:   annualProduct   = product
+                case lifetimeProductID: lifetimeProduct = product
                 default: break
                 }
             }
@@ -140,13 +144,19 @@ final class PremiumManager {
 
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
-            if transaction.productID == monthlyProductID || transaction.productID == annualProductID {
+            switch transaction.productID {
+            case lifetimeProductID:
+                // Non-consumable — never expires, no expiration date
+                found = true
+            case monthlyProductID, annualProductID:
                 found = true
                 if let expiry = transaction.expirationDate {
                     if latestExpiry == nil || expiry > latestExpiry! {
                         latestExpiry = expiry
                     }
                 }
+            default:
+                break
             }
         }
 

@@ -39,7 +39,7 @@ struct PremiumManagementView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             } else {
-                                Text("Active")
+                                Text("Never expires")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

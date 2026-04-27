@@ -12,25 +12,25 @@ struct PaywallView: View {
 
     private let features: [(icon: String, color: Color, title: String, description: String)] = [
         ("chart.bar.fill",             .purple,  "Rich Stats",           "See patterns in your own time."),
-        ("figure.run",                 .orange,  "Streaks & Dry Spells", "Know your rhythms."),
+//        ("figure.run",                 .orange,  "Streaks & Dry Spells", "Know your rhythms."),
         ("rectangle.stack.fill",       .blue,    "Widgets",              "At a glance, privately."),
         ("heart.text.square.fill",     .pink,    "HealthKit",            "Connect to your health picture."),
         ("photo.on.rectangle",         .teal,    "Extra Icons",          "Make it yours."),
         ("arrow.triangle.2.circlepath",.indigo,  "Partner Sync",         "Share history with people you trust."),
-        ("person.3.fill",              .mint,    "Group Sync",           "For the adventurous."),
+//        ("person.3.fill",              .mint,    "Group Sync",           "For the adventurous."),
         ("trophy.fill",                .yellow,  "Leaderboards",         "Friendly competition."),
     ]
 
     var body: some View {
-        ScrollView {
+//        ScrollView {
             VStack(spacing: 0) {
                 heroSection
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 16)
 
                 VStack(spacing: 0) {
                     featureList
                         .padding(.horizontal)
-                        .padding(.bottom, 32)
+                        .padding(.bottom, 16)
 
                     planPicker
                         .padding(.horizontal)
@@ -48,10 +48,10 @@ struct PaywallView: View {
                         .padding(.bottom, 32)
                 }
             }
-        }
+//        }
         .ignoresSafeArea(edges: .top)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+//        .navigationTitle("")
+//        .navigationBarTitleDisplayMode(.inline)
         .task { await premium.load() }
     }
 
@@ -66,7 +66,7 @@ struct PaywallView: View {
             )
 
             VStack(spacing: 16) {
-                Spacer(minLength: 60)
+                Spacer(minLength: 20)
 
                 Image(systemName: "heart.circle.fill")
                     .font(.system(size: 80))
@@ -89,13 +89,13 @@ struct PaywallView: View {
                 Spacer(minLength: 32)
             }
         }
-        .frame(minHeight: 280)
+        .frame(minHeight: 240)
     }
 
     // MARK: - Feature list
 
     private var featureList: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             ForEach(features, id: \.title) { feature in
                 PremiumFeatureRow(
                     icon: feature.icon,
@@ -111,19 +111,30 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var planPicker: some View {
-        if let monthly = premium.monthlyProduct, let annual = premium.annualProduct {
-            HStack(spacing: 12) {
+        VStack(spacing: 12) {
+            if let monthly = premium.monthlyProduct, let annual = premium.annualProduct {
+                HStack(spacing: 12) {
+                    planCard(
+                        product: annual,
+                        badge: "Best Value",
+                        period: "/ year",
+                        isSelected: premium.selectedProduct?.id == annual.id
+                    )
+                    planCard(
+                        product: monthly,
+                        badge: nil,
+                        period: "/ month",
+                        isSelected: premium.selectedProduct?.id == monthly.id
+                    )
+                }
+            }
+
+            if let lifetime = premium.lifetimeProduct {
                 planCard(
-                    product: annual,
-                    badge: "Best Value",
-                    period: "/ year",
-                    isSelected: premium.selectedProduct?.id == annual.id
-                )
-                planCard(
-                    product: monthly,
-                    badge: nil,
-                    period: "/ month",
-                    isSelected: premium.selectedProduct?.id == monthly.id
+                    product: lifetime,
+                    badge: "One-Time",
+                    period: "forever",
+                    isSelected: premium.selectedProduct?.id == lifetime.id
                 )
             }
         }
