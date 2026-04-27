@@ -24,7 +24,7 @@ final class PremiumManager {
     private(set) var monthlyProduct: Product? = nil
     private(set) var annualProduct: Product? = nil
     private(set) var loadError: String? = nil
-    private(set) var renewalDate: Date? = nil
+    private(set) var expirationDate: Date? = nil
 
     /// Which product the user has selected in the paywall. Annual is preselected (better value).
     var selectedProduct: Product? {
@@ -66,6 +66,7 @@ final class PremiumManager {
     // MARK: - Purchase
 
     func purchase(_ product: Product) async {
+        guard !isPurchasing else { return }
         isPurchasing = true
         IAPStateManager.shared.isIAPInProgress = true
         defer {
@@ -119,12 +120,13 @@ final class PremiumManager {
         transactionListenerTask = Task.detached(priority: .background) { [weak self] in
             for await result in Transaction.updates {
                 guard let self else { return }
-                do {
-                    let transaction = try result.payloadValue
+                switch result {
+                case .verified(let transaction):
                     await transaction.finish()
                     await self.refreshEntitlements()
-                } catch {
-                    logger.error("Transaction update error: \(error)")
+                case .unverified(let transaction, let error):
+                    logger.error("Unverified transaction: \(error)")
+                    await transaction.finish()
                 }
             }
         }
@@ -149,7 +151,7 @@ final class PremiumManager {
         }
 
         isPremium = found
-        renewalDate = latestExpiry
-        logger.info("Entitlement check: isPremium=\(found), renewalDate=\(String(describing: latestExpiry))")
+        expirationDate = latestExpiry
+        logger.info("Entitlement check: isPremium=\(found), expirationDate=\(String(describing: latestExpiry))")
     }
 }
