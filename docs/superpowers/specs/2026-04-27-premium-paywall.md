@@ -2,7 +2,9 @@
 
 **Date:** 2026-04-27  
 **Status:** Approved  
-**Product ID:** `baby.safi.Fuckify.premium.monthly`
+**Product IDs:**
+- `baby.safi.Fuckify.premium.monthly` (1 month)
+- `baby.safi.Fuckify.premium.annual` (1 year)
 
 ---
 
@@ -10,7 +12,7 @@
 
 Add a Premium subscription paywall behind a feature flag in the Experiments section. The paywall is the first step toward monetising server-backed and power-user features. It is gated behind `settings.more.experiments.paywall` so it can be tested in isolation before being promoted to the main app.
 
-There is one subscription tier: monthly (`baby.safi.Fuckify.premium.monthly`). No annual or lifetime options in this iteration.
+Two subscription options: monthly (`baby.safi.Fuckify.premium.monthly`) and annual (`baby.safi.Fuckify.premium.annual`). Both unlock the same set of premium features. Annual is presented as the better value option.
 
 ---
 
@@ -38,18 +40,20 @@ There is one subscription tier: monthly (`baby.safi.Fuckify.premium.monthly`). N
 **State:**
 
 ```swift
-var isLoading: Bool           // product fetch in progress
-var isPurchasing: Bool        // purchase flow in progress
-var isPremium: Bool           // active entitlement exists
-var product: Product?         // loaded StoreKit 2 product
-var loadError: String?        // shown in paywall if fetch fails
-var renewalDate: Date?        // from latest transaction, shown in management view
+var isLoading: Bool             // product fetch in progress
+var isPurchasing: Bool          // purchase flow in progress
+var isPremium: Bool             // active entitlement exists for either product
+var monthlyProduct: Product?    // baby.safi.Fuckify.premium.monthly
+var annualProduct: Product?     // baby.safi.Fuckify.premium.annual
+var loadError: String?          // shown in paywall if fetch fails
+var renewalDate: Date?          // from latest transaction, shown in management view
+var selectedProduct: Product?   // which option the user has chosen in the paywall UI
 ```
 
 **Responsibilities:**
 
-- `load()` — fetches product via `Product.products(for: [productID])`, checks `Transaction.currentEntitlements` to set `isPremium` and `renewalDate`. Called from `.task` in `ExperimentsView`.
-- `purchase()` — calls `product.purchase()`, manages `isPurchasing` and feeds `IAPStateManager.shared.isIAPInProgress` (prevents app lock during purchase). Handles `.success`, `.userCancelled`, `.pending`.
+- `load()` — fetches both products via `Product.products(for: [monthlyID, annualID])`, checks `Transaction.currentEntitlements` for either product ID to set `isPremium` and `renewalDate`. Called from `.task` in `ExperimentsView`. Sets `selectedProduct` to the annual product by default (better value preselected).
+- `purchase(product:)` — calls `product.purchase()` on the passed product, manages `isPurchasing` and feeds `IAPStateManager.shared.isIAPInProgress` (prevents app lock during purchase). Handles `.success`, `.userCancelled`, `.pending`.
 - `restore()` — calls `AppStore.sync()`, re-checks entitlements.
 - `listenForTransactions()` — long-lived background `Task` on `Transaction.updates`, keeps `isPremium` live after purchase or cancellation.
 
@@ -101,19 +105,21 @@ Full-screen `ScrollView`. Emotional/aspirational tone. Matches `SupportView` gra
    | `heart.text.square.fill` | HealthKit | *"Connect to your health picture."* |
    | `photo.on.rectangle` | Extra Icons | *"Make it yours."* |
    | `arrow.triangle.2.circlepath` | Partner Sync | *"Share history with people you trust."* |
-   | `person.3.fill` | Group Sync | *"For the adventurous."* |
+   | `person.3.fill` | Group Sync | *"For the polycules."* |
    | `trophy.fill` | Leaderboards | *"Friendly competition."* |
 
-3. **Subscribe button** — full-width gradient pill (`.accentColor → .purple`):
-   - Loaded: `"{price} / month"`
-   - Loading: `ProgressView`
+3. **Plan picker** — two tappable cards side by side, monthly and annual. Annual is preselected and badged *"Best Value"*. Each card shows the product's `displayPrice` and period. Selecting a card updates `premiumManager.selectedProduct`.
+
+4. **Subscribe button** — full-width gradient pill (`.accentColor → .purple`):
+   - Loaded: `"Subscribe for {selectedProduct.displayPrice}"` 
+   - Loading products: `ProgressView`
    - Error: error message + "Retry" button
    - Purchasing: disabled + `ProgressView`
    - Already premium (edge case): static "You're already premium" message
 
-4. **Restore Purchases** — `.plain` text button below CTA, calls `premiumManager.restore()`
+5. **Restore Purchases** — `.plain` text button below CTA, calls `premiumManager.restore()`
 
-5. **Legal footer** — `.caption` text: *"Subscription auto-renews monthly. Cancel anytime in iOS Settings."*
+6. **Legal footer** — `.caption` text: *"Subscription auto-renews. Cancel anytime in iOS Settings."*
 
 ---
 
@@ -165,13 +171,12 @@ Modified files:
 
 ## StoreKit Testing
 
-Uses the existing StoreKit configuration pattern in the project. A `.storekit` config file entry for `baby.safi.Fuckify.premium.monthly` must be added for simulator testing. The `DebugMenuView` "Reset Login State" pattern is the model for any debug-only purchase reset tooling needed.
+Uses the existing StoreKit configuration pattern in the project. `.storekit` config file entries for both `baby.safi.Fuckify.premium.monthly` and `baby.safi.Fuckify.premium.annual` must be added for simulator testing. The `DebugMenuView` "Reset Login State" pattern is the model for any debug-only purchase reset tooling needed — a "Reset Premium" debug button should be added to clear the local entitlement cache and force a re-check.
 
 ---
 
 ## Out of Scope
 
-- Annual or lifetime purchase options
 - Paywall enforcement on individual features (that comes after this experiment graduates)
 - Server-side receipt validation
 - Subscription analytics / conversion tracking
