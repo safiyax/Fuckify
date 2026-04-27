@@ -14,7 +14,7 @@ actor FeatureFlagsService {
 
     // MARK: - Network
 
-    func fetchFlags() async throws -> [String: Bool] {
+    func fetchFlags() async throws -> [String: FlagValue] {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
 
@@ -44,22 +44,22 @@ actor FeatureFlagsService {
             throw FeatureFlagsError.badResponse(code)
         }
 
-        let flags = try JSONDecoder().decode([String: Bool].self, from: data)
+        let flags = try JSONDecoder().decode([String: FlagValue].self, from: data)
         logger.info("Fetched \(flags.count) feature flags (version: \(version), build: \(build))")
         return flags
     }
 
     // MARK: - Cache
 
-    func cachedFlags() -> [String: Bool] {
+    func cachedFlags() -> [String: FlagValue] {
         guard let data = UserDefaults.standard.data(forKey: cacheKey),
-              let flags = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+              let flags = try? JSONDecoder().decode([String: FlagValue].self, from: data) else {
             return [:]
         }
         return flags
     }
 
-    func persistFlags(_ flags: [String: Bool]) {
+    func persistFlags(_ flags: [String: FlagValue]) {
         guard let data = try? JSONEncoder().encode(flags) else { return }
         UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimestampKey)
@@ -75,6 +75,13 @@ actor FeatureFlagsService {
     func lastFetchedDate() -> Date? {
         UserDefaults.standard.object(forKey: cacheTimestampKey) as? Date
     }
+}
+
+// MARK: - Value type
+
+struct FlagValue: Codable {
+    let enabled: Bool
+    let premium: Bool
 }
 
 // MARK: - Errors

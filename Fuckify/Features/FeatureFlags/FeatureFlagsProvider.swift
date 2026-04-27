@@ -46,7 +46,7 @@ private enum FeatureFlagKey: String, CaseIterable {
 @Observable
 @MainActor
 final class FeatureFlagsProvider {
-    private(set) var flags: [String: Bool] = [:]
+    private(set) var flags: [String: FlagValue] = [:]
     private(set) var isLoaded: Bool = false
 
     private(set) var overrides: [String: Bool] = [:]
@@ -81,7 +81,11 @@ final class FeatureFlagsProvider {
         if let override = overrides[key.rawValue] {
             return override
         }
-        return flags[key.rawValue] ?? false
+        return flags[key.rawValue]?.enabled ?? false
+    }
+
+    fileprivate func isPremiumFeature(_ key: FeatureFlagKey) -> Bool {
+        flags[key.rawValue]?.premium ?? false
     }
 
     // MARK: - Debug Overrides
