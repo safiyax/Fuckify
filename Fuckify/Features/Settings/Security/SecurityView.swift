@@ -76,10 +76,11 @@ struct SecurityView: View {
                         Toggle(isOn: $isBiometricEnabled) {
                             HStack {
                                 Image(systemName: settings.biometricType == .faceID ? "faceid" : "touchid")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(settings.isPINEnabled ? .blue : .secondary)
                                 Text("Enable \(settings.biometricDisplayName)")
                             }
                         }
+                        .disabled(!settings.isPINEnabled)
                         .onChange(of: isBiometricEnabled) { _, newValue in
                             if newValue {
                                 // Test biometric authentication when enabled
@@ -97,9 +98,13 @@ struct SecurityView: View {
                                 settings.isBiometricEnabled = false
                             }
                         }
-                        
+
                         if isBiometricEnabled {
                             Text("You'll be prompted to use \(settings.biometricDisplayName) when opening the app.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if !settings.isPINEnabled {
+                            Text("Set up a PIN first to enable \(settings.biometricDisplayName).")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

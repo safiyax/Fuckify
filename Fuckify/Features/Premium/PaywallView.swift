@@ -112,8 +112,14 @@ struct PaywallView: View {
     @ViewBuilder
     private var planPicker: some View {
         VStack(spacing: 12) {
-            if let monthly = premium.monthlyProduct, let annual = premium.annualProduct {
+            if let monthly = premium.monthlyProduct, let annual = premium.annualProduct, let lifetime = premium.lifetimeProduct {
                 HStack(spacing: 12) {
+                    planCard(
+                        product: monthly,
+                        badge: nil,
+                        period: "/ month",
+                        isSelected: premium.selectedProduct?.id == monthly.id
+                    )
                     planCard(
                         product: annual,
                         badge: "Best Value",
@@ -121,21 +127,12 @@ struct PaywallView: View {
                         isSelected: premium.selectedProduct?.id == annual.id
                     )
                     planCard(
-                        product: monthly,
-                        badge: nil,
-                        period: "/ month",
-                        isSelected: premium.selectedProduct?.id == monthly.id
+                        product: lifetime,
+                        badge: "One-Time",
+                        period: "forever",
+                        isSelected: premium.selectedProduct?.id == lifetime.id
                     )
                 }
-            }
-
-            if let lifetime = premium.lifetimeProduct {
-                planCard(
-                    product: lifetime,
-                    badge: "One-Time",
-                    period: "forever",
-                    isSelected: premium.selectedProduct?.id == lifetime.id
-                )
             }
         }
     }
@@ -145,16 +142,16 @@ struct PaywallView: View {
             premium.selectedProduct = product
         } label: {
             VStack(spacing: 6) {
-                if let badge {
-                    Text(badge)
+//                if let badge {
+                    Text(badge ?? "")
                         .font(.caption2)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(Color.accentColor)
+                        .background(badge != nil ? Color.accentColor : .clear)
                         .clipShape(Capsule())
-                }
+//                }
 
                 Text(product.displayPrice)
                     .font(.title3)

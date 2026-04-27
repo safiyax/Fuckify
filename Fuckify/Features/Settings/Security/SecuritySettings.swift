@@ -88,8 +88,17 @@ final class SecuritySettings {
     init() {
         // Load values from UserDefaults
         self.isPINEnabled = UserDefaults.standard.bool(forKey: "security_isPINEnabled")
-        self.isBiometricEnabled = UserDefaults.standard.bool(forKey: "security_isBiometricEnabled")
         self.storedPINHash = UserDefaults.standard.string(forKey: "security_pinHash")
+
+        // Biometric requires a PIN — self-heal any invalid stored state
+        let storedBiometric = UserDefaults.standard.bool(forKey: "security_isBiometricEnabled")
+        let pinActuallySet = UserDefaults.standard.string(forKey: "security_pinHash") != nil
+        if storedBiometric && !pinActuallySet {
+            self.isBiometricEnabled = false
+            UserDefaults.standard.set(false, forKey: "security_isBiometricEnabled")
+        } else {
+            self.isBiometricEnabled = storedBiometric
+        }
     }
     
     // MARK: - PIN Management

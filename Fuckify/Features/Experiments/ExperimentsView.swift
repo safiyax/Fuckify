@@ -24,6 +24,8 @@ struct ExperimentsView: View {
                                     RegistrationContainerView()
                                 }
                             }
+                        } header: {
+                            Text("Online Features")
                         }
                     }
 
@@ -34,10 +36,12 @@ struct ExperimentsView: View {
                                     .contentShape(Rectangle())
                                     .onTapGesture { showManagement = true }
                             } else {
-                                NavigationLink("Premium") {
+                                NavigationLink("Paywall Sheet") {
                                     PaywallView()
                                 }
                             }
+                        } header: {
+                            Text("Paywall Features")
                         }
                     }
                 }
@@ -46,6 +50,7 @@ struct ExperimentsView: View {
             }
         }
         .navigationTitle("Experiments")
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             registeredUsername = UserDefaults.standard.string(forKey: "cc.username")
         }
