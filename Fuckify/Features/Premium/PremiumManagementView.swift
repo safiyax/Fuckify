@@ -26,23 +26,32 @@ struct PremiumManagementView: View {
                 // MARK: Status
                 Section {
                     HStack(spacing: 16) {
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 40))
-                            .foregroundStyle(.green)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("You're Premium")
-                                .font(.headline)
-
-                            if let date = premium.expirationDate {
-                                Text("Renews \(date.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Text("Never expires")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        if premium.isPremium {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.green)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("You're Premium")
+                                    .font(.headline)
+                                
+                                if let date = premium.expirationDate {
+                                    Text("Renews \(date.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text("Never expires")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                        } else {
+                            Image(systemName: "xmark.seal.fill")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.red)
+                            
+                            Text("You're Not Premium")
+                                .font(.headline)
                         }
                     }
                     .padding(.vertical, 8)

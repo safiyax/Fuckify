@@ -22,36 +22,32 @@ struct PaywallView: View {
     ]
 
     var body: some View {
-//        ScrollView {
+        VStack(spacing: 0) {
+            heroSection
+                .padding(.bottom, 16)
+            
             VStack(spacing: 0) {
-                heroSection
+                featureList
+                    .padding(.horizontal)
                     .padding(.bottom, 16)
-
-                VStack(spacing: 0) {
-                    featureList
-                        .padding(.horizontal)
-                        .padding(.bottom, 16)
-
-                    planPicker
-                        .padding(.horizontal)
-                        .padding(.bottom, 16)
-
-                    subscribeButton
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
-
-                    restoreButton
-                        .padding(.bottom, 12)
-
-                    legalFooter
-                        .padding(.horizontal)
-                        .padding(.bottom, 32)
-                }
+                
+                planPicker
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
+                
+                subscribeButton
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
+                
+                restoreButton
+                    .padding(.bottom, 12)
+                
+                legalFooter
+                    .padding(.horizontal)
+                    .padding(.bottom, 32)
             }
-//        }
+        }
         .ignoresSafeArea(edges: .top)
-//        .navigationTitle("")
-//        .navigationBarTitleDisplayMode(.inline)
         .task { await premium.load() }
     }
 

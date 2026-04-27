@@ -31,15 +31,12 @@ struct ExperimentsView: View {
 
                     if featureFlags.settings.more.experimentsFlags.paywall {
                         Section {
-                            if premium.isPremium {
-                                LabeledContent("Premium", value: "Active")
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { showManagement = true }
-                            } else {
-                                NavigationLink("Paywall Sheet") {
-                                    PaywallView()
-                                }
+                            NavigationLink("Paywall Sheet") {
+                                PaywallView()
                             }
+                            LabeledContent("Premium", value: premium.isPremium ? "Active" : "Not Active")
+                                .contentShape(Rectangle())
+                                .onTapGesture { showManagement = true }
                         } header: {
                             Text("Paywall Features")
                         }
