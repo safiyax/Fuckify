@@ -85,7 +85,7 @@ struct SupportView: View {
                                 icon: "lock.shield.fill",
                                 color: .green,
                                 title: "Privacy First",
-                                description: "No ads, no tracking, no subscriptions"
+                                description: "No ads, no tracking, your data stays on device."
                             )
                             
                             FeatureRow(
