@@ -91,6 +91,7 @@ struct FuckifyApp: App {
     @State private var liveActivityManager = LiveActivityManager()
     @State private var stiManager = STIManager()
     @State private var featureFlags = FeatureFlagsProvider()
+    @State private var premiumManager = PremiumManager.shared
     
     @StateObject private var iapState = IAPStateManager.shared
     @State private var wasInactive = false
@@ -131,10 +132,12 @@ struct FuckifyApp: App {
                     .environment(liveActivityManager)
                     .environment(stiManager)
                     .environment(featureFlags)
+                    .environment(premiumManager)
                     .environment(\.appIsLocked, securitySettings.isSecurityEnabled && !isUnlocked)
                     .task {
                         await stiManager.load()
                         await featureFlags.load()
+                        premiumManager.startListeningForTransactions()
                     }
                     .onShake {
                         // Lock immediately on shake if security is enabled and unlocked
