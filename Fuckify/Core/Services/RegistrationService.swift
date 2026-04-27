@@ -49,7 +49,7 @@ final class RegistrationService {
 
     // MARK: - Step 3b: Reset identity (returning user on new device)
 
-    func resetIdentity(displayName: String) async throws {
+    func resetIdentity(username: String, displayName: String) async throws {
         // Clear any stale keys first so installAndBuildRegistrationBundle generates fresh ones
         km.clearIdentityKeys()
         let bundle = try km.installAndBuildRegistrationBundle(opkCount: 100)
@@ -70,6 +70,7 @@ final class RegistrationService {
             signedPrekeySig:      bundle.signedPrekeySig,
             oneTimePrekeys:       opks
         )
-        // Username is preserved on server — no UserDefaults write needed
+        // Persist username locally — may not have been cached on this device
+        UserDefaults.standard.set(username, forKey: "cc.username")
     }
 }

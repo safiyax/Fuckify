@@ -98,7 +98,7 @@ final class RegistrationCoordinator {
         isLoading = true
         defer { isLoading = false }
         do {
-            try await service.resetIdentity(displayName: displayName)
+            try await service.resetIdentity(username: username, displayName: displayName)
             step = .registered(username: username)
         } catch {
             logger.error("resetIdentity failed: \(error)")
