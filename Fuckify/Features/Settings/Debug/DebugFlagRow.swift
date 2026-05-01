@@ -12,6 +12,7 @@ struct DebugFlagRow: View {
     let label: String
     @Binding var value: Bool
     var isOverridden: Bool = false
+    var isPremium: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -35,6 +36,7 @@ struct DebugFlagRow: View {
 
             Toggle("", isOn: $value)
                 .labelsHidden()
+                .tint(isPremium ? .accent : .green)
         }
     }
 }

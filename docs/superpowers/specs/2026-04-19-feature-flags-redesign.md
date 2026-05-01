@@ -9,7 +9,7 @@ Replace the PostHog-based feature flag implementation with a custom API-backed s
 
 ## Goals
 
-- Fetch boolean flags from `https://api.coitalcomrade.safiya.sh/api/feature-flags`
+- Fetch boolean flags from `https://dev.coitalcomra.de/api/feature-flags`
 - Remove PostHog SDK entirely
 - Type-safe access via computed property structs (`featureFlags.settings.showAppIconPicker`)
 - Simple persistent cache: load from cache on launch, refresh from API in background
@@ -84,7 +84,7 @@ Responsible only for networking and cache I/O. Not `@MainActor` — runs on back
 ```swift
 actor FeatureFlagsService {
     private let cacheKey = "feature_flags_cache"
-    private let baseURL = "https://api.coitalcomrade.safiya.sh/api/feature-flags"
+    private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 
     func fetchFlags() async throws -> [String: Bool]
     func cachedFlags() -> [String: Bool]   // reads UserDefaults

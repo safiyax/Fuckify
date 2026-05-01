@@ -55,7 +55,7 @@ private let logger = AppLogger(subsystem: "baby.safi.Fuckify", category: "Featur
 actor FeatureFlagsService {
     private let cacheKey = "feature_flags_cache"
     private let cacheTimestampKey = "feature_flags_cache_timestamp"
-    private let baseURL = "https://api.coitalcomrade.safiya.sh/api/feature-flags"
+    private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 
     // MARK: - Network
 

@@ -1,7 +1,6 @@
 # Coital Comrade — Backend API Reference
 
-**Base URL (prod):** `https://api.coitalcomrade.safiya.sh`
-**Base URL (dev):** `https://api.dev.coitalcomrade.safiya.sh`
+**Base URL (dev):** `https://dev.coitalcomra.de`
 
 All request and response bodies are JSON. All authenticated endpoints require an `Authorization: Bearer <token>` header. Tokens are obtained from `POST /api/auth/verify-code`.
 

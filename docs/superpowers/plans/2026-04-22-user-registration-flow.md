@@ -48,11 +48,11 @@
 
 In `Fuckify/Features/FeatureFlags/FeatureFlagsService.swift`, change line 13 from:
 ```swift
-    private let baseURL = "https://api.coitalcomrade.safiya.sh/api/feature-flags"
+    private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 ```
 To:
 ```swift
-    private let baseURL = "https://api.dev.coitalcomrade.safiya.sh/api/feature-flags"
+    private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 ```
 
 - [ ] **Step 2: Build**
@@ -515,7 +515,7 @@ struct OKResp: Decodable { let ok: Bool }
 final class APIClient {
     static let shared = APIClient()
 
-    var baseURL = URL(string: "https://api.dev.coitalcomrade.safiya.sh")!
+    var baseURL = URL(string: "https://dev.coitalcomra.de")!
     var authToken: String?
 
     // MARK: - Registration

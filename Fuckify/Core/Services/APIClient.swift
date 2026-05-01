@@ -48,7 +48,7 @@ struct OKResp: Decodable { let ok: Bool }
 final class APIClient {
     static let shared = APIClient()
 
-    var baseURL = URL(string: "https://api.dev.coitalcomrade.safiya.sh")!
+    var baseURL = URL(string: APIConfig.baseURL)!
     var authToken: String?
 
     // MARK: - Registration

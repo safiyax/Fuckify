@@ -2,14 +2,14 @@
 ## Overview
 Implement a feature flagging system that fetches boolean flags from a remote API based on the app's version, build number, and platform.
 ## API Endpoint
-GET https://api.coitalcomrade.safiya.sh/api/feature-flags
+GET https://dev.coitalcomra.de/api/feature-flags
 ## Required Query Parameters
 - `version` - App version in semver format (e.g., `"1.0.0"`)
 - `build` - Build number as integer (e.g., `1`)
 - `platform` - Platform identifier, must be `"ios"` or `"android"`
 ## Example Request
 ```swift
-let url = URL(string: "https://api.coitalcomrade.safiya.sh/api/feature-flags?version=1.0.0&build=1&platform=ios")!
+let url = URL(string: "https://dev.coitalcomra.de/api/feature-flags?version=1.0.0&build=1&platform=ios")!
 Response Format
 The API returns a flat JSON object where:
 - Keys are dot-separated feature flag identifiers

@@ -72,7 +72,7 @@ struct DebugMenuView: View {
                         showResetPremiumConfirm = true
                     } label: {
                         HStack {
-                            Image(systemName: "crown.slash")
+                            Image(systemName: "crown.fill")
                             Text("Reset Premium State")
                         }
                     }
@@ -210,11 +210,12 @@ struct DebugMenuView: View {
     @MainActor
     private func flagRow(_ label: String, key: String, current: Bool) -> some View {
         let isOverridden = featureFlags.overrides[key] != nil
+        let isPremium = featureFlags.flags[key]?.premium ?? false
         let binding = Binding<Bool>(
             get: { current },
             set: { newValue in featureFlags.setOverrideRaw(key, value: newValue) }
         )
-        return DebugFlagRow(label: label, value: binding, isOverridden: isOverridden)
+        return DebugFlagRow(label: label, value: binding, isOverridden: isOverridden, isPremium: isPremium)
     }
 
     private func resetLoginState() {

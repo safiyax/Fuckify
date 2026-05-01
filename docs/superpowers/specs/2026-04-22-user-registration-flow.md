@@ -7,8 +7,8 @@
 
 Build the phone-number-to-username registration flow, surfaced under Settings > Experiments > User Registration, gated by the `settings.more.experiments.userRegistration` feature flag. The flow is fully end-to-end: real SMS verification via Twilio, real CryptoKit key generation, AES-GCM profile encryption, and an atomic upload to the dev backend.
 
-**API base URL:** `https://api.dev.coitalcomrade.safiya.sh`
-**Feature flags API:** `https://api.dev.coitalcomrade.safiya.sh/api/feature-flags`
+**API base URL:** `https://dev.coitalcomra.de`
+**Feature flags API:** `https://dev.coitalcomra.de/api/feature-flags`
 
 ---
 
@@ -93,7 +93,7 @@ These will be updated to use the app's bundle ID (`baby.safi.Fuckify`) in a futu
 ## Section 2: API Client (`Core/Services/APIClient.swift`)
 
 `final class APIClient` with:
-- `var baseURL = URL(string: "https://api.dev.coitalcomrade.safiya.sh")!`
+- `var baseURL = URL(string: "https://dev.coitalcomra.de")!`
 - `var authToken: String?`
 - Generic `post<T>` and `get<T>` helpers using `URLSession.shared`
 - Registration endpoints only for now:
@@ -355,11 +355,11 @@ Section("settings.more.experiments") {
 
 Change:
 ```swift
-private let baseURL = "https://api.coitalcomrade.safiya.sh/api/feature-flags"
+private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 ```
 To:
 ```swift
-private let baseURL = "https://api.dev.coitalcomrade.safiya.sh/api/feature-flags"
+private let baseURL = "https://dev.coitalcomra.de/api/feature-flags"
 ```
 
 ---
