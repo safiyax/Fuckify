@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		890775622FAD867B008DD7A5 /* BottomSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 890775612FAD867B008DD7A5 /* BottomSheet */; };
 		890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97532F1ED08200FC58E8 /* LiquidGlassKit */; };
 		890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97602F1F1F8E00FC58E8 /* MijickCalendarView */; };
 		890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */ = {isa = PBXBuildFile; productRef = 890C97632F205DBB00FC58E8 /* AcknowList */; };
@@ -118,6 +119,7 @@
 			files = (
 				890C97612F1F1F8E00FC58E8 /* MijickCalendarView in Frameworks */,
 				89B3DEA72F9436890043AD7E /* StoreKit.framework in Frameworks */,
+				890775622FAD867B008DD7A5 /* BottomSheet in Frameworks */,
 				890C97642F205DBB00FC58E8 /* AcknowList in Frameworks */,
 				89B3DE8A2F93F35C0043AD7E /* SFSafeSymbols in Frameworks */,
 				890C97542F1ED08200FC58E8 /* LiquidGlassKit in Frameworks */,
@@ -194,6 +196,7 @@
 				890C97602F1F1F8E00FC58E8 /* MijickCalendarView */,
 				890C97632F205DBB00FC58E8 /* AcknowList */,
 				89B3DE892F93F35C0043AD7E /* SFSafeSymbols */,
+				890775612FAD867B008DD7A5 /* BottomSheet */,
 			);
 			productName = Fuckify;
 			productReference = 893C5D2E2EBF711200981CDC /* Fuckify.app */;
@@ -254,6 +257,7 @@
 				890C975F2F1F1F8E00FC58E8 /* XCRemoteSwiftPackageReference "CalendarView" */,
 				890C97622F205DBB00FC58E8 /* XCRemoteSwiftPackageReference "acknowlist" */,
 				89B3DE882F93F35C0043AD7E /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
+				890775602FAD867B008DD7A5 /* XCRemoteSwiftPackageReference "BottomSheet" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 893C5D2F2EBF711200981CDC /* Products */;
@@ -623,6 +627,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		890775602FAD867B008DD7A5 /* XCRemoteSwiftPackageReference "BottomSheet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lucaszischka/BottomSheet";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.1;
+			};
+		};
 		890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/DnV1eX/LiquidGlassKit.git";
@@ -666,6 +678,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		890775612FAD867B008DD7A5 /* BottomSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 890775602FAD867B008DD7A5 /* XCRemoteSwiftPackageReference "BottomSheet" */;
+			productName = BottomSheet;
+		};
 		890C97532F1ED08200FC58E8 /* LiquidGlassKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 890C97522F1ED08200FC58E8 /* XCRemoteSwiftPackageReference "LiquidGlassKit" */;

@@ -39,6 +39,8 @@ private enum FeatureFlagKey: String, CaseIterable {
     // settings.more.experiments
     case settingsMoreExperimentsUserRegistration    = "settings.more.experiments.userRegistration"
     case settingsMoreExperimentsPaywall             = "settings.more.experiments.paywall"
+    case settingsMoreExperimentsSheetRedesign       = "settings.more.experiments.sheetRedesign"
+    case settingsMoreExperimentsAnimatedBackground  = "settings.more.experiments.animatedBackground"
 }
 
 // MARK: - Provider
@@ -226,5 +228,7 @@ struct SettingsMoreFlags {
 struct ExperimentsFlags {
     let provider: FeatureFlagsProvider
     var userRegistration: Bool { provider.isEnabled(.settingsMoreExperimentsUserRegistration) }
-    var paywall: Bool { provider.isEnabled(.settingsMoreExperimentsPaywall) }
+    var paywall: Bool          { provider.isEnabled(.settingsMoreExperimentsPaywall) }
+    var sheetRedesign: Bool    { provider.isEnabled(.settingsMoreExperimentsSheetRedesign) }
+    var animatedBackground: Bool { provider.isEnabled(.settingsMoreExperimentsAnimatedBackground) }
 }

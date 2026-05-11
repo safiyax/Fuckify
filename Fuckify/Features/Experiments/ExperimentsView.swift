@@ -13,7 +13,9 @@ struct ExperimentsView: View {
     var body: some View {
         Group {
             if featureFlags.settings.more.experimentsFlags.userRegistration ||
-               featureFlags.settings.more.experimentsFlags.paywall {
+               featureFlags.settings.more.experimentsFlags.paywall ||
+               featureFlags.settings.more.experimentsFlags.sheetRedesign ||
+               featureFlags.settings.more.experimentsFlags.animatedBackground {
                 Form {
                     if featureFlags.settings.more.experimentsFlags.userRegistration {
                         Section {
@@ -26,6 +28,22 @@ struct ExperimentsView: View {
                             }
                         } header: {
                             Text("Online Features")
+                        }
+                    }
+
+                    if featureFlags.settings.more.experimentsFlags.sheetRedesign ||
+                       featureFlags.settings.more.experimentsFlags.animatedBackground {
+                        Section("Redesign") {
+                            if featureFlags.settings.more.experimentsFlags.sheetRedesign {
+                                NavigationLink("Bottom Sheet") {
+                                    BottomSheetView()
+                                }
+                            }
+                            if featureFlags.settings.more.experimentsFlags.animatedBackground {
+                                NavigationLink("Animated Background") {
+                                    AnimatedBlobBackground()
+                                }
+                            }
                         }
                     }
 

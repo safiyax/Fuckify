@@ -176,6 +176,12 @@ struct DebugMenuView: View {
                     flagRow("  paywall",
                             key: "settings.more.experiments.paywall",
                             current: featureFlags.settings.more.experimentsFlags.paywall)
+                    flagRow("  sheetRedesign",
+                            key: "settings.more.experiments.sheetRedesign",
+                            current: featureFlags.settings.more.experimentsFlags.sheetRedesign)
+                    flagRow("  animatedBackground",
+                            key: "settings.more.experiments.animatedBackground",
+                            current: featureFlags.settings.more.experimentsFlags.animatedBackground)
                 }
 
                 // MARK: App Info
