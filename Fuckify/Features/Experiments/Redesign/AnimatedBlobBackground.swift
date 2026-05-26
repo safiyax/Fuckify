@@ -13,7 +13,7 @@ struct AnimatedBlobBackground: View {
     let timer = Timer.publish(every: 0.016, on: .main, in: .common).autoconnect()
     
     // SPEED CONTROL - Lower = slower, higher = faster
-    let movementSpeed: Double = 0.5  // Change this! (0.1 = very slow, 1.0 = fast)
+    var movementSpeed: Double = 1.0  // Change this! (0.1 = very slow, 1.0 = fast)
     
     var body: some View {
         ZStack {

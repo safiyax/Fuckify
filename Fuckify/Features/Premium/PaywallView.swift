@@ -55,11 +55,12 @@ struct PaywallView: View {
 
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
-            LinearGradient(
-                colors: [.accentColor, .purple],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+//            LinearGradient(
+//                colors: [.accentColor, .purple],
+//                startPoint: .topLeading,
+//                endPoint: .bottomTrailing
+//            )
+            AnimatedBlobBackground(movementSpeed: 5.0)
 
             VStack(spacing: 16) {
                 Spacer(minLength: 20)
@@ -212,11 +213,12 @@ struct PaywallView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(
-                    LinearGradient(
-                        colors: [.accentColor, .purple],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+//                    LinearGradient(
+//                        colors: [.accentColor, .purple],
+//                        startPoint: .leading,
+//                        endPoint: .trailing
+//                    )
+                    AnimatedBlobBackground(movementSpeed: 5.0)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             }

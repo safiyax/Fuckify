@@ -98,7 +98,7 @@ struct PremiumManagementView: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large, .fraction(0.60)])
     }
 }
 
